@@ -67,8 +67,8 @@ h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -.01em; }
 .side-foot { display: none; }
 
 main { width: 100%; max-width: 760px; margin: 0 auto; padding: 20px 16px 110px; }
-.view { display: grid; gap: 16px; animation: rise .25s var(--ease); }
-@keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+.view { display: grid; gap: 16px; animation: rise .14s var(--ease); }
+@keyframes rise { from { opacity: .4; transform: translateY(3px); } }
 .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding: 6px 4px 2px; }
 .page-head h1 { font-size: 28px; letter-spacing: -.02em; }
 .page-head p { color: var(--muted); font-size: 14px; margin-top: 2px; }

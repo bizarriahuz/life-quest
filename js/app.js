@@ -1,4 +1,5 @@
 import { cloudEnabled, getClient, cloudStore, localStore } from './store.js';
+import { withCache } from './cache.js';
 import { html, raw, mount, wire, toast, levelUpModal } from './ui.js';
 import { icon } from './icons.js';
 import { STATS, overallLevel, statLevel } from './game.js';
@@ -112,7 +113,24 @@ async function route() {
   }
 }
 
-async function start(store) {
+// Background refresh found newer data: redraw, unless you're mid-typing.
+function onStale() {
+  const a = document.activeElement;
+  if (a && a.closest?.('#view') && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return;
+  if (document.querySelector('#view .levelup, .levelup')) return;
+  route();
+}
+
+// Warm every section's data so the first switch is instant too.
+async function prefetch(currentId) {
+  for (const v of VIEWS) {
+    if (v.id === currentId || !S.store) continue;
+    try { await v.render(document.createElement('div'), ctx); } catch { /* ignore */ }
+  }
+}
+
+async function start(rawStore) {
+  const store = withCache(rawStore, onStale);
   S.store = store;
   mount(root, html`<p class="loading">Loading…</p>`);
   try {
@@ -124,7 +142,8 @@ async function start(store) {
   }
   renderShell();
   window.onhashchange = route;
-  route();
+  await route();
+  prefetch(document.getElementById('view')?.dataset.view);
 }
 
 // ---------- sign in ----------
