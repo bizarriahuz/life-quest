@@ -66,7 +66,7 @@ export function cloudStore(sb, user) {
 const KEY = 'lifequest:v1';
 const DEFAULTS = {
   tasks: { kind: 'side', due_on: null, done: false, done_on: null },
-  books: { author: null, status: 'queued', pages_total: null, pages_read: 0, rating: null, started_on: null, finished_on: null },
+  books: { isbn: null, cover_url: null, author: null, status: 'queued', pages_total: null, pages_read: 0, rating: null, started_on: null, finished_on: null },
   notes: { title: '', body: '', pinned: false },
   quotes: { source: null },
   workouts: { kind: 'run', duration_min: 0, distance_km: null, notes: null },

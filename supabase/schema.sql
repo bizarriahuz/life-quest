@@ -26,6 +26,8 @@ create table public.books (
   user_id     uuid not null default auth.uid() references auth.users(id) on delete cascade,
   title       text not null check (char_length(title) between 1 and 200),
   author      text,
+  isbn        text check (isbn is null or isbn ~ '^[0-9]{9}[0-9X]$|^[0-9]{13}$'),
+  cover_url   text check (cover_url is null or cover_url ~ '^https://'),
   status      text not null default 'queued' check (status in ('queued','reading','finished')),
   pages_total int check (pages_total is null or pages_total > 0),
   pages_read  int not null default 0 check (pages_read >= 0),

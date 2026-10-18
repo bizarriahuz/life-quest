@@ -252,6 +252,9 @@ details[open] > summary { margin-bottom: 12px; }
 .book { padding: 14px 0; border-top: 1px solid var(--line); display: grid; gap: 10px; }
 .book:first-child { border-top: 0; padding-top: 0; }
 .book-title { font-size: 16px; font-weight: 600; }
+.cover { width: 56px; aspect-ratio: 2 / 3; flex: none; object-fit: cover; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--line); }
+.cover.sm { width: 36px; border-radius: 4px; }
+.isbn-result:empty { display: none; }
 .stars { display: inline-flex; flex: none; }
 .star { background: none; border: 0; padding: 2px; cursor: pointer; color: var(--line-2); font-size: 18px; line-height: 1; }
 .star.on { color: var(--fg); }
