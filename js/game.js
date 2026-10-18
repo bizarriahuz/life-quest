@@ -14,6 +14,7 @@ export const XP = {
   task: { main: 30, job: 30, side: 15, daily: 10 },
   prayer: 10,
   prayerFullDay: 20,
+  awrad: 20,
   note: 10,
   quote: 5,
   bookFinished: 50,

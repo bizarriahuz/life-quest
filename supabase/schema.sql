@@ -72,7 +72,7 @@ create table public.prayer_logs (
   id         uuid primary key default gen_random_uuid(),
   user_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
   prayed_on  date not null,
-  prayer     text not null check (prayer in ('fajr','dhuhr','asr','maghrib','isha')),
+  prayer     text not null check (prayer in ('fajr','dhuhr','asr','maghrib','isha','awrad')),
   created_at timestamptz not null default now(),
   unique (user_id, prayed_on, prayer)
 );

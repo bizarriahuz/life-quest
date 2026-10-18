@@ -17,13 +17,15 @@ export default {
   label: 'Home',
   async render(el, ctx) {
     const t = today();
-    const [prayers, openTasks, lastWorkout, reading, quotes] = await Promise.all([
+    const [prayerLogs, openTasks, lastWorkout, reading, quotes] = await Promise.all([
       ctx.store.list('prayer_logs', { match: { prayed_on: t } }),
       ctx.store.list('tasks', { match: { done: false } }),
       ctx.store.list('workouts', { order: 'performed_on', limit: 1 }),
       ctx.store.list('books', { match: { status: 'reading' } }),
       ctx.store.list('quotes', { limit: 500 }),
     ]);
+    const prayers = prayerLogs.filter((x) => x.prayer !== 'awrad');
+    const awradDone = prayerLogs.some((x) => x.prayer === 'awrad');
     const totals = ctx.totals;
     const lv = overallLevel(totals);
     const name = ctx.profile?.hero_name || 'You';
@@ -77,7 +79,7 @@ export default {
           <div class="today">
             <a href="#/prayer">${raw(icon('prayer'))}<span class="t-label">Prayer</span>
               <span class="t-val"><span class="dots">${['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'].map((p) =>
-                html`<i class="${prayers.some((x) => x.prayer === p) ? 'on' : ''}"></i>`)}</span>${prayers.length}/5</span></a>
+                html`<i class="${prayers.some((x) => x.prayer === p) ? 'on' : ''}"></i>`)}</span>${prayers.length}/5 · awrad ${awradDone ? '✓' : '–'}</span></a>
             <a href="#/tasks">${raw(icon('tasks'))}<span class="t-label">Tasks</span>
               <span class="t-val">${jobsOpen ? `${jobsOpen} job${jobsOpen === 1 ? '' : 's'} · ` : ''}${dailies.length ? `${dailyLeft} daily left` : 'No dailies'}${due ? ` · ${due} due` : ''}</span></a>
             <a href="#/fitness">${raw(icon('fitness'))}<span class="t-label">Fitness</span>
@@ -100,7 +102,7 @@ export default {
           <summary>How XP works</summary>
           <ul class="list small muted">
             <li class="item">Tasks: main or job ${XP.task.main}, side ${XP.task.side}, daily ${XP.task.daily}</li>
-            <li class="item">Prayer: ${XP.prayer} each, +${XP.prayerFullDay} for all five in a day</li>
+            <li class="item">Prayer: ${XP.prayer} each, +${XP.prayerFullDay} for all five in a day · Daily Awrad: ${XP.awrad}</li>
             <li class="item">Fitness: 1 per minute (up to 120) + 5 per km</li>
             <li class="item">Books: 1 per 10 pages, ${XP.bookFinished} for finishing</li>
             <li class="item">Notes: ${XP.note} per new note · Quotes: ${XP.quote} each</li>

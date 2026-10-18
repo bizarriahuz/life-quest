@@ -4,3 +4,6 @@
 // Set both to '' to play in OFFLINE MODE (data stays in this browser only).
 export const SUPABASE_URL = 'https://qbguhztrcerqfoctzqaj.supabase.co';
 export const SUPABASE_KEY = 'sb_publishable_2PD_Wa9we6XjzK-TWPWfdw_De44JRb0';
+
+// Your Naqshbandi companion app; the Prayer page links to it. Leave '' to hide the link.
+export const AWRAD_URL = '';
