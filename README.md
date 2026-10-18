@@ -31,7 +31,7 @@ A personal companion app — tasks, prayer, fitness, books, notes, quotes and ho
 
 | Action | XP | Stat |
 |---|---|---|
-| Task (main / side / daily) | 30 / 15 / 10 | Discipline |
+| Task (main or job / side / daily) | 30 / 15 / 10 | Discipline |
 | Each prayer, +20 for all five in a day | 10 | Faith |
 | Workout | 1 per minute (max 120) + 5 per km | Strength |
 | Reading | 1 per 10 pages, 50 for finishing | Knowledge |

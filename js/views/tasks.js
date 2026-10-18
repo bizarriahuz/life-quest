@@ -2,7 +2,8 @@ import { html, raw, wire, mount, today, relDate, empty } from '../ui.js';
 import { icon } from '../icons.js';
 import { XP } from '../game.js';
 
-const KIND = { main: 'Main', side: 'Side', daily: 'Daily' };
+const KIND = { side: 'Side', main: 'Main', job: 'Job', daily: 'Daily' };
+const byDue = (a, b) => (a.due_on || '9999').localeCompare(b.due_on || '9999');
 
 export default {
   id: 'tasks',
@@ -11,9 +12,9 @@ export default {
     const t = today();
     const all = await ctx.store.list('tasks', { order: 'created_at' });
     const daily = all.filter((q) => q.kind === 'daily');
-    const active = all.filter((q) => q.kind !== 'daily' && !q.done).sort((a, b) =>
-      (a.kind === 'main' ? 0 : 1) - (b.kind === 'main' ? 0 : 1) ||
-      (a.due_on || '9999').localeCompare(b.due_on || '9999'));
+    const jobs = all.filter((q) => q.kind === 'job' && !q.done).sort(byDue);
+    const active = all.filter((q) => (q.kind === 'main' || q.kind === 'side') && !q.done).sort((a, b) =>
+      (a.kind === 'main' ? 0 : 1) - (b.kind === 'main' ? 0 : 1) || byDue(a, b));
     const done = all.filter((q) => q.kind !== 'daily' && q.done)
       .sort((a, b) => (b.done_on || '').localeCompare(a.done_on || '')).slice(0, 25);
     const dailyDone = daily.filter((q) => q.done_on === t).length;
@@ -32,14 +33,14 @@ export default {
       </li>`;
 
     mount(el, html`
-      <header class="page-head"><div><h1>Tasks</h1><p>${active.length} open · ${dailyDone}/${daily.length} dailies done</p></div></header>
+      <header class="page-head"><div><h1>Tasks</h1><p>${jobs.length} job${jobs.length === 1 ? '' : 's'} · ${active.length} to do · ${dailyDone}/${daily.length} dailies done</p></div></header>
 
       <section class="card">
         <form data-form="add" class="form">
           <input name="title" placeholder="Add a task…" maxlength="200" required aria-label="New task">
           <div class="row wrap spread">
             <div class="seg" role="radiogroup" aria-label="Type">
-              ${['side', 'main', 'daily'].map((k, i) => html`<label><input type="radio" name="kind" value="${k}" ${i === 0 ? 'checked' : ''}><span>${KIND[k]}</span></label>`)}
+              ${Object.keys(KIND).map((k, i) => html`<label><input type="radio" name="kind" value="${k}" ${i === 0 ? 'checked' : ''}><span>${KIND[k]}</span></label>`)}
             </div>
             <div class="row">
               <input type="date" name="due_on" aria-label="Due date" style="width:auto">
@@ -53,6 +54,12 @@ export default {
         <div class="card-head"><h2>Daily</h2><span class="meta">Resets every day</span></div>
         ${daily.length ? html`<ul class="list">${daily.map((q) => item(q, q.done_on === t))}</ul>`
           : empty('Add habits you want to repeat every day.')}
+      </section>
+
+      <section class="card">
+        <div class="card-head"><h2>Jobs</h2><span class="meta">${jobs.length}</span></div>
+        ${jobs.length ? html`<ul class="list">${jobs.map((q) => item(q, false))}</ul>`
+          : empty('No open jobs.')}
       </section>
 
       <section class="card">

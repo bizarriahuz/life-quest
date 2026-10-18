@@ -11,7 +11,7 @@ export const STATS = {
 };
 
 export const XP = {
-  task: { main: 30, side: 15, daily: 10 },
+  task: { main: 30, job: 30, side: 15, daily: 10 },
   prayer: 10,
   prayerFullDay: 20,
   note: 10,

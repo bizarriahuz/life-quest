@@ -13,7 +13,7 @@ create table public.tasks (
   id         uuid primary key default gen_random_uuid(),
   user_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
   title      text not null check (char_length(title) between 1 and 200),
-  kind       text not null default 'side' check (kind in ('main','side','daily')),
+  kind       text not null default 'side' check (kind in ('main','side','daily','job')),
   due_on     date,
   done       boolean not null default false,
   done_on    date,             -- for daily quests: the last day it was completed

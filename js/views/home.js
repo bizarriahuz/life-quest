@@ -28,6 +28,7 @@ export default {
     const lv = overallLevel(totals);
     const name = ctx.profile?.hero_name || 'You';
     const dailies = openTasks.filter((q) => q.kind === 'daily');
+    const jobsOpen = openTasks.filter((q) => q.kind === 'job').length;
     const dailyLeft = dailies.filter((q) => q.done_on !== t).length;
     const due = openTasks.filter((q) => q.kind !== 'daily' && q.due_on && q.due_on <= t).length;
     const quote = quotes.length ? quotes[dailyIndex(quotes.length)] : null;
@@ -78,7 +79,7 @@ export default {
               <span class="t-val"><span class="dots">${['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'].map((p) =>
                 html`<i class="${prayers.some((x) => x.prayer === p) ? 'on' : ''}"></i>`)}</span>${prayers.length}/5</span></a>
             <a href="#/tasks">${raw(icon('tasks'))}<span class="t-label">Tasks</span>
-              <span class="t-val">${dailies.length ? `${dailyLeft} daily left` : 'No dailies'}${due ? ` · ${due} due` : ''}</span></a>
+              <span class="t-val">${jobsOpen ? `${jobsOpen} job${jobsOpen === 1 ? '' : 's'} · ` : ''}${dailies.length ? `${dailyLeft} daily left` : 'No dailies'}${due ? ` · ${due} due` : ''}</span></a>
             <a href="#/fitness">${raw(icon('fitness'))}<span class="t-label">Fitness</span>
               <span class="t-val">${w ? `${w.kind[0].toUpperCase()}${w.kind.slice(1)} · ${relDate(w.performed_on)}` : 'Nothing logged yet'}</span></a>
             <a href="#/books">${raw(icon('books'))}<span class="t-label">Reading</span>
@@ -98,7 +99,7 @@ export default {
         <details>
           <summary>How XP works</summary>
           <ul class="list small muted">
-            <li class="item">Tasks: main ${XP.task.main}, side ${XP.task.side}, daily ${XP.task.daily}</li>
+            <li class="item">Tasks: main or job ${XP.task.main}, side ${XP.task.side}, daily ${XP.task.daily}</li>
             <li class="item">Prayer: ${XP.prayer} each, +${XP.prayerFullDay} for all five in a day</li>
             <li class="item">Fitness: 1 per minute (up to 120) + 5 per km</li>
             <li class="item">Books: 1 per 10 pages, ${XP.bookFinished} for finishing</li>
