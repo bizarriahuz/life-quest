@@ -61,7 +61,7 @@ export default {
     const todayRows = {
       prayer: () => html`<a href="#/prayer">${raw(icon('prayer'))}<span class="t-label">Prayer</span>
               <span class="t-val"><span class="dots">${['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'].map((p) =>
-                html`<i class="${prayers.some((x) => x.prayer === p) ? 'on' : ''}"></i>`)}</span>${prayers.length}/5${nextP ? ` · ${PNAME[nextP.key]} ${nextP.label}` : ` · awrad ${awradDone ? '✓' : '–'}`}</span></a>`,
+                html`<i class="${prayers.some((x) => x.prayer === p) ? 'on' : ''}"></i>`)}<i class="aw ${awradDone ? 'on' : ''}" title="Daily Awrad ${awradDone ? 'done' : 'not yet'}"></i></span><span class="t-txt">${prayers.length === 5 ? '5/5 ✓' : nextP ? `${PNAME[nextP.key]} ${nextP.label}` : `${prayers.length}/5`}</span></span></a>`,
       tasks: () => html`<a href="#/tasks">${raw(icon('tasks'))}<span class="t-label">Tasks</span>
               <span class="t-val">${jobsOpen ? `${jobsOpen} job${jobsOpen === 1 ? '' : 's'} · ` : ''}${dailies.length ? `${dailyLeft} daily left` : 'No dailies'}${due ? ` · ${due} due` : ''}</span></a>`,
       finance: () => html`<a href="#/finance">${raw(icon('finance'))}<span class="t-label">Money</span>

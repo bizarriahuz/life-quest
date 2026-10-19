@@ -366,3 +366,10 @@ details[open] > summary { margin-bottom: 12px; }
 .log-head b { font-weight: 600; }
 .log-head .faint { margin-left: auto; }
 .log-entry ul { margin: 0; padding-left: 18px; color: var(--muted); font-size: 14px; display: grid; gap: 3px; }
+
+.dots i.aw { border-radius: 2px; margin-left: 3px; }
+.today a { min-width: 0; }
+.today .t-label { flex: none; }
+.today .t-val { display: flex; align-items: center; justify-content: flex-end; gap: 0; }
+.today .t-val .dots { flex: none; }
+.today .t-txt { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
