@@ -1,7 +1,7 @@
 {
   "name": "Life Quest",
   "short_name": "Life Quest",
-  "description": "A 1-bit RPG for your real life: quests, prayer, training, books, journal, scrolls and hobbies.",
+  "description": "Your real life, levelled up: tasks, prayer, fitness, reading, money and more, with XP and levels.",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#000000",

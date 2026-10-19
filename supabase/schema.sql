@@ -474,3 +474,7 @@ alter table public.xp_events add constraint xp_events_stat_check check (stat in 
 alter table public.profiles drop constraint profiles_sections_check;
 alter table public.profiles add constraint profiles_sections_check check (sections is null or sections <@
   array['tasks','goals','clients','prayer','fitness','sleep','books','comics','learning','notes','mood','quotes','hobbies','mtg','watchlist','people','finance']::text[]);
+
+-- 2026-10-19 · Themes
+alter table public.profiles add column if not exists theme text not null default 'midnight'
+  check (theme in ('midnight','ocean','forest','plum','paper','blush','lavender','sand'));

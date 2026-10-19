@@ -1,6 +1,7 @@
 import { cloudEnabled, getClient, cloudStore, localStore } from './store.js';
 import { withCache } from './cache.js';
 import { hasUnseen, markSeen } from './changelog.js';
+import { applyTheme } from './theme.js';
 import { html, raw, mount, wire, toast, levelUpModal } from './ui.js';
 import { icon } from './icons.js';
 import { STATS, overallLevel, statLevel, enabledSections, visibleTotals } from './game.js';
@@ -167,6 +168,7 @@ async function start(rawStore) {
   mount(root, html`<p class="loading">Loading…</p>`);
   try {
     [S.profile, S.rawTotals] = await Promise.all([store.profile(), store.totals()]);
+    applyTheme(S.profile?.theme);
   } catch (err) {
     mount(root, html`<div class="auth"><section class="card err-card"><h2>Couldn't load your data</h2>
       <p class="muted">${err?.message || String(err)}</p><p style="margin-top:14px"><button class="btn" data-reload>Retry</button></p></section></div>`);

@@ -1,6 +1,13 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.16', date: '2026-10-19', title: 'Themes',
+    items: [
+      'Pick a colourway in Settings: Midnight (the original), Ocean, Forest and Plum, or the light ones, Paper, Blush, Lavender and Sand.',
+      'Your theme is saved to your account, so it follows you to every device.',
+    ],
+  },
+  {
     version: '1.15', date: '2026-10-19', title: 'Seven new sections & Sadaqah',
     items: [
       'Goals: bigger goals broken into milestones you tick off.',

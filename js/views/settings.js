@@ -3,6 +3,7 @@ import { icon } from '../icons.js';
 import { SECTIONS, CURRENCIES } from '../game.js';
 import { CHANGELOG, LATEST } from '../changelog.js';
 import { fmtDate } from '../ui.js';
+import { THEMES, DEFAULT_THEME, applyTheme } from '../theme.js';
 
 const logEntry = (e) => html`
   <article class="log-entry">
@@ -24,6 +25,20 @@ export default {
 
     mount(el, html`
       <header class="page-head"><div><h1>Settings</h1><p>Make Life Quest yours</p></div></header>
+
+      <section class="card">
+        <div class="card-head"><h2>Theme</h2><span class="meta">Changes straight away</span></div>
+        <div class="themes" role="radiogroup" aria-label="Theme">
+          ${THEMES.map((t) => html`
+            <label class="theme-opt">
+              <input type="radio" name="theme" value="${t.id}" data-change="theme" ${(ctx.profile?.theme || DEFAULT_THEME) === t.id ? 'checked' : ''}>
+              <span class="theme-card" style="--t-bg:${t.swatch[0]};--t-card:${t.swatch[1]};--t-acc:${t.swatch[2]};--t-fg:${t.swatch[3]}">
+                <span class="tp"><i class="tp-bar"></i><i class="tp-line"></i><i class="tp-line short"></i><i class="tp-dot"></i></span>
+                <span class="theme-name">${t.label}<span class="faint">${t.mode === 'light' ? 'Light' : 'Dark'}</span></span>
+              </span>
+            </label>`)}
+        </div>
+      </section>
 
       <form data-form="save" class="form" style="gap:16px">
         <section class="card">
@@ -99,6 +114,10 @@ export default {
     el.addEventListener('change', (e) => { if (e.target.closest('form')) markDirty(); });
 
     wire(el, {
+      theme: async (r) => {
+        const id = applyTheme(r.value);
+        await ctx.setProfile({ theme: id });
+      },
       up: (b) => move(b, -1),
       down: (b) => move(b, 1),
       save: async (v, form) => {
