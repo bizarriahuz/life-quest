@@ -21,7 +21,7 @@ A personal companion app — tasks, goals, prayer, fitness, sleep, books, comics
 
 ## Configuration
 
-`js/config.js` holds the Supabase URL and publishable key. Both are designed to be public; row-level security protects the data. Blank them out to run in offline mode (data stays in that browser).
+`js/config.js` holds the Supabase URL and publishable key, plus an optional TMDB key (Watchlist search, posters and where to watch). Both are designed to be public; row-level security protects the data. Blank them out to run in offline mode (data stays in that browser).
 
 ## Database
 
@@ -75,6 +75,8 @@ js/store.js           Supabase + offline data stores (same interface)
 js/game.js            XP rules and level maths
 js/changelog.js       What's new entries
 js/prayertimes.js     MUIS prayer times (api.prayertimes.sg)
+js/tmdb.js            TMDB search, details and Singapore streaming services for the Watchlist
+js/theme.js           colourways (picked in Settings)
 js/mtg.js             decklist parser + Scryfall lookups (commander art, mana curve)
 js/scanner.js         camera barcode scanner (native BarcodeDetector or bundled ZXing)
 js/vendor/zxing.js    ZXing 0.21.3 1D decoder + a working EAN 5-digit add-on reader (bundled with esbuild)

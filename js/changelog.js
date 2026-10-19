@@ -1,6 +1,14 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.17', date: '2026-10-19', title: 'Smarter Watchlist',
+    items: [
+      'Search films and series as you type, or paste an IMDb link, to add them with poster, year and running time.',
+      'See where each title is streaming in Singapore.',
+      'Older entries can pick up a poster and details from the ⋯ menu.',
+    ],
+  },
+  {
     version: '1.16', date: '2026-10-19', title: 'Themes',
     items: [
       'Pick a colourway in Settings: Midnight (the original), Ocean, Forest and Plum, or the light ones, Paper, Blush, Lavender and Sand.',

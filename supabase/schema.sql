@@ -478,3 +478,13 @@ alter table public.profiles add constraint profiles_sections_check check (sectio
 -- 2026-10-19 · Themes
 alter table public.profiles add column if not exists theme text not null default 'midnight'
   check (theme in ('midnight','ocean','forest','plum','paper','blush','lavender','sand'));
+
+-- 2026-10-19 · Watchlist details from TMDB
+alter table public.watchlist
+  add column if not exists tmdb_id int check (tmdb_id is null or tmdb_id > 0),
+  add column if not exists tmdb_type text check (tmdb_type is null or tmdb_type in ('movie','tv')),
+  add column if not exists imdb_id text check (imdb_id is null or imdb_id ~ '^tt[0-9]{5,10}$'),
+  add column if not exists year smallint check (year is null or year between 1870 and 2100),
+  add column if not exists poster_url text check (poster_url is null or (poster_url ~ '^https://image\.tmdb\.org/' and char_length(poster_url) <= 300)),
+  add column if not exists details text check (details is null or char_length(details) <= 200),
+  add column if not exists overview text check (overview is null or char_length(overview) <= 700);

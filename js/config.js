@@ -7,3 +7,7 @@ export const SUPABASE_KEY = 'sb_publishable_2PD_Wa9we6XjzK-TWPWfdw_De44JRb0';
 
 // Your Naqshbandi companion app; the Prayer page links to it. Leave '' to hide the link.
 export const AWRAD_URL = '';
+
+// TMDB key for Watchlist search, posters and where to watch (themoviedb.org → Settings → API).
+// Either the API key or the API Read Access Token works. Leave '' to add titles by hand.
+export const TMDB_KEY = '';

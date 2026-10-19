@@ -561,3 +561,28 @@ details.more[open] > summary { margin: 0; background: var(--surface-2); color: v
 .tp-dot { position: absolute; right: 9px; bottom: 9px; width: 18px; height: 18px; background: var(--t-acc); }
 .theme-name { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; padding: 0 4px; font-size: 13.5px; font-weight: 600; }
 .theme-name .faint { font-size: 11.5px; font-weight: 500; }
+
+/* ---------- watchlist: TMDB ---------- */
+.tmdb-search { position: relative; }
+.tmdb-results { position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 35; max-height: min(60vh, 420px); overflow-y: auto; padding: 6px;
+  border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line-2); box-shadow: 0 12px 30px var(--shadow); }
+.tmdb-hit { display: flex; align-items: center; gap: 12px; width: 100%; padding: 8px; border: 0; border-radius: 8px; background: none; color: var(--fg); font: inherit; text-align: left; cursor: pointer; }
+.tmdb-hit:hover, .tmdb-hit:focus-visible { background: color-mix(in srgb, var(--fg) 7%, transparent); }
+.tmdb-hit img, .tmdb-noimg { width: 34px; aspect-ratio: 2 / 3; flex: none; object-fit: cover; border-radius: 4px; background: var(--surface); }
+.tmdb-hit .grow { display: grid; gap: 1px; }
+.tmdb-hit .t { font-size: 14.5px; font-weight: 500; overflow-wrap: anywhere; }
+.tmdb-hit .s { font-size: 12.5px; color: var(--muted); }
+.tmdb-pick { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 12px; background: var(--surface-2); }
+.tmdb-pick .title { font-weight: 600; font-size: 15px; }
+.tmdb-pick .sub { font-size: 13px; color: var(--muted); }
+#tmdb-picked:empty { display: none; }
+.wl-item { align-items: flex-start; flex-wrap: wrap; }
+.wl-item > .cover.sm { width: 44px; }
+.wl-item .body { flex-basis: 10em; }
+.wl-acts { display: flex; align-items: center; gap: 8px; flex: none; margin-left: auto; }
+.wtw { color: var(--accent-text) !important; }
+.wtw:empty { display: none; }
+.wtw-label { color: var(--muted); }
+.ov { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.tmdb-credit { padding: 0 4px; }
+.tmdb-credit a:hover { color: var(--fg); }

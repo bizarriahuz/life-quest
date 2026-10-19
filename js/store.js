@@ -90,7 +90,7 @@ const DEFAULTS = {
   moods: { gratitude: null },
   contacts: { relation: null, every_days: 30, note: null },
   contact_logs: { how: 'message', note: null },
-  watchlist: { kind: 'film', status: 'queued', rating: null, note: null, done_on: null },
+  watchlist: { kind: 'film', status: 'queued', rating: null, note: null, done_on: null, tmdb_id: null, tmdb_type: null, imdb_id: null, year: null, poster_url: null, details: null, overview: null },
 };
 const UNIQUE = { prayer_logs: ['prayed_on', 'prayer'], hobbies: ['name'], finance_categories: ['kind', 'name'], sleep_logs: ['slept_on'], moods: ['logged_on'] };
 
