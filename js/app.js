@@ -29,7 +29,7 @@ import music from './views/music.js';
 
 const VIEWS = [home, tasks, goals, clients, prayer, fitness, sleep, books, comics, learning, notes, mood, quotes, hobbies, mtg, watchlist, music, people, finance, settings];
 const root = document.getElementById('app');
-const S = { store: null, profile: null, rawTotals: {}, routeToken: 0 };
+const S = { store: null, profile: null, rawTotals: {}, routeToken: 0, swipe: null };
 const sections = () => enabledSections(S.profile);
 const shownViews = () => {
   const byId = Object.fromEntries(VIEWS.map((v) => [v.id, v]));
@@ -138,6 +138,8 @@ async function route() {
   if (token !== S.routeToken) return; // a newer navigation won
   const sameView = main.dataset.view === view.id;
   if (sameView) fresh.style.animation = 'none';
+  else if (S.swipe) fresh.classList.add(S.swipe === 'next' ? 'in-right' : 'in-left');
+  S.swipe = null;
   main.replaceChildren(fresh);
   main.dataset.view = view.id;
   if (view.id === 'settings') { markSeen(); document.querySelector('.nav a[data-view=settings]')?.classList.remove('has-new'); }
@@ -145,6 +147,66 @@ async function route() {
     window.scrollTo(0, 0);
     document.querySelector('.nav a.active')?.scrollIntoView({ block: 'nearest', inline: 'center' });
   }
+}
+
+// ---------- swipe left / right between sections (touch screens) ----------
+// Follows the finger a little, then moves to the next or previous section in menu order.
+function setupSwipe() {
+  if (setupSwipe.done) return;
+  setupSwipe.done = true;
+  const NO_SWIPE = 'input, textarea, select, button, [contenteditable], .nav, .seg, .decks, .chart, .tmdb-results, .theme-menu, .more-menu, .album-grid, .scanner, .levelup, .mood-cal, .cardlist, .pgrid, details.more';
+  let t = null;  // { x, y, at, dir, el }
+  const main = () => document.getElementById('view');
+  const neighbour = (step) => {
+    const views = shownViews();
+    const i = views.findIndex((v) => v.id === main()?.dataset.view);
+    return i < 0 ? null : views[i + step] || null;
+  };
+  document.addEventListener('touchstart', (e) => {
+    t = null;
+    if (e.touches.length !== 1 || !S.store) return;
+    const p = e.touches[0];
+    const m = main();
+    if (!m || !m.contains(e.target) || e.target.closest(NO_SWIPE)) return;
+    if (p.clientX < 24 || p.clientX > innerWidth - 24) return;           // leave the phone's own edge gestures alone
+    if (document.querySelector('.levelup, .scanner')) return;
+    t = { x: p.clientX, y: p.clientY, at: Date.now(), dir: null, el: m.firstElementChild };
+  }, { passive: true });
+  document.addEventListener('touchmove', (e) => {
+    if (!t) return;
+    const p = e.touches[0];
+    const dx = p.clientX - t.x; const dy = p.clientY - t.y;
+    if (!t.dir) {
+      if (Math.abs(dx) < 12 && Math.abs(dy) < 12) return;
+      t.dir = Math.abs(dx) > Math.abs(dy) * 1.4 ? 'h' : 'v';
+    }
+    if (t.dir !== 'h' || !t.el) return;
+    const edge = !neighbour(dx < 0 ? 1 : -1);                             // nothing that way: resist harder
+    t.el.style.transition = 'none';
+    t.el.style.transform = `translateX(${dx * (edge ? 0.12 : 0.35)}px)`;
+    t.el.style.opacity = String(1 - Math.min(0.35, Math.abs(dx) / 900));
+  }, { passive: true });
+  const end = (e) => {
+    if (!t) return;
+    const s = t; t = null;
+    if (s.dir !== 'h') return;
+    const p = e.changedTouches[0];
+    const dx = p.clientX - s.x; const dy = p.clientY - s.y;
+    const fast = Date.now() - s.at < 350 && Math.abs(dx) > 40;
+    const go = (Math.abs(dx) > Math.min(110, innerWidth * 0.28) || fast) && Math.abs(dx) > Math.abs(dy) * 1.4;
+    const target = go ? neighbour(dx < 0 ? 1 : -1) : null;
+    if (s.el) {
+      s.el.style.transition = 'transform .18s var(--ease), opacity .18s';
+      s.el.style.transform = target ? `translateX(${dx < 0 ? -40 : 40}px)` : '';
+      s.el.style.opacity = target ? '0' : '';
+    }
+    if (target) {
+      S.swipe = dx < 0 ? 'next' : 'prev';
+      setTimeout(() => { location.hash = `#/${target.id}`; }, 90);
+    }
+  };
+  document.addEventListener('touchend', end, { passive: true });
+  document.addEventListener('touchcancel', end, { passive: true });
 }
 
 // Background refresh found newer data: redraw, unless you're mid-typing.
@@ -177,6 +239,7 @@ async function start(rawStore) {
     return;
   }
   renderShell();
+  setupSwipe();
   window.onhashchange = route;
   await route();
   prefetch(document.getElementById('view')?.dataset.view);

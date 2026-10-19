@@ -1,6 +1,10 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.21', date: '2026-10-20', title: 'Swipe between sections',
+    items: ['On your phone, swipe left or right to move to the next or previous section, in your menu order.'],
+  },
+  {
     version: '1.20', date: '2026-10-20', title: 'More themes',
     items: [
       'Seven new colourways: Peach, Mint, Sky, Butter, Cotton candy and Sage in pastels, plus Dusk, a soft dark theme with lilac.',

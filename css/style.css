@@ -676,3 +676,10 @@ details.more[open] > summary { margin: 0; background: var(--surface-2); color: v
 
 .captcha { min-height: 65px; display: flex; justify-content: center; }
 .captcha:empty { display: none; }
+
+/* ---------- swipe between sections ---------- */
+#view { touch-action: pan-y pinch-zoom; }
+.view.in-right { animation: in-right .2s var(--ease); }
+.view.in-left { animation: in-left .2s var(--ease); }
+@keyframes in-right { from { opacity: .3; transform: translateX(36px); } }
+@keyframes in-left { from { opacity: .3; transform: translateX(-36px); } }
