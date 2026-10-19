@@ -1,14 +1,16 @@
 import { html, raw, wire, mount, today, fmtDate, empty } from '../ui.js';
 import { icon } from '../icons.js';
 import { XP } from '../game.js';
-import { searchAlbums, lastfmEnabled, listening, checkUser } from '../music.js';
+import { searchAlbums, lastfmEnabled, listening, cachedListening, checkUser } from '../music.js';
 
 let tab = 'want';        // 'want' | 'listened'
 let picked = null;       // album chosen from search
 
 const stars = (a) => html`<span class="stars" role="group" aria-label="Rating">${[1, 2, 3, 4, 5].map((n) => html`
   <button class="star ${a.rating >= n ? 'on' : ''}" data-act="rate" data-id="${a.id}" data-n="${n}" aria-label="${n} star${n > 1 ? 's' : ''}">★</button>`)}</span>`;
-const art = (url, cls = '') => (url ? html`<img class="album-art ${cls}" src="${url}" alt="" loading="lazy" referrerpolicy="no-referrer">` : html`<span class="album-art blank ${cls}">${raw(icon('music', 18))}</span>`);
+// Apple covers are stored large; thumbnails ask Apple for a 200px version (much faster).
+const small = (url) => (url && url.includes('mzstatic.com') ? url.replace(/\/\d+x\d+bb\.(jpg|png|webp)$/, '/200x200bb.jpg') : url);
+const art = (url, cls = '', eager = false) => (url ? html`<img class="album-art ${cls}" src="${small(url)}" alt="" ${eager ? '' : 'loading="lazy"'} decoding="async" referrerpolicy="no-referrer">` : html`<span class="album-art blank ${cls}">${raw(icon('music', 18))}</span>`);
 const meta = (a) => [a.artist, a.year, a.tracks ? `${a.tracks} track${a.tracks === 1 ? '' : 's'}` : '', a.genre].filter(Boolean).join(' · ');
 const pickCard = (p) => html`
   <div class="tmdb-pick">${art(p.art_url, 'sm')}
@@ -113,7 +115,7 @@ export default {
             <ul class="list">${g.items.map(doneRow)}</ul>
           </section>`) : html`<section class="card">${empty('Nothing here yet. Tap Listened on an album, or add one as Already listened.')}</section>`}`}
 
-      <p class="small faint tmdb-credit">Album search by Apple Music${lastfmEnabled ? ', listening data from Last.fm' : ''}.</p>
+      <p class="small faint tmdb-credit">Album search by Apple Music and MusicBrainz${lastfmEnabled ? ', listening data from Last.fm' : ''}.</p>
     `);
     const fixImgs = (root) => root.querySelectorAll('img.album-art').forEach((img) => img.addEventListener('error', () => img.replaceWith(Object.assign(document.createElement('span'), { className: `album-art blank ${img.classList.contains('sm') ? 'sm' : ''}`, innerHTML: icon('music', 18) })), { once: true }));
     fixImgs(el);
@@ -121,21 +123,25 @@ export default {
     // ---- Last.fm panel, filled in after the page shows ----
     const box = el.querySelector('#lfm');
     if (lastfmEnabled && lfmUser) {
-      listening(lfmUser).then((d) => {
+      const paint = (d) => {
         const top = d.artists[0]?.plays || 1;
         const now = d.tracks[0];
         box.innerHTML = html`
           <div class="card-head"><h2>Listening</h2><span class="meta">Last.fm · ${lfmUser}</span></div>
-          ${now ? html`<div class="np">${art(now.art)}<div class="grow"><p class="small muted">${now.now ? 'Now playing' : `Last played ${ago(now.at)}`}</p><p class="title">${now.name}</p><p class="sub">${now.artist}${now.album ? ` · ${now.album}` : ''}</p></div>${now.now ? html`<span class="eq" aria-hidden="true"><i></i><i></i><i></i></span>` : ''}</div>` : html`<p class="small muted">No plays yet. Once Spotify or Apple Music is connected to Last.fm, they show up here.</p>`}
+          ${now ? html`<div class="np">${art(now.art, '', true)}<div class="grow"><p class="small muted">${now.now ? 'Now playing' : `Last played ${ago(now.at)}`}</p><p class="title">${now.name}</p><p class="sub">${now.artist}${now.album ? ` · ${now.album}` : ''}</p></div>${now.now ? html`<span class="eq" aria-hidden="true"><i></i><i></i><i></i></span>` : ''}</div>` : html`<p class="small muted">No plays yet. Once Spotify or Apple Music is connected to Last.fm, they show up here.</p>`}
           <div class="kpis"><div class="kpi"><b>${d.weekPlays.toLocaleString()}</b><span>Plays, 7 days</span></div><div class="kpi"><b>${d.total.toLocaleString()}</b><span>All-time plays</span></div></div>
           ${d.albums.length ? html`<p class="small muted list-head">Top albums ${d.albumsPeriod}</p>
-            <div class="album-grid">${d.albums.map((a) => html`<div class="ag">${art(a.art)}<p class="ag-t">${a.name}</p><p class="ag-s">${a.artist} · ${a.plays} play${a.plays === 1 ? '' : 's'}</p></div>`)}</div>` : ''}
+            <div class="album-grid">${d.albums.map((a) => html`<div class="ag">${art(a.art, '', true)}<p class="ag-t">${a.name}</p><p class="ag-s">${a.artist} · ${a.plays} play${a.plays === 1 ? '' : 's'}</p></div>`)}</div>` : ''}
           ${d.artists.length ? html`<p class="small muted list-head">Top artists ${d.artistsPeriod}</p>
             <ul class="list top-artists">${d.artists.map((a) => html`<li class="item"><div class="body"><p class="title">${a.name}</p><div class="bar"><i style="width:${(a.plays / top) * 100}%"></i></div></div><span class="small muted num">${a.plays}</span></li>`)}</ul>` : ''}
           ${d.tracks.length > 1 ? html`<details><summary class="small muted" style="font-weight:500">Recent plays</summary><ul class="list">${d.tracks.slice(now?.now ? 1 : 0).map((tr) => html`<li class="item"><div class="body"><p class="title">${tr.name}</p><p class="sub">${tr.artist}${tr.at ? ` · ${ago(tr.at)}` : ''}</p></div></li>`)}</ul></details>` : ''}
           <p class="small"><button class="text-btn" data-act="lfmoff">Disconnect Last.fm</button></p>`.s;
         fixImgs(box);
-      }).catch((e) => {
+      };
+      const snap = cachedListening(lfmUser);
+      if (snap) paint(snap);
+      listening(lfmUser).then((d) => { if (JSON.stringify(d) !== JSON.stringify(snap)) paint(d); }).catch((e) => {
+        if (snap) return; // keep showing the last snapshot
         box.innerHTML = html`<div class="card-head"><h2>Listening</h2><span class="meta">Last.fm · ${lfmUser}</span></div>
           <p class="small muted">${e.message || 'Couldn’t reach Last.fm'}.</p>
           <p class="small" style="margin-top:8px"><button class="text-btn" data-act="lfmoff">Change username</button></p>`.s;
@@ -167,7 +173,7 @@ export default {
           if (my !== seq) return;
           results.innerHTML = hits.length ? hits.map((a, i) => html`
             <button type="button" class="tmdb-hit" role="option" data-act="pick" data-i="${i}">
-              ${a.art_url ? html`<img src="${a.art_url.replace('600x600', '100x100')}" alt="" referrerpolicy="no-referrer" class="sq">` : html`<span class="tmdb-noimg sq"></span>`}
+              ${a.art_url ? html`<img src="${a.art_url.replace('600x600', '100x100')}" loading="lazy" alt="" referrerpolicy="no-referrer" class="sq">` : html`<span class="tmdb-noimg sq"></span>`}
               <span class="grow"><span class="t">${a.title}</span><span class="s">${[a.artist, a.year].filter(Boolean).join(' · ')}</span></span>
             </button>`).map(String).join('') : html`<p class="small muted" style="padding:10px 12px">No matches. Add the artist below and press Add.</p>`.s;
           results.hidden = false;

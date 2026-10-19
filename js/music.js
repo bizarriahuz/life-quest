@@ -16,10 +16,32 @@ const album = (x) => ({
 
 export async function searchAlbums(q) {
   const u = `https://itunes.apple.com/search?${new URLSearchParams({ term: q, entity: 'album', media: 'music', country: 'SG', limit: '10' })}`;
-  const r = await fetch(u);
-  if (!r.ok) throw new Error('Album search didn’t answer. Try again in a moment');
+  // Apple sometimes refuses a burst of searches (403 or an empty reply); retry with a short pause.
+  let j = null;
+  for (let attempt = 0; attempt < 3 && !j; attempt += 1) {
+    if (attempt) await new Promise((res) => setTimeout(res, 800 * attempt));
+    try { const r = await fetch(u); if (r.ok) j = await r.json(); } catch { /* retry */ }
+  }
+  if (j) return (j.results || []).filter((x) => x.collectionId).map(album);
+  // Apple unavailable: fall back to MusicBrainz, with covers from the Cover Art Archive.
+  try { return await searchMusicBrainz(q); } catch { throw new Error('Album search is busy. Try again in a moment'); }
+}
+
+async function searchMusicBrainz(q) {
+  const u = `https://musicbrainz.org/ws/2/release-group?${new URLSearchParams({ query: q, fmt: 'json', limit: '10' })}`;
+  const r = await fetch(u, { headers: { Accept: 'application/json' } });
+  if (!r.ok) throw new Error('busy');
   const j = await r.json();
-  return (j.results || []).filter((x) => x.collectionId).map(album);
+  return (j['release-groups'] || []).map((g) => ({
+    itunes_id: null,
+    title: (g.title || '').slice(0, 200),
+    artist: (g['artist-credit'] || []).map((c) => c.name + (c.joinphrase || '')).join('').slice(0, 200) || null,
+    year: /^\d{4}/.test(g['first-release-date'] || '') ? Number(g['first-release-date'].slice(0, 4)) : null,
+    tracks: null,
+    genre: g['primary-type'] && g['primary-type'] !== 'Album' ? g['primary-type'] : null,
+    art_url: `https://coverartarchive.org/release-group/${g.id}/front-250`,
+    apple_url: null,
+  }));
 }
 
 // ---------- Last.fm ----------
@@ -54,15 +76,21 @@ async function cached(key, ms, fn) {
 
 export function listening(user) {
   return cached(`lfm:${user}`, 60_000, async () => {
+    const out = await fetchListening(user);
+    try { localStorage.setItem(`lifequest:lfm:${user}`, JSON.stringify(out)); } catch { /* ignore */ }
+    return out;
+  });
+}
+
+async function fetchListening(user) {
+  {
     const weekAgo = String(Math.floor(Date.now() / 1000) - 7 * 86400);
     // Use the shortest period that has plays, so a quiet week still shows something.
     const firstWith = async (method, key, periods, limit) => {
-      for (const period of periods) {
-        const j = await lfm(method, { user, period, limit });
-        const rows = j[key]?.[key.replace(/^top(.*)s$/, '$1')] || [];
-        if (rows.length) return { rows, period };
-      }
-      return { rows: [], period: periods[0] };
+      // Ask for every period at once (in parallel) and use the shortest one that has plays.
+      const all = await Promise.all(periods.map((period) => lfm(method, { user, period, limit })
+        .then((j) => ({ period, rows: j[key]?.[key.replace(/^top(.*)s$/, '$1')] || [] }))));
+      return all.find((x) => x.rows.length) || { rows: [], period: periods[0] };
     };
     const [recent, week, albums, artists, info] = await Promise.all([
       lfm('user.getrecenttracks', { user, limit: '8' }),
@@ -83,7 +111,12 @@ export function listening(user) {
       total: Number(info.user?.playcount) || 0,
       weekPlays: Number(week.recenttracks?.['@attr']?.total) || 0,
     };
-  });
+  }
+}
+
+// Last snapshot, shown instantly while a fresh one loads.
+export function cachedListening(user) {
+  try { return JSON.parse(localStorage.getItem(`lifequest:lfm:${user}`) || 'null'); } catch { return null; }
 }
 
 export async function checkUser(user) {
