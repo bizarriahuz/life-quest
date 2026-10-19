@@ -4,17 +4,24 @@
 // Sections a person can switch on or off in Settings (Home is always on).
 export const SECTIONS = [
   { id: 'tasks',   label: 'Tasks',   hint: 'To-dos, jobs and daily habits' },
+  { id: 'goals',   label: 'Goals',   hint: 'Bigger goals broken into milestones' },
+  { id: 'clients', label: 'Clients', hint: 'Side-gig pipeline: leads, quotes, invoices' },
   { id: 'prayer',  label: 'Prayer',  hint: 'Five daily prayers and the Daily Awrad' },
   { id: 'fitness', label: 'Fitness', hint: 'Runs, workouts and sport' },
   { id: 'sleep',   label: 'Sleep',   hint: 'Bedtime, wake time and how well you slept' },
   { id: 'books',   label: 'Books',   hint: 'Reading list and progress' },
   { id: 'comics',  label: 'Comics',  hint: 'Your collection and reading pile, with barcode scanning' },
+  { id: 'learning', label: 'Learning', hint: 'Courses, certifications and skills, with time spent' },
   { id: 'notes',   label: 'Notes',   hint: 'Journal and notes' },
+  { id: 'mood',    label: 'Mood',    hint: 'A daily check-in and one thing you’re grateful for' },
   { id: 'quotes',  label: 'Quotes',  hint: 'Words to live by' },
   { id: 'hobbies', label: 'Hobbies', hint: 'Time spent on things you love' },
-  { id: 'finance', label: 'Finance', hint: 'Spending, budgets and savings goals' },
+  { id: 'mtg',     label: 'MTG',     hint: 'Magic: The Gathering decks, decklists and win rates' },
+  { id: 'watchlist', label: 'Watchlist', hint: 'Films and series to watch, with ratings' },
+  { id: 'people',  label: 'People',  hint: 'Keep in touch with friends and family' },
+  { id: 'finance', label: 'Finance', hint: 'Spending, budgets, savings goals and sadaqah' },
 ];
-export const DEFAULT_SECTIONS = ['tasks', 'prayer', 'fitness', 'sleep', 'books', 'comics', 'notes', 'quotes', 'hobbies'];
+export const DEFAULT_SECTIONS = ['tasks', 'goals', 'prayer', 'fitness', 'sleep', 'books', 'comics', 'learning', 'notes', 'mood', 'quotes', 'hobbies', 'watchlist', 'people'];
 
 export function enabledSections(profile) {
   const s = profile?.sections;
@@ -23,13 +30,14 @@ export function enabledSections(profile) {
 
 export const STATS = {
   STR: { name: 'Strength',   from: 'Fitness',        view: 'fitness', sections: ['fitness'] },
-  DEX: { name: 'Discipline', from: 'Tasks',          view: 'tasks',   sections: ['tasks'] },
-  INT: { name: 'Knowledge',  from: 'Books & comics', view: 'books',   sections: ['books', 'comics'] },
-  WIS: { name: 'Reflection', from: 'Notes & quotes', view: 'notes',   sections: ['notes', 'quotes'] },
-  CHA: { name: 'Craft',      from: 'Hobbies',        view: 'hobbies', sections: ['hobbies'] },
-  FTH: { name: 'Faith',      from: 'Prayer',         view: 'prayer',  sections: ['prayer'] },
+  DEX: { name: 'Discipline', from: 'Tasks & goals',  view: 'tasks',   sections: ['tasks', 'goals'] },
+  INT: { name: 'Knowledge',  from: 'Reading & learning', view: 'books', sections: ['books', 'comics', 'learning'] },
+  WIS: { name: 'Reflection', from: 'Notes, mood & quotes', view: 'notes', sections: ['notes', 'mood', 'quotes'] },
+  CHA: { name: 'Craft',      from: 'Hobbies, MTG & watchlist', view: 'hobbies', sections: ['hobbies', 'mtg', 'watchlist'] },
+  FTH: { name: 'Faith',      from: 'Prayer & sadaqah', view: 'prayer', sections: ['prayer'] },
   RST: { name: 'Rest',       from: 'Sleep',          view: 'sleep',   sections: ['sleep'] },
-  WLT: { name: 'Wealth',     from: 'Finance',        view: 'finance', sections: ['finance'] },
+  CON: { name: 'Connection', from: 'People',         view: 'people',  sections: ['people'] },
+  WLT: { name: 'Wealth',     from: 'Finance & clients', view: 'finance', sections: ['finance', 'clients'] },
 };
 
 export const statVisible = (key, sections) => STATS[key].sections.some((s) => sections.has(s));
@@ -57,6 +65,18 @@ export const XP = {
   financeDay: 10,                                         // first entry logged on a given day
   saving: (amt) => Math.max(5, Math.min(50, Math.floor((Number(amt) || 0) / 10))), // per deposit into a goal
   budgetMonth: 50,                                        // a finished month at or under budget
+  sadaqahDay: 10,                                         // first sadaqah on a given day (Faith)
+  milestone: 15,
+  goalDone: 100,
+  learning: (min) => Math.max(5, Math.round((Number(min) || 0) / 2)),
+  learnDone: 75,
+  clientActive: 20,
+  clientPaid: 40,
+  mtgMatch: 10,
+  mtgWin: 5,
+  mood: 10,
+  contact: 10,
+  watched: 5,
 };
 
 // Overall level: 100 XP for level 2, then +50 more per level.

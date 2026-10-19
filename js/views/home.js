@@ -24,7 +24,8 @@ export default {
     const m = t.slice(0, 7);
     const [yy, mm] = m.split('-').map(Number);
     const monthEnd = `${m}-${String(new Date(yy, mm, 0).getDate()).padStart(2, '0')}`;
-    const [prayerLogs, openTasks, lastWorkout, reading, quotes, monthTxns, cats, comicsAll, sleepLogs] = await Promise.all([
+    const [prayerLogs, openTasks, lastWorkout, reading, quotes, monthTxns, cats, comicsAll, sleepLogs,
+      goalsAll, steps, projects, learnWeek, moodToday, decks, lastMatch, watchingNow, contacts, contactLogs] = await Promise.all([
       on.has('prayer') ? ctx.store.list('prayer_logs', { match: { prayed_on: t } }) : none,
       on.has('tasks') ? ctx.store.list('tasks', { match: { done: false } }) : none,
       on.has('fitness') ? ctx.store.list('workouts', { order: 'performed_on', limit: 1 }) : none,
@@ -34,6 +35,16 @@ export default {
       on.has('finance') ? ctx.store.list('finance_categories', { order: 'name', asc: true }) : none,
       on.has('comics') ? ctx.store.list('comics', {}) : none,
       on.has('sleep') ? ctx.store.list('sleep_logs', { gte: ['slept_on', addDays(t, -7)] }) : none,
+      on.has('goals') ? ctx.store.list('goals', { match: { status: 'active' } }) : none,
+      on.has('goals') ? ctx.store.list('goal_milestones', {}) : none,
+      on.has('clients') ? ctx.store.list('client_projects', {}) : none,
+      on.has('learning') ? ctx.store.list('learning_sessions', { gte: ['session_on', addDays(t, -6)] }) : none,
+      on.has('mood') ? ctx.store.list('moods', { match: { logged_on: t } }) : none,
+      on.has('mtg') ? ctx.store.list('mtg_decks', { match: { retired: false } }) : none,
+      on.has('mtg') ? ctx.store.list('mtg_matches', { order: 'played_on', limit: 1 }) : none,
+      on.has('watchlist') ? ctx.store.list('watchlist', { match: { status: 'watching' } }) : none,
+      on.has('people') ? ctx.store.list('contacts', {}) : none,
+      on.has('people') ? ctx.store.list('contact_logs', { gte: ['contacted_on', addDays(t, -366)] }) : none,
     ]);
     const spentMonth = monthTxns.reduce((n, x) => n + Number(x.amount), 0);
     const budgetMonth = cats.reduce((n, c) => n + (c.kind === 'expense' ? Number(c.budget) || 0 : 0), 0);
@@ -67,7 +78,32 @@ export default {
     const lastSleep = sleepSorted[0];
     const sleepAvg = sleepLogs.length ? sleepLogs.reduce((n, x) => n + x.duration_min, 0) / sleepLogs.length : 0;
     const hmin = (n) => `${Math.floor(n / 60)}h ${String(Math.round(n % 60)).padStart(2, '0')}m`;
+    const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+    const nextGoal = [...goalsAll].sort((a, b) => (a.target_date || '9999').localeCompare(b.target_date || '9999'))[0];
+    const goalSteps = nextGoal ? steps.filter((s) => s.goal_id === nextGoal.id) : [];
+    const working = projects.filter((p) => p.stage === 'active' || p.stage === 'done');
+    const unpaid = projects.filter((p) => p.stage === 'done');
+    const learnMin = learnWeek.reduce((n, x) => n + x.duration_min, 0);
+    const MOODS = ['Awful', 'Low', 'Okay', 'Good', 'Great'];
+    const lastSeen = {};
+    for (const l of contactLogs) if (!lastSeen[l.contact_id] || l.contacted_on > lastSeen[l.contact_id]) lastSeen[l.contact_id] = l.contacted_on;
+    const overdue = contacts.filter((c) => !lastSeen[c.id] || addDays(lastSeen[c.id], c.every_days) <= t);
+    const lm = lastMatch[0];
     const todayRows = {
+      goals: () => html`<a href="#/goals">${raw(icon('goals'))}<span class="t-label">Goals</span>
+              <span class="t-val"><span class="t-txt">${nextGoal ? `${nextGoal.title} · ${goalSteps.filter((s) => s.done).length}/${goalSteps.length}` : 'Set a goal'}</span></span></a>`,
+      clients: () => html`<a href="#/clients">${raw(icon('clients'))}<span class="t-label">Clients</span>
+              <span class="t-val"><span class="t-txt">${working.length ? `${working.length} in progress${unpaid.length ? ` · ${unpaid.length} to invoice` : ''}` : 'Nothing on the go'}</span></span></a>`,
+      learning: () => html`<a href="#/learning">${raw(icon('learning'))}<span class="t-label">Learning</span>
+              <span class="t-val"><span class="t-txt">${learnMin ? `${learnMin >= 60 ? `${(learnMin / 60).toFixed(1).replace(/\.0$/, '')} h` : `${learnMin} min`} this week` : 'No study time this week'}</span></span></a>`,
+      mood: () => html`<a href="#/mood">${raw(icon('mood'))}<span class="t-label">Mood</span>
+              <span class="t-val"><span class="t-txt">${moodToday[0] ? MOODS[moodToday[0].mood - 1] : 'Check in'}</span></span></a>`,
+      mtg: () => html`<a href="#/mtg">${raw(icon('mtg'))}<span class="t-label">MTG</span>
+              <span class="t-val"><span class="t-txt">${lm ? `Last game ${relDate(lm.played_on).toLowerCase()} · ${lm.result}` : plural(decks.length, 'deck')}</span></span></a>`,
+      watchlist: () => html`<a href="#/watchlist">${raw(icon('watchlist'))}<span class="t-label">Watching</span>
+              <span class="t-val"><span class="t-txt">${watchingNow.length ? watchingNow.map((w) => w.title).join(', ') : 'Nothing on'}</span></span></a>`,
+      people: () => html`<a href="#/people">${raw(icon('people'))}<span class="t-label">People</span>
+              <span class="t-val"><span class="t-txt">${contacts.length ? (overdue.length ? `${overdue.slice(0, 2).map((c) => c.name).join(', ')}${overdue.length > 2 ? ` +${overdue.length - 2}` : ''} to catch up` : 'All caught up') : 'Add someone'}</span></span></a>`,
       prayer: () => html`<a href="#/prayer">${raw(icon('prayer'))}<span class="t-label">Prayer</span>
               <span class="t-val"><span class="dots">${['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'].map((p) =>
                 html`<i class="${prayers.some((x) => x.prayer === p) ? 'on' : ''}"></i>`)}<i class="aw ${awradDone ? 'on' : ''}" title="Daily Awrad ${awradDone ? 'done' : 'not yet'}"></i></span><span class="t-txt">${prayers.length === 5 ? '5/5 ✓' : nextP ? `${PNAME[nextP.key]} ${nextP.label}` : `${prayers.length}/5`}</span></span></a>`,
@@ -119,7 +155,7 @@ export default {
           ${Object.entries(STATS).filter(([k]) => statVisible(k, on)).map(([k, s]) => {
             const sl = statLevel(totals[k] || 0);
             return html`
-              <a class="stat" href="#/${s.view}">
+              <a class="stat" href="#/${s.sections.find((x) => on.has(x)) || s.view}">
                 <span class="stat-top"><span class="stat-name">${s.name}</span><span class="stat-lv">Lv ${sl.level}</span></span>
                 ${bar(sl.pct)}
                 <span class="stat-from">${s.from}</span>
@@ -158,6 +194,14 @@ export default {
             ${on.has('comics') ? html`<li class="item">Comics: ${XP.comicRead} per comic read</li>` : ''}
             ${on.has('notes') || on.has('quotes') ? html`<li class="item">Notes: ${XP.note} per new note · Quotes: ${XP.quote} each</li>` : ''}
             ${on.has('hobbies') ? html`<li class="item">Hobbies: 1 per 2 minutes (minimum 5)</li>` : ''}
+            ${on.has('goals') ? html`<li class="item">Goals: ${XP.milestone} per milestone, ${XP.goalDone} for achieving a goal</li>` : ''}
+            ${on.has('learning') ? html`<li class="item">Learning: 1 per 2 minutes studied (minimum 5), ${XP.learnDone} for completing a course</li>` : ''}
+            ${on.has('clients') ? html`<li class="item">Clients: ${XP.clientActive} when a project starts, ${XP.clientPaid} when it’s paid</li>` : ''}
+            ${on.has('mood') ? html`<li class="item">Mood: ${XP.mood} per daily check-in</li>` : ''}
+            ${on.has('mtg') ? html`<li class="item">MTG: ${XP.mtgMatch} per game, +${XP.mtgWin} for a win</li>` : ''}
+            ${on.has('watchlist') ? html`<li class="item">Watchlist: ${XP.watched} per film or series finished</li>` : ''}
+            ${on.has('people') ? html`<li class="item">People: ${XP.contact} for each person you catch up with, once a day</li>` : ''}
+            ${on.has('finance') && on.has('prayer') ? html`<li class="item">Sadaqah: ${XP.sadaqahDay} Faith on each day you give</li>` : ''}
             <li class="item">Undo or delete something and its XP is removed.</li>
           </ul>
         </details>

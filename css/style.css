@@ -417,3 +417,74 @@ details.more[open] > summary { margin: 0; background: var(--surface-2); color: v
 .sleep-chart .goal-line { position: absolute; left: 0; right: 0; height: 0; border-top: 1.5px dashed rgba(255,255,255,.45); z-index: 1; pointer-events: none; }
 .sleep-chart .goal-line span { position: absolute; right: 0; top: -20px; font-size: 11px; color: var(--muted); background: var(--surface); padding: 0 4px; }
 .sleep-chart .b i.under { background: rgba(255,255,255,.45); }
+
+/* ---------- goals ---------- */
+.goal-card { display: grid; gap: 12px; }
+.goal-title { font-size: 18px; font-weight: 600; letter-spacing: -.01em; overflow-wrap: anywhere; }
+
+/* ---------- finance: sadaqah ---------- */
+.amt.give { color: var(--fg); opacity: .8; }
+
+/* ---------- MTG ---------- */
+.decks { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.deck { display: grid; text-align: left; padding: 0; border-radius: 12px; overflow: hidden; cursor: pointer; color: var(--fg); font: inherit;
+  background: var(--surface-2); border: 1px solid var(--line); transition: border-color .15s, transform .15s var(--ease); }
+.deck:hover { border-color: var(--line-2); }
+.deck.sel { border-color: var(--fg); }
+.deck img, .deck .deck-blank { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; background: #050505; }
+.deck .deck-blank { display: grid; place-items: center; color: var(--faint); }
+.deck-body { display: grid; gap: 4px; padding: 10px 12px 12px; min-width: 0; }
+.deck-name { font-weight: 600; font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.deck-sub { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); min-width: 0; }
+.deck-sub > span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pips { display: inline-flex; gap: 2px; vertical-align: -3px; flex: none; }
+.pip { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; font: 700 9px/1 var(--font); font-style: normal;
+  border: 1px solid var(--line-2); color: var(--fg); background: var(--bg); }
+.pip-W { background: #f3efe0; color: #111; border-color: transparent; }
+.pip-U { background: #2f6fb1; border-color: transparent; }
+.pip-B { background: #2a2626; }
+.pip-R { background: #c4442d; border-color: transparent; }
+.pip-G { background: #2f7d4a; border-color: transparent; }
+.add-deck { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+.deck-detail { display: grid; gap: 14px; scroll-margin-top: 16px; }
+.deck-art { width: calc(100% + 36px); margin: -18px -18px 0; max-width: none; aspect-ratio: 16 / 7; object-fit: cover; display: block; border-radius: var(--r) var(--r) 0 0; }
+.deck-stats { display: grid; gap: 8px; }
+.chart.curve { grid-template-columns: repeat(8, 1fr); height: 120px; margin-top: 8px; }
+.list-head { margin: 6px 0 4px; text-transform: uppercase; letter-spacing: .06em; font-size: 11.5px; font-weight: 600; }
+.cardlist { list-style: none; margin: 0 0 10px; padding: 0; columns: 2 200px; column-gap: 20px; font-size: 14px; }
+.cardlist li { padding: 2px 0; break-inside: avoid; overflow-wrap: anywhere; }
+.cardlist .num { display: inline-block; min-width: 1.6em; color: var(--muted); }
+
+/* ---------- mood ---------- */
+.moods { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.moods label { cursor: pointer; }
+.moods input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.moods span { display: grid; justify-items: center; gap: 4px; padding: 10px 2px; border-radius: 12px; border: 1px solid var(--line-2); font-size: 12px; color: var(--muted); text-align: center; }
+.moods span b { font-size: 24px; line-height: 1; font-weight: 400; filter: grayscale(1); opacity: .75; }
+.moods input:checked + span { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.moods input:checked + span b { filter: none; opacity: 1; }
+.moods input:focus-visible + span { outline: 2px solid var(--fg); outline-offset: 2px; }
+.mood-cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; max-width: 360px; }
+.mc-h { font-size: 11px; color: var(--faint); text-align: center; }
+.mc { aspect-ratio: 1; border-radius: 6px; background: rgba(255,255,255,.05); display: block; }
+.mc.future { background: transparent; border: 1px dashed var(--line); }
+.mc.sel { outline: 1.5px solid var(--fg); outline-offset: 1px; }
+.mc.m1 { background: rgba(255,255,255,.14); }
+.mc.m2 { background: rgba(255,255,255,.3); }
+.mc.m3 { background: rgba(255,255,255,.5); }
+.mc.m4 { background: rgba(255,255,255,.75); }
+.mc.m5 { background: #fff; }
+.mc-key { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
+.mc-key span { display: inline-flex; align-items: center; gap: 6px; }
+.mc-key .mc { width: 12px; height: 12px; border-radius: 3px; }
+.face { font-size: 20px; flex: none; filter: grayscale(1); }
+
+/* ---------- people ---------- */
+.person { flex-wrap: wrap; }
+.person .body { flex-basis: 12em; }
+.person .quick { gap: 6px; flex: none; }
+.person .quick .btn { padding-left: 10px; padding-right: 10px; }
+
+/* ---------- watchlist ---------- */
+.seg.filter { align-self: flex-start; }
+.item .btn.sm .i { margin-right: 2px; }

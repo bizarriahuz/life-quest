@@ -80,8 +80,19 @@ const DEFAULTS = {
   transactions: { category_id: null, note: null },
   savings_goals: {},
   savings_contributions: {},
+  goals: { why: null, target_date: null, status: 'active', done_on: null },
+  goal_milestones: { done: false, done_on: null, position: 0 },
+  learning_items: { kind: 'course', provider: null, status: 'active', target_hours: null, done_on: null },
+  learning_sessions: { note: null },
+  client_projects: { stage: 'lead', value: null, due_on: null, note: null, paid_on: null },
+  mtg_decks: { commander: null, format: 'commander', colors: '', art_url: null, decklist: null, retired: false },
+  mtg_matches: { players: 4, note: null },
+  moods: { gratitude: null },
+  contacts: { relation: null, every_days: 30, note: null },
+  contact_logs: { how: 'message', note: null },
+  watchlist: { kind: 'film', status: 'queued', rating: null, note: null, done_on: null },
 };
-const UNIQUE = { prayer_logs: ['prayed_on', 'prayer'], hobbies: ['name'], finance_categories: ['kind', 'name'], sleep_logs: ['slept_on'] };
+const UNIQUE = { prayer_logs: ['prayed_on', 'prayer'], hobbies: ['name'], finance_categories: ['kind', 'name'], sleep_logs: ['slept_on'], moods: ['logged_on'] };
 
 const cmp = (a, b) => (a == null ? (b == null ? 0 : 1) : b == null ? -1 : a < b ? -1 : a > b ? 1 : 0);
 
@@ -125,6 +136,8 @@ export function localStore() {
       db[table] = tbl(table).filter((r) => r.id !== id);
       if (table === 'hobbies') db.hobby_sessions = tbl('hobby_sessions').filter((s) => s.hobby_id !== id);
       if (table === 'savings_goals') db.savings_contributions = tbl('savings_contributions').filter((c) => c.goal_id !== id);
+      const KIDS = { goals: ['goal_milestones', 'goal_id'], learning_items: ['learning_sessions', 'item_id'], mtg_decks: ['mtg_matches', 'deck_id'], contacts: ['contact_logs', 'contact_id'] };
+      if (KIDS[table]) { const [kt, fk] = KIDS[table]; db[kt] = tbl(kt).filter((r) => r[fk] !== id); }
       if (table === 'finance_categories') for (const x of tbl('transactions')) if (x.category_id === id) x.category_id = null;
       save();
     },

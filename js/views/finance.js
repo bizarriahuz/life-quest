@@ -79,7 +79,9 @@ export default {
     const spending = txns.filter((x) => x.kind === 'expense');
     const income = sum(txns.filter((x) => x.kind === 'income'));
     const spent = sum(spending);
-    const net = Math.round((income - spent) * 100) / 100;
+    const giving = txns.filter((x) => x.kind === 'sadaqah');
+    const sadaqah = sum(giving);
+    const net = Math.round((income - spent - sadaqah) * 100) / 100;
     const spentIn = (id) => sum(spending.filter((x) => x.category_id === id));
     const uncategorised = sum(spending.filter((x) => !catById[x.category_id]));
     const budgeted = expCats.filter((c) => Number(c.budget) > 0);
@@ -113,6 +115,7 @@ export default {
       <div class="kpis">
         <div class="kpi"><b>${$(income, { maximumFractionDigits: 0 })}</b><span>Income</span></div>
         <div class="kpi"><b>${$(spent, { maximumFractionDigits: 0 })}</b><span>Spent</span></div>
+        <div class="kpi"><b>${$(sadaqah, { maximumFractionDigits: 0 })}</b><span>Sadaqah</span></div>
         <div class="kpi ${net < 0 ? 'neg' : ''}"><b>${net < 0 ? '−' : ''}${$(Math.abs(net), { maximumFractionDigits: 0 })}</b><span>${net < 0 ? 'Overspent' : 'Left over'}</span></div>
       </div>
 
@@ -124,6 +127,7 @@ export default {
             <label class="field">Category<select name="category_id">
               <optgroup label="Spending">${expCats.map((c) => html`<option value="${c.id}">${c.name}</option>`)}</optgroup>
               <optgroup label="Income">${incCats.map((c) => html`<option value="${c.id}">${c.name}</option>`)}</optgroup>
+              <optgroup label="Giving"><option value="sadaqah">Sadaqah</option></optgroup>
             </select></label>
             <label class="field">Date<input type="date" name="occurred_on" value="${defaultDate}" required></label>
           </div>
@@ -178,10 +182,10 @@ export default {
         ${txns.length ? html`<ul class="list">${txns.map((x) => html`
           <li class="item">
             <div class="body">
-              <p class="title">${catById[x.category_id]?.name || 'Uncategorised'}${x.note ? html` <span class="muted">· ${x.note}</span>` : ''}</p>
+              <p class="title">${x.kind === 'sadaqah' ? 'Sadaqah' : catById[x.category_id]?.name || 'Uncategorised'}${x.note ? html` <span class="muted">· ${x.note}</span>` : ''}</p>
               <p class="sub">${relDate(x.occurred_on)}</p>
             </div>
-            <span class="amt ${x.kind === 'income' ? 'in' : 'out'}">${x.kind === 'income' ? '+' : '−'}${$(x.amount)}</span>
+            <span class="amt ${x.kind === 'income' ? 'in' : x.kind === 'sadaqah' ? 'give' : 'out'}">${x.kind === 'income' ? '+' : '−'}${$(x.amount)}</span>
             <button class="icon-btn" data-act="deltxn" data-id="${x.id}" aria-label="Delete entry">${raw(icon('trash'))}</button>
           </li>`)}</ul>` : empty(`Nothing logged in ${monthLabel(month)}.`)}
       </section>
@@ -226,23 +230,29 @@ export default {
       add: async (v, form) => {
         const amount = cents(v.amount.replace(',', '.'));
         if (!amountOk(amount)) { ctx.say('Enter an amount above zero'); return; }
-        const cat = catById[v.category_id];
+        const give = v.category_id === 'sadaqah';
+        const cat = give ? { id: null, kind: 'sadaqah', name: 'Sadaqah' } : catById[v.category_id];
         if (!cat) { ctx.say('Pick a category'); return; }
         const day = v.occurred_on || t;
-        const firstToday = !(await ctx.store.list('transactions', { match: { occurred_on: day }, limit: 1 })).length;
+        const sameDay = await ctx.store.list('transactions', { match: { occurred_on: day } });
+        const firstToday = !sameDay.length;
+        const firstGift = give && !sameDay.some((x) => x.kind === 'sadaqah');
         await ctx.store.insert('transactions', { kind: cat.kind, amount, category_id: cat.id, occurred_on: day, note: v.note || null });
         form.elements.amount.value = ''; form.elements.note.value = '';
         if (day.slice(0, 7) !== month) month = day.slice(0, 7) > cur ? cur : day.slice(0, 7);
         if (firstToday) await ctx.award('WLT', XP.financeDay, 'finance_day', day, `${cat.name} logged`);
-        else ctx.say(`${cat.name} · ${cat.kind === 'income' ? '+' : '−'}${$(amount)}`);
+        if (firstGift) await ctx.award('FTH', XP.sadaqahDay, 'sadaqah_day', day, `Sadaqah · ${$(amount)}`);
+        if (!firstToday && !firstGift) ctx.say(`${cat.name} · ${cat.kind === 'income' ? '+' : '−'}${$(amount)}`);
         ctx.rerender();
       },
       deltxn: async (b) => {
         const x = txns.find((r) => r.id === b.dataset.id);
         if (!x || !confirm('Delete this entry?')) return;
         await ctx.store.remove('transactions', x.id);
-        const left = await ctx.store.list('transactions', { match: { occurred_on: x.occurred_on }, limit: 1 });
-        if (!left.length) await ctx.revoke('finance_day', x.occurred_on);
+        const left = await ctx.store.list('transactions', { match: { occurred_on: x.occurred_on } });
+        if (x.kind === 'sadaqah' && !left.some((r) => r.kind === 'sadaqah')) await ctx.store.revoke('sadaqah_day', x.occurred_on);
+        if (!left.length) await ctx.store.revoke('finance_day', x.occurred_on);
+        await ctx.revoke('finance_day', '-'); // refresh totals
         ctx.rerender();
       },
       addgoal: async (v, form) => {

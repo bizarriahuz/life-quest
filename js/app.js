@@ -16,8 +16,15 @@ import quotes from './views/quotes.js';
 import hobbies from './views/hobbies.js';
 import finance from './views/finance.js';
 import settings from './views/settings.js';
+import goals from './views/goals.js';
+import clients from './views/clients.js';
+import learning from './views/learning.js';
+import mood from './views/mood.js';
+import mtg from './views/mtg.js';
+import watchlist from './views/watchlist.js';
+import people from './views/people.js';
 
-const VIEWS = [home, tasks, prayer, fitness, sleep, books, comics, notes, quotes, hobbies, finance, settings];
+const VIEWS = [home, tasks, goals, clients, prayer, fitness, sleep, books, comics, learning, notes, mood, quotes, hobbies, mtg, watchlist, people, finance, settings];
 const root = document.getElementById('app');
 const S = { store: null, profile: null, rawTotals: {}, routeToken: 0 };
 const sections = () => enabledSections(S.profile);

@@ -1,6 +1,20 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.15', date: '2026-10-19', title: 'Seven new sections & Sadaqah',
+    items: [
+      'Goals: bigger goals broken into milestones you tick off.',
+      'Learning: courses, certifications and skills, with study time and progress toward a target.',
+      'Mood: a daily check-in plus one thing you’re grateful for, with a five-week calendar.',
+      'People: keep in touch with friends and family. See who’s due a catch-up and log a call, visit or message in one tap.',
+      'Watchlist: films, series and anime to watch, with ratings when you finish.',
+      'Clients (off by default): a side-gig pipeline from lead to paid, which can add the payment to Finance.',
+      'MTG (off by default): decks with commander art, game logging and win rates. Paste a decklist to see the card count, mana curve, card types and price.',
+      'Finance: log Sadaqah as its own kind of entry, shown in the monthly summary and worth Faith XP.',
+      'New Connection stat from People. Turn sections on and reorder them in Settings.',
+    ],
+  },
+  {
     version: '1.14', date: '2026-10-19', title: 'Sleep tracker',
     items: [
       'New Sleep section: log bedtime, wake time and how well you slept.',

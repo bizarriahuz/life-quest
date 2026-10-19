@@ -1,6 +1,6 @@
 # Life Quest
 
-A personal companion app — tasks, prayer, fitness, books, notes, quotes, hobbies and finance in one place — with a light XP-and-levels layer on top. Each person picks the sections they use in Settings. Pure black, white accents.
+A personal companion app — tasks, goals, prayer, fitness, sleep, books, comics, learning, notes, mood, quotes, hobbies, MTG decks, a watchlist, people to keep in touch with, client work and finance in one place — with a light XP-and-levels layer on top. Each person picks the sections they use in Settings. Pure black, white accents.
 
 - **Static site**: plain HTML/CSS/JS modules, no build step.
 - **Data**: Supabase (Postgres + Auth). Every table is locked to its owner with row-level security.
@@ -43,6 +43,14 @@ A personal companion app — tasks, prayer, fitness, books, notes, quotes, hobbi
 | First finance entry on a day | 10 | Wealth |
 | Deposit into a savings goal | 1 per 10 (5–50) | Wealth |
 | Finished month at or under budget | 50 | Wealth |
+| First sadaqah on a day (logged in Finance) | 10 | Faith |
+| Goal milestone / goal achieved | 15 / 100 | Discipline |
+| Study time / course completed | 1 per 2 min (min 5) / 75 | Knowledge |
+| Mood check-in | 10 | Reflection |
+| MTG game (+5 for a win) | 10 | Craft |
+| Film or series finished | 5 | Craft |
+| Catch-up with someone (once per person per day) | 10 | Connection |
+| Client project started / paid | 20 / 40 | Wealth |
 
 Only stats for the sections someone has switched on count toward their level.
 
@@ -67,9 +75,11 @@ js/store.js           Supabase + offline data stores (same interface)
 js/game.js            XP rules and level maths
 js/changelog.js       What's new entries
 js/prayertimes.js     MUIS prayer times (api.prayertimes.sg)
+js/mtg.js             decklist parser + Scryfall lookups (commander art, mana curve)
 js/scanner.js         camera barcode scanner (native BarcodeDetector or bundled ZXing)
 js/vendor/zxing.js    ZXing 0.21.3 1D decoder + a working EAN 5-digit add-on reader (bundled with esbuild)
 js/views/*.js         one file per section
 supabase/schema.sql   database schema
+supabase/migrations/  changes applied after the first schema
 _headers              Cloudflare security headers
 ```
