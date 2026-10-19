@@ -673,3 +673,6 @@ details.more[open] > summary { margin: 0; background: var(--surface-2); color: v
 .ag-s { font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .top-artists .item { padding: 8px 0; }
 .top-artists .bar { margin-top: 6px; height: 4px; }
+
+.captcha { min-height: 0; display: flex; justify-content: center; }
+.captcha:empty { display: none; }

@@ -10,6 +10,9 @@ export const AWRAD_URL = '';
 
 // TMDB key for Watchlist search, posters and where to watch (themoviedb.org → Settings → API).
 // Either the API key or the API Read Access Token works. Leave '' to add titles by hand.
+// Cloudflare Turnstile site key (bot check on sign-in / sign-up). Leave '' to turn it off.
+export const TURNSTILE_SITE_KEY = '';
+
 // Last.fm API key for the Music page's listening panel (last.fm/api/account/create). Leave '' to hide it.
 export const LASTFM_KEY = '53fc2021d571483ba4b095636ffd33c4';
 

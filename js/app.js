@@ -2,6 +2,7 @@ import { cloudEnabled, getClient, cloudStore, localStore } from './store.js';
 import { withCache } from './cache.js';
 import { hasUnseen, markSeen } from './changelog.js';
 import { applyTheme } from './theme.js';
+import { captchaEnabled, mountCaptcha } from './captcha.js';
 import { html, raw, mount, wire, toast, levelUpModal } from './ui.js';
 import { icon } from './icons.js';
 import { STATS, overallLevel, statLevel, enabledSections, visibleTotals } from './game.js';
@@ -196,6 +197,7 @@ function renderLogin(sb, notice = '') {
           <button class="btn primary">Sign in</button>
           <button type="button" class="btn" data-act="signup">Create account</button>
         </div>
+        ${captchaEnabled ? html`<div id="captcha" class="captcha"></div>` : ''}
         <p class="msg" id="login-msg" role="status">${notice}</p>
       </form>
       ${finePrint()}
@@ -203,19 +205,35 @@ function renderLogin(sb, notice = '') {
   `);
   const msg = (t) => { document.getElementById('login-msg').textContent = t; };
   const form = root.querySelector('form');
+  // Bot check (Cloudflare Turnstile), if switched on in config.js.
+  let captcha = null;
+  if (captchaEnabled) mountCaptcha(root.querySelector('#captcha')).then((c) => { captcha = c; }).catch((e) => msg(e.message));
+  const human = async () => {
+    if (!captchaEnabled) return {};
+    if (!captcha) { msg('Loading the security check…'); await new Promise((r) => setTimeout(r, 1200)); }
+    const captchaToken = await captcha?.token();
+    if (!captchaToken) { msg('Please complete the security check above, then try again.'); return null; }
+    return { captchaToken };
+  };
   wire(root, {
     signin: async (v) => {
+      const extra = await human();
+      if (!extra) return;
       msg('Signing in…');
-      const { error } = await sb.auth.signInWithPassword({ email: v.email, password: v.password });
+      const { error } = await sb.auth.signInWithPassword({ email: v.email, password: v.password, options: extra });
+      captcha?.reset();
       if (error) msg(error.message);
     },
     signup: async () => {
       if (!form.reportValidity()) return;
       const v = Object.fromEntries(new FormData(form));
+      const extra = await human();
+      if (!extra) return;
       msg('Creating account…');
       const { data, error } = await sb.auth.signUp({
-        email: v.email.trim(), password: v.password, options: { emailRedirectTo: location.origin },
+        email: v.email.trim(), password: v.password, options: { emailRedirectTo: location.origin, ...extra },
       });
+      captcha?.reset();
       if (error) msg(error.message);
       else if (!data.session) msg('Check your email to confirm your account, then sign in.');
     },
