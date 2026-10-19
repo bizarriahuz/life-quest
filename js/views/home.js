@@ -49,6 +49,20 @@ export default {
     const w = lastWorkout[0];
     const top = strongest(totals);
 
+    const todayRows = {
+      prayer: () => html`<a href="#/prayer">${raw(icon('prayer'))}<span class="t-label">Prayer</span>
+              <span class="t-val"><span class="dots">${['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'].map((p) =>
+                html`<i class="${prayers.some((x) => x.prayer === p) ? 'on' : ''}"></i>`)}</span>${prayers.length}/5 · awrad ${awradDone ? '✓' : '–'}</span></a>`,
+      tasks: () => html`<a href="#/tasks">${raw(icon('tasks'))}<span class="t-label">Tasks</span>
+              <span class="t-val">${jobsOpen ? `${jobsOpen} job${jobsOpen === 1 ? '' : 's'} · ` : ''}${dailies.length ? `${dailyLeft} daily left` : 'No dailies'}${due ? ` · ${due} due` : ''}</span></a>`,
+      finance: () => html`<a href="#/finance">${raw(icon('finance'))}<span class="t-label">Money</span>
+              <span class="t-val">${$(spentMonth)} spent${budgetMonth ? ` · ${budgetUsed > budgetMonth ? `${$(budgetUsed - budgetMonth)} over` : `${$(budgetMonth - budgetUsed)} left`}` : ' this month'}</span></a>`,
+      fitness: () => html`<a href="#/fitness">${raw(icon('fitness'))}<span class="t-label">Fitness</span>
+              <span class="t-val">${w ? `${w.kind[0].toUpperCase()}${w.kind.slice(1)} · ${relDate(w.performed_on)}` : 'Nothing logged yet'}</span></a>`,
+      books: () => html`<a href="#/books">${raw(icon('books'))}<span class="t-label">Reading</span>
+              <span class="t-val">${reading.length ? reading.map((b) => b.title).join(', ') : 'Nothing in progress'}</span></a>`,
+    };
+
     mount(el, html`
       <header class="page-head">
         <div><h1>${greeting()}</h1><p>${fmtDate(t, { weekday: 'long', day: 'numeric', month: 'long' })}</p></div>
@@ -96,18 +110,8 @@ export default {
         <section class="card">
           <div class="card-head"><h2>Today</h2></div>
           <div class="today">
-            ${on.has('prayer') ? html`<a href="#/prayer">${raw(icon('prayer'))}<span class="t-label">Prayer</span>
-              <span class="t-val"><span class="dots">${['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'].map((p) =>
-                html`<i class="${prayers.some((x) => x.prayer === p) ? 'on' : ''}"></i>`)}</span>${prayers.length}/5 · awrad ${awradDone ? '✓' : '–'}</span></a>` : ''}
-            ${on.has('tasks') ? html`<a href="#/tasks">${raw(icon('tasks'))}<span class="t-label">Tasks</span>
-              <span class="t-val">${jobsOpen ? `${jobsOpen} job${jobsOpen === 1 ? '' : 's'} · ` : ''}${dailies.length ? `${dailyLeft} daily left` : 'No dailies'}${due ? ` · ${due} due` : ''}</span></a>` : ''}
-            ${on.has('finance') ? html`<a href="#/finance">${raw(icon('finance'))}<span class="t-label">Money</span>
-              <span class="t-val">${$(spentMonth)} spent${budgetMonth ? ` · ${budgetUsed > budgetMonth ? `${$(budgetUsed - budgetMonth)} over` : `${$(budgetMonth - budgetUsed)} left`}` : ' this month'}</span></a>` : ''}
-            ${on.has('fitness') ? html`<a href="#/fitness">${raw(icon('fitness'))}<span class="t-label">Fitness</span>
-              <span class="t-val">${w ? `${w.kind[0].toUpperCase()}${w.kind.slice(1)} · ${relDate(w.performed_on)}` : 'Nothing logged yet'}</span></a>` : ''}
-            ${on.has('books') ? html`<a href="#/books">${raw(icon('books'))}<span class="t-label">Reading</span>
-              <span class="t-val">${reading.length ? reading.map((b) => b.title).join(', ') : 'Nothing in progress'}</span></a>` : ''}
-            ${!['prayer', 'tasks', 'finance', 'fitness', 'books'].some((k) => on.has(k)) ? html`<p class="empty">Turn on a few sections in <a href="#/settings"><u>Settings</u></a>.</p>` : ''}
+            ${[...on].filter((k) => todayRows[k]).map((k) => todayRows[k]())}
+            ${!Object.keys(todayRows).some((k) => on.has(k)) ? html`<p class="empty">Turn on a few sections in <a href="#/settings"><u>Settings</u></a>.</p>` : ''}
           </div>
         </section>
 

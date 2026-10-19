@@ -18,7 +18,10 @@ const VIEWS = [home, tasks, prayer, fitness, books, notes, quotes, hobbies, fina
 const root = document.getElementById('app');
 const S = { store: null, profile: null, rawTotals: {}, routeToken: 0 };
 const sections = () => enabledSections(S.profile);
-const shownViews = () => { const on = sections(); return VIEWS.filter((v) => v.id === 'home' || v.id === 'settings' || on.has(v.id)); };
+const shownViews = () => {
+  const byId = Object.fromEntries(VIEWS.map((v) => [v.id, v]));
+  return [byId.home, ...[...sections()].map((id) => byId[id]).filter(Boolean), byId.settings];
+};
 const totals = () => visibleTotals(S.rawTotals, sections());
 
 const initials = (name) => (name || '?').trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
@@ -48,9 +51,9 @@ const ctx = {
   },
   async revoke(source, id) { await S.store.revoke(source, id); await refreshTotals(); },
   async setProfile(patch) {
-    const before = JSON.stringify([...sections()].sort());
+    const before = JSON.stringify([...sections()]);
     S.profile = await S.store.saveProfile(patch);
-    if (JSON.stringify([...sections()].sort()) !== before) { renderShell(); route(); } else renderBrand();
+    if (JSON.stringify([...sections()]) !== before) { renderShell(); route(); } else renderBrand();
   },
 };
 
@@ -128,7 +131,8 @@ async function route() {
 function onStale() {
   const a = document.activeElement;
   if (a && a.closest?.('#view') && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return;
-  if (document.querySelector('#view .levelup, .levelup')) return;
+  if (document.querySelector('.levelup')) return;
+  if (document.querySelector('#dirty:not([hidden])')) return; // unsaved Settings
   route();
 }
 

@@ -339,3 +339,8 @@ details[open] > summary { margin-bottom: 12px; }
 .goal:first-child { border-top: 0; padding-top: 0; }
 .cat-row input.budget-in { width: 120px; }
 .kpi.neg b { color: var(--muted); }
+
+.mover { display: grid; flex: none; margin: -6px 0 -6px -6px; }
+.mover .icon-btn { width: 30px; height: 24px; border-radius: 6px; }
+.mover .icon-btn:disabled { opacity: .2; cursor: default; background: none; }
+#dirty { margin-right: auto; }

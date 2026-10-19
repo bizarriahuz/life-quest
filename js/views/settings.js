@@ -7,6 +7,9 @@ export default {
   label: 'Settings',
   async render(el, ctx) {
     const on = ctx.sections;
+    // Turned-on sections in your order, then the rest in the default order.
+    const byId = Object.fromEntries(SECTIONS.map((x) => [x.id, x]));
+    const ordered = [...[...on].map((id) => byId[id]).filter(Boolean), ...SECTIONS.filter((x) => !on.has(x.id))];
     const name = ctx.profile?.hero_name || '';
     const currency = ctx.currency;
     const currencies = CURRENCIES.includes(currency) ? CURRENCIES : [currency, ...CURRENCIES];
@@ -16,10 +19,14 @@ export default {
 
       <form data-form="save" class="form" style="gap:16px">
         <section class="card">
-          <div class="card-head"><h2>Sections</h2><span class="meta">Turn off what you don't use</span></div>
-          <ul class="list">
-            ${SECTIONS.map((s) => html`
-              <li class="item">
+          <div class="card-head"><h2>Sections</h2><span class="meta">Switch on, off, and reorder</span></div>
+          <ul class="list" id="sec-list">
+            ${ordered.map((s) => html`
+              <li class="item" data-sec="${s.id}">
+                <span class="mover">
+                  <button type="button" class="icon-btn" data-act="up" aria-label="Move ${s.label} up">${raw(icon('up', 16))}</button>
+                  <button type="button" class="icon-btn" data-act="down" aria-label="Move ${s.label} down">${raw(icon('down', 16))}</button>
+                </span>
                 <span class="i-wrap">${raw(icon(s.id))}</span>
                 <label class="body switch-row" for="sec-${s.id}">
                   <span class="title">${s.label}</span>
@@ -28,7 +35,7 @@ export default {
                 <span class="switch"><input type="checkbox" id="sec-${s.id}" name="sec" value="${s.id}" ${on.has(s.id) ? 'checked' : ''}><i aria-hidden="true"></i></span>
               </li>`)}
           </ul>
-          <p class="small faint" style="margin-top:10px">Hidden sections keep their data. Your level only counts the sections you use.</p>
+          <p class="small faint" style="margin-top:10px">The order here is the order in your menu and on Home. Hidden sections keep their data, and your level only counts the sections you use.</p>
         </section>
 
         <section class="card">
@@ -39,7 +46,7 @@ export default {
           </div>
         </section>
 
-        <div class="row end"><button class="btn primary">Save changes</button></div>
+        <div class="row end"><span class="small muted" id="dirty" hidden>Unsaved changes</span><button class="btn primary">Save changes</button></div>
       </form>
 
       <section class="card">
@@ -52,13 +59,35 @@ export default {
       </section>
     `);
 
+    const list = el.querySelector('#sec-list');
+    const markDirty = () => { el.querySelector('#dirty').hidden = false; };
+    const refreshArrows = () => {
+      const items = [...list.children];
+      items.forEach((li, i) => {
+        li.querySelector('[data-act=up]').disabled = i === 0;
+        li.querySelector('[data-act=down]').disabled = i === items.length - 1;
+      });
+    };
+    const move = (btn, dir) => {
+      const li = btn.closest('li');
+      const sib = dir < 0 ? li.previousElementSibling : li.nextElementSibling;
+      if (!sib) return;
+      if (dir < 0) list.insertBefore(li, sib); else list.insertBefore(sib, li);
+      refreshArrows(); markDirty();
+      (btn.disabled ? li.querySelector(`[data-act=${dir < 0 ? 'down' : 'up'}]`) : btn).focus();
+    };
+    refreshArrows();
+    el.addEventListener('change', (e) => { if (e.target.closest('form')) markDirty(); });
+
     wire(el, {
+      up: (b) => move(b, -1),
+      down: (b) => move(b, 1),
       save: async (v, form) => {
-        const chosen = [...form.querySelectorAll('input[name=sec]:checked')].map((i) => i.value);
+        const chosen = [...form.querySelectorAll('input[name=sec]:checked')].map((i) => i.value); // in on-screen order
         await ctx.setProfile({
           hero_name: (v.hero_name || 'You').slice(0, 24),
           currency: /^[A-Z]{3}$/.test(v.currency) ? v.currency : 'SGD',
-          sections: SECTIONS.map((s) => s.id).filter((id) => chosen.includes(id)),
+          sections: chosen.filter((id) => SECTIONS.some((x) => x.id === id)),
         });
         ctx.say('Settings saved');
         ctx.rerender();
