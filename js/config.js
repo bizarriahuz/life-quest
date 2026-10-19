@@ -10,4 +10,4 @@ export const AWRAD_URL = '';
 
 // TMDB key for Watchlist search, posters and where to watch (themoviedb.org → Settings → API).
 // Either the API key or the API Read Access Token works. Leave '' to add titles by hand.
-export const TMDB_KEY = '';
+export const TMDB_KEY = '4894ba27d5cc4044063c95083bca103e';

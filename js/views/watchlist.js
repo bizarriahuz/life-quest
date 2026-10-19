@@ -61,7 +61,7 @@ export default {
       <section class="card">
         <form data-form="add" class="form">
           <div class="tmdb-search">
-            <input name="title" maxlength="200" placeholder="${tmdbEnabled ? 'Search films and series, or paste an IMDb link' : 'Add a film or series…'}" required aria-label="Title" autocomplete="off" value="${picked?.title || ''}">
+            <input name="title" maxlength="200" placeholder="${tmdbEnabled ? 'Search, or paste an IMDb link' : 'Add a film or series…'}" required aria-label="Title" autocomplete="off" value="${picked?.title || ''}">
             <div class="tmdb-results" id="tmdb-results" role="listbox" aria-label="Search results" hidden></div>
           </div>
           <div id="tmdb-picked">${picked ? pickCard(picked) : ''}</div>
