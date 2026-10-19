@@ -59,6 +59,7 @@ When you ship something, add an entry at the top of `js/changelog.js`. It shows 
 
 ```
 index.html            app shell
+about.html            public showcase page (/about), with img/showcase/ and og.png for link previews
 css/style.css         all styling
 js/app.js             routing, sign-in, level-ups
 js/store.js           Supabase + offline data stores (same interface)

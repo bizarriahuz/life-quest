@@ -1,6 +1,10 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.13', date: '2026-10-19', title: 'About page',
+    items: ['A public page to show Life Quest off, at /about. Share the link and it shows a proper preview card.'],
+  },
+  {
     version: '1.12', date: '2026-10-19', title: 'Comics & barcode scanner',
     items: [
       'New Comics section: series, issues, trades and manga, with a reading pile, collection and ratings.',

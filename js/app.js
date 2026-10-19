@@ -61,7 +61,8 @@ const ctx = {
 
 const COFFEE_URL = 'https://buymeacoffee.com/faustianecho';
 const finePrint = () => html`<footer class="fine">Life Quest is built and kept running by one person, free of ads.
-  If it helps you on your journey, you can <a href="${COFFEE_URL}" target="_blank" rel="noopener noreferrer">buy me a coffee ☕</a></footer>`;
+  If it helps you on your journey, you can <a href="${COFFEE_URL}" target="_blank" rel="noopener noreferrer">buy me a coffee ☕</a>
+  · <a href="/about">About Life Quest</a></footer>`;
 
 // ---------- shell ----------
 function renderShell() {
