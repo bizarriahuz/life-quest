@@ -3,7 +3,7 @@
 // changed. Every write clears the cached lists for that table.
 
 const FRESH_MS = 3000;           // don't re-check the same list more often than this
-const CASCADE = { hobbies: ['hobby_sessions'] }; // deleting a hobby deletes its sessions
+const CASCADE = { hobbies: ['hobby_sessions'], savings_goals: ['savings_contributions'], finance_categories: ['transactions'] }; // deleting a hobby deletes its sessions
 
 export function withCache(store, onStale) {
   const cache = new Map();       // key -> { data, at, table }

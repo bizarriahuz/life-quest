@@ -74,8 +74,12 @@ const DEFAULTS = {
   hobbies: {},
   hobby_sessions: { duration_min: 0, note: null },
   xp_events: {},
+  finance_categories: { budget: null },
+  transactions: { category_id: null, note: null },
+  savings_goals: {},
+  savings_contributions: {},
 };
-const UNIQUE = { prayer_logs: ['prayed_on', 'prayer'], hobbies: ['name'] };
+const UNIQUE = { prayer_logs: ['prayed_on', 'prayer'], hobbies: ['name'], finance_categories: ['kind', 'name'] };
 
 const cmp = (a, b) => (a == null ? (b == null ? 0 : 1) : b == null ? -1 : a < b ? -1 : a > b ? 1 : 0);
 
@@ -118,6 +122,8 @@ export function localStore() {
     async remove(table, id) {
       db[table] = tbl(table).filter((r) => r.id !== id);
       if (table === 'hobbies') db.hobby_sessions = tbl('hobby_sessions').filter((s) => s.hobby_id !== id);
+      if (table === 'savings_goals') db.savings_contributions = tbl('savings_contributions').filter((c) => c.goal_id !== id);
+      if (table === 'finance_categories') for (const x of tbl('transactions')) if (x.category_id === id) x.category_id = null;
       save();
     },
     async removeWhere(table, match) { db[table] = tbl(table).filter((r) => !matches(r, match)); save(); },
@@ -133,7 +139,7 @@ export function localStore() {
       for (const e of tbl('xp_events')) t[e.stat] = (t[e.stat] || 0) + e.amount;
       return t;
     },
-    async profile() { db.profile ??= { hero_name: 'HERO' }; save(); return { ...db.profile }; },
+    async profile() { db.profile ??= { hero_name: 'You', sections: null, currency: 'SGD' }; save(); return { ...db.profile }; },
     async saveProfile(patch) { db.profile = { ...(db.profile || {}), ...patch }; save(); return { ...db.profile }; },
     async signOut() {},
   };

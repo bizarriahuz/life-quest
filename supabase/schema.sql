@@ -5,6 +5,8 @@
 create table public.profiles (
   user_id    uuid primary key default auth.uid() references auth.users(id) on delete cascade,
   hero_name  text not null default 'HERO' check (char_length(hero_name) between 1 and 24),
+  sections   text[] check (sections is null or sections <@ array['tasks','prayer','fitness','books','notes','quotes','hobbies','finance']::text[]),
+  currency   text not null default 'SGD' check (currency ~ '^[A-Z]{3}$'),
   created_at timestamptz not null default now()
 );
 
@@ -85,17 +87,19 @@ create table public.hobbies (
   user_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
   name       text not null check (char_length(name) between 1 and 60),
   created_at timestamptz not null default now(),
-  unique (user_id, name)
+  unique (user_id, name),
+  unique (id, user_id)
 );
 
 create table public.hobby_sessions (
   id           uuid primary key default gen_random_uuid(),
   user_id      uuid not null default auth.uid() references auth.users(id) on delete cascade,
-  hobby_id     uuid not null references public.hobbies(id) on delete cascade,
+  hobby_id     uuid not null,
   session_on   date not null default current_date,
   duration_min int not null default 0 check (duration_min between 0 and 1440),
   note         text,
-  created_at   timestamptz not null default now()
+  created_at   timestamptz not null default now(),
+  foreign key (hobby_id, user_id) references public.hobbies(id, user_id) on delete cascade
 );
 create index on public.hobby_sessions (hobby_id);
 
@@ -103,7 +107,7 @@ create index on public.hobby_sessions (hobby_id);
 create table public.xp_events (
   id         uuid primary key default gen_random_uuid(),
   user_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
-  stat       text not null check (stat in ('STR','DEX','INT','WIS','CHA','FTH')),
+  stat       text not null check (stat in ('STR','DEX','INT','WIS','CHA','FTH','WLT')),
   amount     int not null check (amount between 0 and 1000),
   source     text not null,
   source_id  text not null,
@@ -111,12 +115,60 @@ create table public.xp_events (
   unique (user_id, source, source_id)
 );
 
+-- ---------- finance ----------
+create table public.finance_categories (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  name       text not null check (char_length(name) between 1 and 40),
+  kind       text not null check (kind in ('expense','income')),
+  budget     numeric(12,2) check (budget is null or budget > 0),   -- monthly
+  created_at timestamptz not null default now(),
+  unique (user_id, kind, name),
+  unique (id, user_id)
+);
+
+create table public.transactions (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  kind        text not null check (kind in ('expense','income')),
+  amount      numeric(12,2) not null check (amount > 0),
+  category_id uuid,
+  occurred_on date not null default current_date,
+  note        text check (note is null or char_length(note) <= 200),
+  created_at  timestamptz not null default now(),
+  -- a category can only be one of your own; deleting it keeps the entry as uncategorised
+  foreign key (category_id, user_id) references public.finance_categories(id, user_id) on delete set null (category_id)
+);
+create index on public.transactions (user_id, occurred_on);
+create index on public.transactions (category_id);
+
+create table public.savings_goals (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  name       text not null check (char_length(name) between 1 and 60),
+  target     numeric(12,2) not null check (target > 0),
+  created_at timestamptz not null default now(),
+  unique (id, user_id)
+);
+
+create table public.savings_contributions (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  goal_id    uuid not null,
+  amount     numeric(12,2) not null check (amount <> 0),           -- negative = withdrawal
+  made_on    date not null default current_date,
+  created_at timestamptz not null default now(),
+  foreign key (goal_id, user_id) references public.savings_goals(id, user_id) on delete cascade
+);
+create index on public.savings_contributions (goal_id);
+
 -- Row-level security: every table is readable/writable only by its owner.
 do $$
 declare t text;
 begin
   foreach t in array array['profiles','tasks','books','notes','quotes','workouts',
-                           'prayer_logs','hobbies','hobby_sessions','xp_events'] loop
+                           'prayer_logs','hobbies','hobby_sessions','xp_events',
+                           'finance_categories','transactions','savings_goals','savings_contributions'] loop
     execute format('alter table public.%I enable row level security', t);
     execute format('create policy "own rows" on public.%I for all to authenticated
                     using (user_id = (select auth.uid()))

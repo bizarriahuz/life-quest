@@ -308,3 +308,34 @@ details[open] > summary { margin-bottom: 12px; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ---------- settings ---------- */
+.i-wrap { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border-radius: 10px; background: var(--surface-2); color: var(--muted); }
+.switch-row { cursor: pointer; display: grid; gap: 1px; }
+.switch { position: relative; flex: none; width: 46px; height: 28px; }
+.switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; z-index: 1; width: 100%; height: 100%; min-height: 0; }
+.switch i { position: absolute; inset: 0; border-radius: 999px; background: rgba(255, 255, 255, .14); transition: background .15s; }
+.switch i::after { content: ''; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--muted); transition: transform .18s var(--ease), background .15s; }
+.switch input:checked + i { background: var(--fg); }
+.switch input:checked + i::after { transform: translateX(18px); background: var(--bg); }
+.switch input:focus-visible + i { outline: 2px solid var(--fg); outline-offset: 2px; }
+.nav a[data-view=settings] { margin-left: auto; }
+@media (min-width: 960px) { .nav a[data-view=settings] { margin: 8px 0 0; } }
+.banner { display: flex; align-items: center; gap: 14px; }
+.banner .grow p:first-child { font-weight: 600; }
+
+/* ---------- finance ---------- */
+.monthnav { display: inline-flex; align-items: center; gap: 4px; }
+.monthnav b { min-width: 118px; text-align: center; font-size: 15px; font-weight: 600; }
+.amt { flex: none; font-weight: 600; font-variant-numeric: tabular-nums; }
+.amt.in { color: var(--fg); }
+.amt.out { color: var(--muted); }
+.budget { display: grid; gap: 6px; padding: 10px 0; border-top: 1px solid var(--line); }
+.budget:first-child { border-top: 0; padding-top: 0; }
+.budget .row { justify-content: space-between; }
+.budget .over { color: var(--fg); font-weight: 700; }
+.bar.over i { background: repeating-linear-gradient(45deg, var(--fg) 0 6px, rgba(255,255,255,.55) 6px 12px); }
+.goal { display: grid; gap: 8px; padding: 12px 0; border-top: 1px solid var(--line); }
+.goal:first-child { border-top: 0; padding-top: 0; }
+.cat-row input.budget-in { width: 120px; }
+.kpi.neg b { color: var(--muted); }

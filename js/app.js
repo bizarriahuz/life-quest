@@ -2,7 +2,7 @@ import { cloudEnabled, getClient, cloudStore, localStore } from './store.js';
 import { withCache } from './cache.js';
 import { html, raw, mount, wire, toast, levelUpModal } from './ui.js';
 import { icon } from './icons.js';
-import { STATS, overallLevel, statLevel } from './game.js';
+import { STATS, overallLevel, statLevel, enabledSections, visibleTotals } from './game.js';
 import home from './views/home.js';
 import tasks from './views/tasks.js';
 import prayer from './views/prayer.js';
@@ -11,36 +11,47 @@ import books from './views/books.js';
 import notes from './views/notes.js';
 import quotes from './views/quotes.js';
 import hobbies from './views/hobbies.js';
+import finance from './views/finance.js';
+import settings from './views/settings.js';
 
-const VIEWS = [home, tasks, prayer, fitness, books, notes, quotes, hobbies];
+const VIEWS = [home, tasks, prayer, fitness, books, notes, quotes, hobbies, finance, settings];
 const root = document.getElementById('app');
-const S = { store: null, profile: null, totals: {}, routeToken: 0 };
+const S = { store: null, profile: null, rawTotals: {}, routeToken: 0 };
+const sections = () => enabledSections(S.profile);
+const shownViews = () => { const on = sections(); return VIEWS.filter((v) => v.id === 'home' || v.id === 'settings' || on.has(v.id)); };
+const totals = () => visibleTotals(S.rawTotals, sections());
 
 const initials = (name) => (name || '?').trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
 
-async function refreshTotals() { S.totals = await S.store.totals(); renderBrand(); }
+async function refreshTotals() { S.rawTotals = await S.store.totals(); renderBrand(); }
 
 // ---------- context shared with views ----------
 const ctx = {
   get store() { return S.store; },
   get profile() { return S.profile; },
-  get totals() { return S.totals; },
+  get totals() { return totals(); },
+  get sections() { return sections(); },
+  get currency() { return S.profile?.currency || 'SGD'; },
   say: (msg) => toast(msg),
   rerender: () => route(),
   async award(stat, amount, source, id, label) {
     if (!amount || amount <= 0) return;
-    const before = overallLevel(S.totals).level;
-    const statBefore = statLevel(S.totals[stat] || 0).level;
+    const before = overallLevel(totals()).level;
+    const statBefore = statLevel(S.rawTotals[stat] || 0).level;
     await S.store.award(stat, amount, source, id);
     await refreshTotals();
-    const after = overallLevel(S.totals).level;
-    const statAfter = statLevel(S.totals[stat] || 0).level;
+    const after = overallLevel(totals()).level;
+    const statAfter = statLevel(S.rawTotals[stat] || 0).level;
     const statLine = statAfter > statBefore ? `${STATS[stat].name} reached level ${statAfter}` : null;
     if (after > before) levelUpModal(after, statLine ? [statLine] : [`You reached level ${after}`]);
     else toast(statLine ? `${statLine} · +${amount} XP` : `${label ? `${label} · ` : ''}+${amount} XP`);
   },
   async revoke(source, id) { await S.store.revoke(source, id); await refreshTotals(); },
-  async setProfile(patch) { S.profile = await S.store.saveProfile(patch); renderBrand(); },
+  async setProfile(patch) {
+    const before = JSON.stringify([...sections()].sort());
+    S.profile = await S.store.saveProfile(patch);
+    if (JSON.stringify([...sections()].sort()) !== before) { renderShell(); route(); } else renderBrand();
+  },
 };
 
 // ---------- shell ----------
@@ -51,7 +62,7 @@ function renderShell() {
       <aside class="side">
         <div class="brand" id="brand"></div>
         <nav class="nav" aria-label="Sections">
-          ${VIEWS.map((v) => html`<a href="#/${v.id}" data-view="${v.id}">${raw(icon(v.id))}<span>${v.label}</span></a>`)}
+          ${shownViews().map((v) => html`<a href="#/${v.id}" data-view="${v.id}">${raw(icon(v.id))}<span>${v.label}</span></a>`)}
         </nav>
         <div class="side-foot">
           ${S.store.mode === 'cloud' ? html`
@@ -69,7 +80,7 @@ function renderShell() {
 function renderBrand() {
   const el = document.getElementById('brand');
   if (!el) return;
-  const lv = overallLevel(S.totals);
+  const lv = overallLevel(totals());
   const name = S.profile?.hero_name || 'You';
   el.innerHTML = html`
     <a href="#/home" class="avatar" aria-label="Home">${initials(name)}</a>
@@ -85,7 +96,7 @@ function renderBrand() {
 async function route() {
   const token = ++S.routeToken;
   const id = (location.hash.match(/^#\/(\w+)/) || [])[1];
-  const view = VIEWS.find((v) => v.id === id) || home;
+  const view = shownViews().find((v) => v.id === id) || home;
   document.querySelectorAll('.nav a').forEach((a) => {
     const active = a.dataset.view === view.id;
     a.classList.toggle('active', active);
@@ -123,8 +134,8 @@ function onStale() {
 
 // Warm every section's data so the first switch is instant too.
 async function prefetch(currentId) {
-  for (const v of VIEWS) {
-    if (v.id === currentId || !S.store) continue;
+  for (const v of shownViews()) {
+    if (v.id === currentId || v.id === 'settings' || !S.store) continue;
     try { await v.render(document.createElement('div'), ctx); } catch { /* ignore */ }
   }
 }
@@ -134,7 +145,7 @@ async function start(rawStore) {
   S.store = store;
   mount(root, html`<p class="loading">Loading…</p>`);
   try {
-    [S.profile, S.totals] = await Promise.all([store.profile(), store.totals()]);
+    [S.profile, S.rawTotals] = await Promise.all([store.profile(), store.totals()]);
   } catch (err) {
     mount(root, html`<div class="auth"><section class="card err-card"><h2>Couldn't load your data</h2>
       <p class="muted">${err?.message || String(err)}</p><p style="margin-top:14px"><button class="btn" data-reload>Retry</button></p></section></div>`);
@@ -154,7 +165,7 @@ function renderLogin(sb, notice = '') {
     <div class="auth">
       <form data-form="signin" class="auth-card">
         <div class="auth-mark">${raw(icon('spark', 26))}</div>
-        <div><h1>Life Quest</h1><p class="lead">Tasks, prayer, fitness, books, notes, quotes and hobbies — in one place.</p></div>
+        <div><h1>Life Quest</h1><p class="lead">Your tasks, habits, reading, fitness and money — in one place, with a little XP to keep you going.</p></div>
         <div class="form">
           <input type="email" name="email" placeholder="Email" autocomplete="email" required aria-label="Email">
           <input type="password" name="password" placeholder="Password (8+ characters)" autocomplete="current-password" minlength="8" required aria-label="Password">

@@ -1,6 +1,6 @@
 # Life Quest
 
-A personal companion app — tasks, prayer, fitness, books, notes, quotes and hobbies in one place — with a light XP-and-levels layer on top. Pure black, white accents.
+A personal companion app — tasks, prayer, fitness, books, notes, quotes, hobbies and finance in one place — with a light XP-and-levels layer on top. Each person picks the sections they use in Settings. Pure black, white accents.
 
 - **Static site**: plain HTML/CSS/JS modules, no build step.
 - **Data**: Supabase (Postgres + Auth). Every table is locked to its owner with row-level security.
@@ -38,6 +38,11 @@ A personal companion app — tasks, prayer, fitness, books, notes, quotes and ho
 | Reading | 1 per 10 pages, 50 for finishing | Knowledge |
 | New note / quote | 10 / 5 | Reflection |
 | Hobby session | 1 per 2 min (min 5) | Craft |
+| First finance entry on a day | 10 | Wealth |
+| Deposit into a savings goal | 1 per 10 (5–50) | Wealth |
+| Finished month at or under budget | 50 | Wealth |
+
+Only stats for the sections someone has switched on count toward their level.
 
 Undoing or deleting something removes its XP. Tune values in `js/game.js`.
 
