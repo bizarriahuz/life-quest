@@ -1,6 +1,14 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.18', date: '2026-10-20', title: 'Want to watch & Watched',
+    items: [
+      'The Watchlist now has two tabs: Want to watch and Watched.',
+      'Watched titles show the date you watched them, grouped by month. Tap the date to change it.',
+      'Add something you’ve already seen with “Already watched” and pick the date.',
+    ],
+  },
+  {
     version: '1.17', date: '2026-10-19', title: 'Smarter Watchlist',
     items: [
       'Search films and series as you type, or paste an IMDb link, to add them with poster, year and running time.',

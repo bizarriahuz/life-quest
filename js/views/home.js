@@ -42,7 +42,7 @@ export default {
       on.has('mood') ? ctx.store.list('moods', { match: { logged_on: t } }) : none,
       on.has('mtg') ? ctx.store.list('mtg_decks', { match: { retired: false } }) : none,
       on.has('mtg') ? ctx.store.list('mtg_matches', { order: 'played_on', limit: 1 }) : none,
-      on.has('watchlist') ? ctx.store.list('watchlist', { match: { status: 'watching' } }) : none,
+      on.has('watchlist') ? ctx.store.list('watchlist', {}) : none,
       on.has('people') ? ctx.store.list('contacts', {}) : none,
       on.has('people') ? ctx.store.list('contact_logs', { gte: ['contacted_on', addDays(t, -366)] }) : none,
     ]);
@@ -100,8 +100,8 @@ export default {
               <span class="t-val"><span class="t-txt">${moodToday[0] ? MOODS[moodToday[0].mood - 1] : 'Check in'}</span></span></a>`,
       mtg: () => html`<a href="#/mtg">${raw(icon('mtg'))}<span class="t-label">MTG</span>
               <span class="t-val"><span class="t-txt">${lm ? `Last game ${relDateInline(lm.played_on)} · ${lm.result}` : plural(decks.length, 'deck')}</span></span></a>`,
-      watchlist: () => html`<a href="#/watchlist">${raw(icon('watchlist'))}<span class="t-label">Watching</span>
-              <span class="t-val"><span class="t-txt">${watchingNow.length ? watchingNow.map((w) => w.title).join(', ') : 'Nothing on'}</span></span></a>`,
+      watchlist: () => html`<a href="#/watchlist">${raw(icon('watchlist'))}<span class="t-label">Watchlist</span>
+              <span class="t-val"><span class="t-txt">${watchingNow.some((w) => w.status === 'watching') ? `Watching ${watchingNow.filter((w) => w.status === 'watching').map((w) => w.title).join(', ')}` : `${watchingNow.filter((w) => w.status === 'queued').length} to watch`}</span></span></a>`,
       people: () => html`<a href="#/people">${raw(icon('people'))}<span class="t-label">People</span>
               <span class="t-val"><span class="t-txt">${contacts.length ? (overdue.length ? `${overdue.slice(0, 2).map((c) => c.name).join(', ')}${overdue.length > 2 ? ` +${overdue.length - 2}` : ''} to catch up` : 'All caught up') : 'Add someone'}</span></span></a>`,
       prayer: () => html`<a href="#/prayer">${raw(icon('prayer'))}<span class="t-label">Prayer</span>

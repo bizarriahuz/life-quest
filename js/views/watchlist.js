@@ -1,4 +1,4 @@
-import { html, raw, wire, mount, today, relDateInline, empty } from '../ui.js';
+import { html, raw, wire, mount, today, fmtDate, empty } from '../ui.js';
 import { icon } from '../icons.js';
 import { XP } from '../game.js';
 import { tmdbEnabled, search, findByImdb, imdbIdFrom, details, providers } from '../tmdb.js';
@@ -6,6 +6,7 @@ import { tmdbEnabled, search, findByImdb, imdbIdFrom, details, providers } from 
 const KIND = { film: 'Film', series: 'Series', anime: 'Anime', documentary: 'Documentary', other: 'Other' };
 let filter = 'all';
 let picked = null;       // TMDB details chosen in the add form
+let tab = 'want';        // 'want' | 'watched'
 
 const stars = (w) => html`<span class="stars" role="group" aria-label="Rating">${[1, 2, 3, 4, 5].map((n) => html`
   <button class="star ${w.rating >= n ? 'on' : ''}" data-act="rate" data-id="${w.id}" data-n="${n}" aria-label="${n} star${n > 1 ? 's' : ''}">★</button>`)}</span>`;
@@ -27,36 +28,70 @@ export default {
     const kinds = [...new Set(all.map((w) => w.kind))];
     if (filter !== 'all' && !kinds.includes(filter)) filter = 'all';
     const shown = all.filter((w) => filter === 'all' || w.kind === filter);
-    const watching = shown.filter((w) => w.status === 'watching');
-    const queued = shown.filter((w) => w.status === 'queued');
-    const done = shown.filter((w) => w.status === 'done').sort((a, b) => (b.done_on || '').localeCompare(a.done_on || ''));
+    const want = shown.filter((w) => w.status !== 'done')
+      .sort((a, b) => (a.status === 'watching' ? 0 : 1) - (b.status === 'watching' ? 0 : 1) || a.created_at.localeCompare(b.created_at));
+    const watched = shown.filter((w) => w.status === 'done')
+      .sort((a, b) => (b.done_on || '').localeCompare(a.done_on || '') || b.created_at.localeCompare(a.created_at));
+    const wantAll = all.filter((w) => w.status !== 'done').length;
+    const watchedAll = all.length - wantAll;
     const yearDone = all.filter((w) => w.status === 'done' && (w.done_on || '').startsWith(t.slice(0, 4))).length;
+    const months = [];
+    for (const w of watched) {
+      const m = (w.done_on || '').slice(0, 7) || 'undated';
+      if (months.at(-1)?.m !== m) months.push({ m, items: [] });
+      months.at(-1).items.push(w);
+    }
+    const links = (w) => html`
+      ${w.imdb_id ? html`<a class="text-btn" href="https://www.imdb.com/title/${w.imdb_id}/" target="_blank" rel="noopener noreferrer">Open on IMDb</a>` : ''}
+      ${w.tmdb_id ? html`<a class="text-btn" href="https://www.themoviedb.org/${w.tmdb_type}/${w.tmdb_id}" target="_blank" rel="noopener noreferrer">Open on TMDB</a>` : ''}
+      ${tmdbEnabled && !w.tmdb_id ? html`<button class="text-btn" data-act="match" data-id="${w.id}">Find poster &amp; details</button>` : ''}`;
+    const title = (w) => html`<p class="title"><span class="pill">${KIND[w.kind]}</span>${w.status === 'watching' ? html`<span class="pill solid">Watching</span>` : ''}${w.title}${w.year ? html` <span class="muted">${w.year}</span>` : ''}</p>`;
 
-    const row = (w) => html`
+    const wantRow = (w) => html`
       <li class="item wl-item">
         ${thumb(w.poster_url)}
-        <div class="body"><p class="title"><span class="pill">${KIND[w.kind]}</span>${w.title}${w.year ? html` <span class="muted">${w.year}</span>` : ''}</p>
-          ${w.details && w.status !== 'done' ? html`<p class="sub">${w.details}</p>` : ''}
-          ${w.note || w.done_on ? html`<p class="sub">${w.done_on ? `Finished ${relDateInline(w.done_on)}` : ''}${w.done_on && w.note ? ' · ' : ''}${w.note || ''}</p>` : ''}
-          ${tmdbEnabled && w.tmdb_id && w.status !== 'done' ? html`<p class="sub wtw" data-wtw="${w.tmdb_type}:${w.tmdb_id}"></p>` : ''}
-          ${w.overview && w.status === 'queued' ? html`<p class="sub ov">${w.overview}</p>` : ''}
+        <div class="body">${title(w)}
+          ${w.details ? html`<p class="sub">${w.details}</p>` : ''}
+          ${w.note ? html`<p class="sub">${w.note}</p>` : ''}
+          ${tmdbEnabled && w.tmdb_id ? html`<p class="sub wtw" data-wtw="${w.tmdb_type}:${w.tmdb_id}"></p>` : ''}
+          ${w.overview ? html`<p class="sub ov">${w.overview}</p>` : ''}
         </div>
         <div class="wl-acts">
-          ${w.status === 'queued' ? html`<button class="btn sm" data-act="start" data-id="${w.id}">${raw(icon('play', 14))}Start</button>` : ''}
-          ${w.status !== 'done' ? html`<button class="btn sm ${w.status === 'watching' ? 'primary' : ''}" data-act="finish" data-id="${w.id}">${raw(icon('check', 14))}Watched</button>` : stars(w)}
+          <button class="btn sm ${w.status === 'watching' ? 'primary' : ''}" data-act="finish" data-id="${w.id}">${raw(icon('check', 14))}Watched</button>
           <details class="more"><summary class="icon-btn" aria-label="More for ${w.title}">⋯</summary>
             <div class="more-menu">
-              ${w.imdb_id ? html`<a class="text-btn" href="https://www.imdb.com/title/${w.imdb_id}/" target="_blank" rel="noopener noreferrer">Open on IMDb</a>` : ''}
-              ${w.tmdb_id ? html`<a class="text-btn" href="https://www.themoviedb.org/${w.tmdb_type}/${w.tmdb_id}" target="_blank" rel="noopener noreferrer">Open on TMDB</a>` : ''}
-              ${tmdbEnabled && !w.tmdb_id ? html`<button class="text-btn" data-act="match" data-id="${w.id}">Find poster &amp; details</button>` : ''}
-              ${w.status !== 'queued' ? html`<button class="text-btn" data-act="requeue" data-id="${w.id}">Back to the list</button>` : ''}
+              <button class="text-btn" data-act="start" data-id="${w.id}">${w.status === 'watching' ? 'Not watching yet' : 'Watching now'}</button>
+              ${links(w)}
+              <button class="text-btn" data-act="delete" data-id="${w.id}">Delete</button>
+            </div></details>
+        </div>
+      </li>`;
+
+    const watchedRow = (w) => html`
+      <li class="item wl-item">
+        ${thumb(w.poster_url)}
+        <div class="body">${title(w)}
+          <label class="wl-date"><span>Watched</span><input type="date" value="${w.done_on || ''}" max="${t}" data-change="setdate" data-id="${w.id}" aria-label="Date you watched ${w.title}"></label>
+          ${w.note ? html`<p class="sub">${w.note}</p>` : ''}
+        </div>
+        <div class="wl-acts">
+          ${stars(w)}
+          <details class="more"><summary class="icon-btn" aria-label="More for ${w.title}">⋯</summary>
+            <div class="more-menu">
+              <button class="text-btn" data-act="requeue" data-id="${w.id}">Move to Want to watch</button>
+              ${links(w)}
               <button class="text-btn" data-act="delete" data-id="${w.id}">Delete</button>
             </div></details>
         </div>
       </li>`;
 
     mount(el, html`
-      <header class="page-head"><div><h1>Watchlist</h1><p>${all.filter((w) => w.status === 'queued').length} to watch · ${yearDone} watched this year</p></div></header>
+      <header class="page-head"><div><h1>Watchlist</h1><p>${wantAll} to watch · ${yearDone} watched this year</p></div></header>
+
+      <div class="seg wl-tabs" role="radiogroup" aria-label="List">
+        <label><input type="radio" name="wtab" value="want" data-change="tab" ${tab === 'want' ? 'checked' : ''}><span>Want to watch <b>${wantAll}</b></span></label>
+        <label><input type="radio" name="wtab" value="watched" data-change="tab" ${tab === 'watched' ? 'checked' : ''}><span>Watched <b>${watchedAll}</b></span></label>
+      </div>
 
       <section class="card">
         <form data-form="add" class="form">
@@ -69,9 +104,16 @@ export default {
             <div class="seg" role="radiogroup" aria-label="Type">
               ${Object.entries(KIND).map(([k, l]) => html`<label><input type="radio" name="kind" value="${k}" ${(picked?.kind || 'film') === k ? 'checked' : ''}><span>${l}</span></label>`)}
             </div>
-            <button class="btn primary">${raw(icon('plus', 18))}Add</button>
+          </div>
+          <div class="row wrap">
+            <div class="seg" role="radiogroup" aria-label="Add to">
+              <label><input type="radio" name="list" value="want" data-change="listmode" ${tab === 'want' ? 'checked' : ''}><span>Want to watch</span></label>
+              <label><input type="radio" name="list" value="watched" data-change="listmode" ${tab === 'watched' ? 'checked' : ''}><span>Already watched</span></label>
+            </div>
+            <label class="row wl-when" ${tab === 'watched' ? '' : 'hidden'}><span class="small muted">on</span><input type="date" name="done_on" value="${t}" max="${t}" aria-label="Date watched" style="width:auto"></label>
           </div>
           <input name="note" maxlength="200" placeholder="Note (optional), e.g. who recommended it" aria-label="Note">
+          <div class="row end"><button class="btn primary">${raw(icon('plus', 18))}Add</button></div>
         </form>
       </section>
 
@@ -80,18 +122,16 @@ export default {
           ${['all', ...kinds].map((k) => html`<label><input type="radio" name="wf" value="${k}" data-change="filter" ${filter === k ? 'checked' : ''}><span>${k === 'all' ? 'All' : KIND[k]}</span></label>`)}
         </div>` : ''}
 
-      ${watching.length ? html`<section class="card">
-        <div class="card-head"><h2>Watching</h2><span class="meta">${watching.length}</span></div>
-        <ul class="list">${watching.map(row)}</ul></section>` : ''}
 
-      <section class="card">
-        <div class="card-head"><h2>Up next</h2><span class="meta">${queued.length}</span></div>
-        ${queued.length ? html`<ul class="list">${queued.map(row)}</ul>` : empty('Nothing queued.')}
-      </section>
-
-      ${done.length ? html`<section class="card">
-        <details><summary>Watched <span class="muted small" style="margin-left:auto;margin-right:10px">${done.length}</span></summary>
-          <ul class="list">${done.slice(0, 100).map(row)}</ul></details></section>` : ''}
+      ${tab === 'want' ? html`
+        <section class="card">
+          ${want.length ? html`<ul class="list">${want.map(wantRow)}</ul>` : empty(filter === 'all' ? 'Nothing on your list. Search above to add something.' : 'Nothing of this type on your list.')}
+        </section>` : html`
+        ${months.length ? months.map((g) => html`
+          <section class="card">
+            <div class="card-head"><h2>${g.m === 'undated' ? 'No date' : fmtDate(`${g.m}-01`, { month: 'long', year: 'numeric' })}</h2><span class="meta">${g.items.length}</span></div>
+            <ul class="list">${g.items.map(watchedRow)}</ul>
+          </section>`) : html`<section class="card">${empty('Nothing watched yet. Tap Watched on a title, or add one as Already watched.')}</section>`}`}
 
       ${tmdbEnabled ? html`<p class="small faint tmdb-credit">Film and TV data from <a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer"><u>TMDB</u></a>, where to watch from JustWatch. This product uses the TMDB API but is not endorsed or certified by TMDB.</p>` : ''}
     `);
@@ -169,10 +209,15 @@ export default {
         if (meta?.tmdb_id && all.some((w) => w.tmdb_id === meta.tmdb_id && w.tmdb_type === meta.tmdb_type)) {
           ctx.say(`${meta.title} is already on your list`); return;
         }
-        await ctx.store.insert('watchlist', { ...(meta || {}), title: v.title, kind, note: v.note || null });
+        const seen = v.list === 'watched';
+        const day = seen ? (v.done_on && v.done_on <= t ? v.done_on : t) : null;
+        const row = await ctx.store.insert('watchlist', { ...(meta || {}), title: v.title, kind, note: v.note || null,
+          status: seen ? 'done' : 'queued', done_on: day });
         picked = null;
         f.reset(); pickedBox.innerHTML = '';
-        ctx.say(`${v.title} added`);
+        tab = seen ? 'watched' : 'want';
+        if (seen) await ctx.award('CHA', XP.watched, 'watched', row.id, `Watched ${v.title}`);
+        else ctx.say(`${v.title} added to Want to watch`);
         ctx.rerender();
       },
       match: async (b) => {
@@ -187,7 +232,16 @@ export default {
         ctx.rerender();
       },
       filter: (r) => { filter = r.value; ctx.rerender(); },
-      start: async (b) => { await ctx.store.update('watchlist', b.dataset.id, { status: 'watching' }); ctx.rerender(); },
+      tab: (r) => { tab = r.value === 'watched' ? 'watched' : 'want'; ctx.rerender(); },
+      listmode: (r) => { el.querySelector('.wl-when').hidden = r.value !== 'watched'; },
+      setdate: async (inp) => {
+        const d = inp.value;
+        if (!d || d > t) { ctx.say('Pick a date up to today'); inp.value = item(inp.dataset.id).done_on || t; return; }
+        await ctx.store.update('watchlist', inp.dataset.id, { done_on: d });
+        ctx.say(`Date set to ${fmtDate(d, { day: 'numeric', month: 'short', year: 'numeric' })}`);
+        ctx.rerender();
+      },
+      start: async (b) => { const w = item(b.dataset.id); await ctx.store.update('watchlist', w.id, { status: w.status === 'watching' ? 'queued' : 'watching' }); ctx.rerender(); },
       finish: async (b) => {
         const w = item(b.dataset.id);
         await ctx.store.update('watchlist', w.id, { status: 'done', done_on: t });
