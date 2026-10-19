@@ -247,6 +247,9 @@ async function start(rawStore) {
 function renderLogin(sb, notice = '') {
   S.store = null;
   window.onhashchange = null;
+  // Arrived from "Start your quest" on the About page: lead with Create account.
+  const starting = new URLSearchParams(location.search).has('start');
+  if (starting) history.replaceState(null, '', location.pathname + location.hash);
   mount(root, html`
     <div class="auth">
       <form data-form="signin" class="auth-card">
@@ -254,12 +257,15 @@ function renderLogin(sb, notice = '') {
         <div><h1>Life Quest</h1><p class="lead">Your tasks, habits, reading, fitness and money — in one place, with a little XP to keep you going.</p></div>
         <div class="form">
           <input type="email" name="email" placeholder="Email" autocomplete="email" required aria-label="Email">
-          <input type="password" name="password" placeholder="Password (8+ characters)" autocomplete="current-password" minlength="8" required aria-label="Password">
-          <button class="btn primary">Sign in</button>
-          <button type="button" class="btn" data-act="signup">Create account</button>
+          <input type="password" name="password" placeholder="Password (8+ characters)" autocomplete="${starting ? 'new-password' : 'current-password'}" minlength="8" required aria-label="Password">
+          ${starting ? html`
+            <button type="button" class="btn primary" data-act="signup">Create free account</button>
+            <button class="btn">I already have an account · Sign in</button>` : html`
+            <button class="btn primary">Sign in</button>
+            <button type="button" class="btn" data-act="signup">Create account</button>`}
         </div>
         ${captchaEnabled ? html`<div id="captcha" class="captcha"></div>` : ''}
-        <p class="msg" id="login-msg" role="status">${notice}</p>
+        <p class="msg" id="login-msg" role="status">${notice || (starting ? 'Welcome! Enter your email and choose a password (8+ characters). We’ll email you a link to confirm your account.' : '')}</p>
       </form>
       ${finePrint()}
     </div>
