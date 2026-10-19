@@ -24,6 +24,7 @@ function loadScript() {
 export async function mountCaptcha(el) {
   if (!captchaEnabled) return null;
   let current = null;
+  let failed = false;     // widget couldn't run (e.g. domain not allowed): don't block sign-in
   let waiters = [];
   const settle = (tok) => { current = tok; const w = waiters; waiters = []; w.forEach((fn) => fn(tok)); };
   const ts = await loadScript();
@@ -33,13 +34,15 @@ export async function mountCaptcha(el) {
     theme: dark ? 'dark' : 'light',
     size: 'flexible',
     appearance: 'interaction-only',     // stays hidden unless Cloudflare needs a click
-    callback: (tok) => settle(tok),
+    callback: (tok) => { failed = false; settle(tok); },
     'expired-callback': () => { current = null; ts.reset(id); },
-    'error-callback': () => { current = null; },
+    'error-callback': (code) => { console.warn('Turnstile error', code); current = null; failed = true; settle(null); return true; },
   });
   return {
+    get failed() { return failed; },
     token(timeoutMs = 15000) {
       if (current) return Promise.resolve(current);
+      if (failed) return Promise.resolve(null);
       return new Promise((resolve) => {
         const t = setTimeout(() => resolve(null), timeoutMs);
         waiters.push((tok) => { clearTimeout(t); resolve(tok); });

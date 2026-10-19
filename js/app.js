@@ -207,11 +207,13 @@ function renderLogin(sb, notice = '') {
   const form = root.querySelector('form');
   // Bot check (Cloudflare Turnstile), if switched on in config.js.
   let captcha = null;
-  if (captchaEnabled) mountCaptcha(root.querySelector('#captcha')).then((c) => { captcha = c; }).catch((e) => msg(e.message));
+  if (captchaEnabled) mountCaptcha(root.querySelector('#captcha')).then((c) => { captcha = c; }).catch(() => { /* script blocked: sign-in still works */ });
   const human = async () => {
     if (!captchaEnabled) return {};
     if (!captcha) { msg('Loading the security check…'); await new Promise((r) => setTimeout(r, 1200)); }
     const captchaToken = await captcha?.token();
+    // If the check itself couldn't run, carry on without it; the server decides.
+    if (!captchaToken && (!captcha || captcha.failed)) return {};
     if (!captchaToken) { msg('Please complete the security check above, then try again.'); return null; }
     return { captchaToken };
   };
