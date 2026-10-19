@@ -58,6 +58,10 @@ const ctx = {
   },
 };
 
+const COFFEE_URL = 'https://buymeacoffee.com/faustianecho';
+const finePrint = () => html`<footer class="fine">Life Quest is built and kept running by one person, free of ads.
+  If it helps you on your journey, you can <a href="${COFFEE_URL}" target="_blank" rel="noopener noreferrer">buy me a coffee ☕</a></footer>`;
+
 // ---------- shell ----------
 function renderShell() {
   mount(root, html`
@@ -75,6 +79,7 @@ function renderShell() {
         </div>
       </aside>
       <main id="view" tabindex="-1"></main>
+      ${finePrint()}
     </div>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
   `);
@@ -180,6 +185,7 @@ function renderLogin(sb, notice = '') {
         </div>
         <p class="msg" id="login-msg" role="status">${notice}</p>
       </form>
+      ${finePrint()}
     </div>
   `);
   const msg = (t) => { document.getElementById('login-msg').textContent = t; };

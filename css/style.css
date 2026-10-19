@@ -91,7 +91,7 @@ main { width: 100%; max-width: 760px; margin: 0 auto; padding: 20px 16px 110px; 
 .card-head h2 { font-size: 15px; }
 .card-head .meta { font-size: 13px; color: var(--muted); }
 .grid-2 { display: grid; gap: 16px; }
-@media (min-width: 680px) { .grid-2 { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 680px) and (max-width: 959px), (min-width: 1120px) { .grid-2 { grid-template-columns: 1fr 1fr; } }
 
 /* ---------- bars ---------- */
 .bar { height: 6px; border-radius: 999px; background: rgba(255, 255, 255, .1); overflow: hidden; }
@@ -373,3 +373,15 @@ details[open] > summary { margin-bottom: 12px; }
 .today .t-val { display: flex; align-items: center; justify-content: flex-end; gap: 0; }
 .today .t-val .dots { flex: none; }
 .today .t-txt { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- fine print ---------- */
+.fine { max-width: 760px; margin: 0 auto; padding: 0 16px 28px; text-align: center; font-size: 11.5px; line-height: 1.5; color: var(--faint); }
+.fine a { color: var(--muted); text-decoration: underline; text-underline-offset: 2px; }
+.fine a:hover { color: var(--fg); }
+main { padding-bottom: 36px; }
+.auth { grid-template-rows: 1fr auto; }
+.auth .fine { padding-top: 24px; align-self: end; }
+@media (min-width: 960px) { .shell > .fine { grid-column: 2; padding: 0 40px 32px; } main { padding-bottom: 40px; } }
+.today .t-label { min-width: 0; margin-right: auto; }
+.today .dots { gap: 4px; margin-right: 6px; }
+.today .dots i { width: 7px; height: 7px; }
