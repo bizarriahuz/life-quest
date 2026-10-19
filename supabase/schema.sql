@@ -488,3 +488,33 @@ alter table public.watchlist
   add column if not exists poster_url text check (poster_url is null or (poster_url ~ '^https://image\.tmdb\.org/' and char_length(poster_url) <= 300)),
   add column if not exists details text check (details is null or char_length(details) <= 200),
   add column if not exists overview text check (overview is null or char_length(overview) <= 700);
+
+-- 2026-10-20 · Music
+create table public.albums (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  title       text not null check (char_length(title) between 1 and 200),
+  artist      text check (artist is null or char_length(artist) <= 200),
+  year        smallint check (year is null or year between 1900 and 2100),
+  tracks      smallint check (tracks is null or tracks between 1 and 500),
+  genre       text check (genre is null or char_length(genre) <= 60),
+  art_url     text check (art_url is null or (art_url ~ '^https://' and char_length(art_url) <= 400)),
+  itunes_id   bigint check (itunes_id is null or itunes_id > 0),
+  apple_url   text check (apple_url is null or (apple_url ~ '^https://(music|itunes)\.apple\.com/' and char_length(apple_url) <= 400)),
+  status      text not null default 'want' check (status in ('want','listened')),
+  listened_on date,
+  rating      smallint check (rating between 1 and 5),
+  note        text check (note is null or char_length(note) <= 200),
+  created_at  timestamptz not null default now()
+);
+alter table public.albums enable row level security;
+create policy "own rows" on public.albums for all to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
+create index on public.albums (user_id);
+create index albums_user_created_idx on public.albums (user_id, created_at);
+grant select, insert, update, delete on public.albums to authenticated;
+create trigger row_limits before insert on public.albums for each row execute function public.enforce_row_limits('5000', 'albums');
+alter table public.profiles add column if not exists lastfm_user text
+  check (lastfm_user is null or lastfm_user ~ '^[A-Za-z][A-Za-z0-9_-]{1,14}$');
+alter table public.profiles drop constraint profiles_sections_check;
+alter table public.profiles add constraint profiles_sections_check check (sections is null or sections <@
+  array['tasks','goals','clients','prayer','fitness','sleep','books','comics','learning','notes','mood','quotes','hobbies','mtg','watchlist','music','people','finance']::text[]);

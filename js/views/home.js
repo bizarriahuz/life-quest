@@ -25,7 +25,7 @@ export default {
     const [yy, mm] = m.split('-').map(Number);
     const monthEnd = `${m}-${String(new Date(yy, mm, 0).getDate()).padStart(2, '0')}`;
     const [prayerLogs, openTasks, lastWorkout, reading, quotes, monthTxns, cats, comicsAll, sleepLogs,
-      goalsAll, steps, projects, learnWeek, moodToday, decks, lastMatch, watchingNow, contacts, contactLogs] = await Promise.all([
+      goalsAll, steps, projects, learnWeek, moodToday, decks, lastMatch, watchingNow, albumsAll, contacts, contactLogs] = await Promise.all([
       on.has('prayer') ? ctx.store.list('prayer_logs', { match: { prayed_on: t } }) : none,
       on.has('tasks') ? ctx.store.list('tasks', { match: { done: false } }) : none,
       on.has('fitness') ? ctx.store.list('workouts', { order: 'performed_on', limit: 1 }) : none,
@@ -43,6 +43,7 @@ export default {
       on.has('mtg') ? ctx.store.list('mtg_decks', { match: { retired: false } }) : none,
       on.has('mtg') ? ctx.store.list('mtg_matches', { order: 'played_on', limit: 1 }) : none,
       on.has('watchlist') ? ctx.store.list('watchlist', {}) : none,
+      on.has('music') ? ctx.store.list('albums', {}) : none,
       on.has('people') ? ctx.store.list('contacts', {}) : none,
       on.has('people') ? ctx.store.list('contact_logs', { gte: ['contacted_on', addDays(t, -366)] }) : none,
     ]);
@@ -102,6 +103,8 @@ export default {
               <span class="t-val"><span class="t-txt">${lm ? `Last game ${relDateInline(lm.played_on)} · ${lm.result}` : plural(decks.length, 'deck')}</span></span></a>`,
       watchlist: () => html`<a href="#/watchlist">${raw(icon('watchlist'))}<span class="t-label">Watchlist</span>
               <span class="t-val"><span class="t-txt">${watchingNow.some((w) => w.status === 'watching') ? `Watching ${watchingNow.filter((w) => w.status === 'watching').map((w) => w.title).join(', ')}` : `${watchingNow.filter((w) => w.status === 'queued').length} to watch`}</span></span></a>`,
+      music: () => html`<a href="#/music">${raw(icon('music'))}<span class="t-label">Music</span>
+              <span class="t-val"><span class="t-txt">${albumsAll.filter((a) => a.status === 'want').length} to listen · ${albumsAll.filter((a) => a.status === 'listened' && (a.listened_on || '').startsWith(t.slice(0, 7))).length} this month</span></span></a>`,
       people: () => html`<a href="#/people">${raw(icon('people'))}<span class="t-label">People</span>
               <span class="t-val"><span class="t-txt">${contacts.length ? (overdue.length ? `${overdue.slice(0, 2).map((c) => c.name).join(', ')}${overdue.length > 2 ? ` +${overdue.length - 2}` : ''} to catch up` : 'All caught up') : 'Add someone'}</span></span></a>`,
       prayer: () => html`<a href="#/prayer">${raw(icon('prayer'))}<span class="t-label">Prayer</span>
@@ -200,6 +203,7 @@ export default {
             ${on.has('mood') ? html`<li class="item">Mood: ${XP.mood} per daily check-in</li>` : ''}
             ${on.has('mtg') ? html`<li class="item">MTG: ${XP.mtgMatch} per game, +${XP.mtgWin} for a win</li>` : ''}
             ${on.has('watchlist') ? html`<li class="item">Watchlist: ${XP.watched} per film or series finished</li>` : ''}
+            ${on.has('music') ? html`<li class="item">Music: ${XP.listened} per album listened to</li>` : ''}
             ${on.has('people') ? html`<li class="item">People: ${XP.contact} for each person you catch up with, once a day</li>` : ''}
             ${on.has('finance') && on.has('prayer') ? html`<li class="item">Sadaqah: ${XP.sadaqahDay} Faith on each day you give</li>` : ''}
             <li class="item">Undo or delete something and its XP is removed.</li>

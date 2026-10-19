@@ -18,6 +18,7 @@ export const SECTIONS = [
   { id: 'hobbies', label: 'Hobbies', hint: 'Time spent on things you love' },
   { id: 'mtg',     label: 'MTG',     hint: 'Magic: The Gathering decks, decklists and win rates' },
   { id: 'watchlist', label: 'Watchlist', hint: 'Films and series to watch, with ratings' },
+  { id: 'music',   label: 'Music',   hint: 'Albums to hear and what you’ve been playing (Last.fm)' },
   { id: 'people',  label: 'People',  hint: 'Keep in touch with friends and family' },
   { id: 'finance', label: 'Finance', hint: 'Spending, budgets, savings goals and sadaqah' },
 ];
@@ -33,7 +34,7 @@ export const STATS = {
   DEX: { name: 'Discipline', from: 'Tasks & goals',  view: 'tasks',   sections: ['tasks', 'goals'] },
   INT: { name: 'Knowledge',  from: 'Reading & learning', view: 'books', sections: ['books', 'comics', 'learning'] },
   WIS: { name: 'Reflection', from: 'Notes, mood & quotes', view: 'notes', sections: ['notes', 'mood', 'quotes'] },
-  CHA: { name: 'Craft',      from: 'Hobbies, MTG & watchlist', view: 'hobbies', sections: ['hobbies', 'mtg', 'watchlist'] },
+  CHA: { name: 'Craft',      from: 'Hobbies, MTG & media', view: 'hobbies', sections: ['hobbies', 'mtg', 'watchlist', 'music'] },
   FTH: { name: 'Faith',      from: 'Prayer & sadaqah', view: 'prayer', sections: ['prayer'] },
   RST: { name: 'Rest',       from: 'Sleep',          view: 'sleep',   sections: ['sleep'] },
   CON: { name: 'Connection', from: 'People',         view: 'people',  sections: ['people'] },
@@ -77,6 +78,7 @@ export const XP = {
   mood: 10,
   contact: 10,
   watched: 5,
+  listened: 5,
 };
 
 // Overall level: 100 XP for level 2, then +50 more per level.

@@ -24,8 +24,9 @@ import mood from './views/mood.js';
 import mtg from './views/mtg.js';
 import watchlist from './views/watchlist.js';
 import people from './views/people.js';
+import music from './views/music.js';
 
-const VIEWS = [home, tasks, goals, clients, prayer, fitness, sleep, books, comics, learning, notes, mood, quotes, hobbies, mtg, watchlist, people, finance, settings];
+const VIEWS = [home, tasks, goals, clients, prayer, fitness, sleep, books, comics, learning, notes, mood, quotes, hobbies, mtg, watchlist, music, people, finance, settings];
 const root = document.getElementById('app');
 const S = { store: null, profile: null, rawTotals: {}, routeToken: 0 };
 const sections = () => enabledSections(S.profile);

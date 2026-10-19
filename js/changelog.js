@@ -1,6 +1,14 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.19', date: '2026-10-20', title: 'Music',
+    items: [
+      'New Music section: albums you want to hear and ones you’ve listened to, with dates and ratings.',
+      'Search any album to fill in the cover, artist, year and track count, with links to Apple Music and Spotify.',
+      'Connect Last.fm to see what you’re playing now, your top albums this week and top artists this month.',
+    ],
+  },
+  {
     version: '1.18', date: '2026-10-20', title: 'Want to watch & Watched',
     items: [
       'The Watchlist now has two tabs: Want to watch and Watched.',

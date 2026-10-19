@@ -10,4 +10,7 @@ export const AWRAD_URL = '';
 
 // TMDB key for Watchlist search, posters and where to watch (themoviedb.org → Settings → API).
 // Either the API key or the API Read Access Token works. Leave '' to add titles by hand.
+// Last.fm API key for the Music page's listening panel (last.fm/api/account/create). Leave '' to hide it.
+export const LASTFM_KEY = '53fc2021d571483ba4b095636ffd33c4';
+
 export const TMDB_KEY = '4894ba27d5cc4044063c95083bca103e';

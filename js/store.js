@@ -88,6 +88,7 @@ const DEFAULTS = {
   mtg_decks: { commander: null, format: 'commander', colors: '', art_url: null, decklist: null, retired: false },
   mtg_matches: { players: 4, note: null },
   moods: { gratitude: null },
+  albums: { artist: null, year: null, tracks: null, genre: null, art_url: null, itunes_id: null, apple_url: null, status: 'want', listened_on: null, rating: null, note: null },
   contacts: { relation: null, every_days: 30, note: null },
   contact_logs: { how: 'message', note: null },
   watchlist: { kind: 'film', status: 'queued', rating: null, note: null, done_on: null, tmdb_id: null, tmdb_type: null, imdb_id: null, year: null, poster_url: null, details: null, overview: null },
@@ -154,7 +155,7 @@ export function localStore() {
       for (const e of tbl('xp_events')) t[e.stat] = (t[e.stat] || 0) + e.amount;
       return t;
     },
-    async profile() { db.profile ??= { hero_name: 'You', sections: null, currency: 'SGD', sleep_goal_min: 480, theme: 'midnight' }; save(); return { ...db.profile }; },
+    async profile() { db.profile ??= { hero_name: 'You', sections: null, currency: 'SGD', sleep_goal_min: 480, theme: 'midnight', lastfm_user: null }; save(); return { ...db.profile }; },
     async saveProfile(patch) { db.profile = { ...(db.profile || {}), ...patch }; save(); return { ...db.profile }; },
     async signOut() {},
   };
