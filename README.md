@@ -11,11 +11,11 @@ A personal companion app — tasks, goals, prayer, fitness, sleep, books, comics
 1. Push this folder to GitHub.
 2. Cloudflare dashboard → **Workers & Pages → Create → Pages → Connect to Git** → pick the repo.
 3. Build settings: **Framework preset: None**, **Build command: _(empty)_**, **Build output directory: `/`**.
-4. Deploy. You'll get a `*.pages.dev` URL.
+4. Deploy. You'll get a `*.pages.dev` URL (now lifequestapp.pages.dev).
 
 ## After the first deploy (Supabase)
 
-1. **Authentication → URL Configuration**: set **Site URL** to your `*.pages.dev` URL (so confirmation emails link back to the app).
+1. **Authentication → URL Configuration**: set **Site URL** to your `*.pages.dev` URL (now lifequestapp.pages.dev) (so confirmation emails link back to the app).
 2. Open the app, **Create account**, confirm the email, sign in.
 3. **Authentication → Sign In / Providers**: turn **off** "Allow new users to sign up" — it's a one-person app, so nobody else should be able to register.
 
