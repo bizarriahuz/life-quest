@@ -1,4 +1,4 @@
-import { html, raw, wire, mount, today, relDate, empty } from '../ui.js';
+import { html, raw, wire, mount, today, relDate, relDateInline, empty } from '../ui.js';
 import { icon } from '../icons.js';
 import { XP } from '../game.js';
 
@@ -25,7 +25,7 @@ export default {
     const row = (w) => html`
       <li class="item ${w.status === 'done' ? '' : ''}">
         <div class="body"><p class="title"><span class="pill">${KIND[w.kind]}</span>${w.title}</p>
-          ${w.note || w.done_on ? html`<p class="sub">${w.done_on ? `Finished ${relDate(w.done_on).toLowerCase()}` : ''}${w.done_on && w.note ? ' · ' : ''}${w.note || ''}</p>` : ''}</div>
+          ${w.note || w.done_on ? html`<p class="sub">${w.done_on ? `Finished ${relDateInline(w.done_on)}` : ''}${w.done_on && w.note ? ' · ' : ''}${w.note || ''}</p>` : ''}</div>
         ${w.status === 'queued' ? html`<button class="btn sm" data-act="start" data-id="${w.id}">${raw(icon('play', 14))}Start</button>` : ''}
         ${w.status !== 'done' ? html`<button class="btn sm ${w.status === 'watching' ? 'primary' : ''}" data-act="finish" data-id="${w.id}">${raw(icon('check', 14))}Watched</button>` : stars(w)}
         <details class="more"><summary class="icon-btn" aria-label="More for ${w.title}">⋯</summary>

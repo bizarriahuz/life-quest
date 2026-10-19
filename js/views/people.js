@@ -1,4 +1,4 @@
-import { html, raw, wire, mount, today, addDays, relDate, empty } from '../ui.js';
+import { html, raw, wire, mount, today, addDays, relDate, relDateInline, empty } from '../ui.js';
 import { icon } from '../icons.js';
 import { XP } from '../game.js';
 
@@ -32,7 +32,7 @@ export default {
       <li class="item person">
         <div class="body">
           <p class="title">${p.name}${p.relation ? html` <span class="muted">· ${p.relation}</span>` : ''}</p>
-          <p class="sub ${left < 0 ? 'due-late' : ''}">${last ? `${HOW[last.how]} ${relDate(last.contacted_on).toLowerCase()}` : 'Not logged yet'} · ${left < 0 ? `${-left} day${left === -1 ? '' : 's'} overdue` : left === 0 ? 'due today' : `in ${left} day${left === 1 ? '' : 's'}`}</p>
+          <p class="sub ${left < 0 ? 'due-late' : ''}">${last ? `${HOW[last.how]} ${relDateInline(last.contacted_on)}` : 'Not logged yet'} · ${left < 0 ? `${-left} day${left === -1 ? '' : 's'} overdue` : left === 0 ? 'due today' : `in ${left} day${left === 1 ? '' : 's'}`}</p>
         </div>
         <div class="row quick">
           ${['message', 'call', 'visit'].map((h) => html`<button class="btn sm" data-act="log" data-id="${p.id}" data-how="${h}" aria-label="Log a ${h} with ${p.name}">${HOW[h]}</button>`)}

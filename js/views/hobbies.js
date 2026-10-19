@@ -1,4 +1,4 @@
-import { html, raw, wire, mount, today, addDays, relDate, empty } from '../ui.js';
+import { html, raw, wire, mount, today, addDays, relDate, relDateInline, empty } from '../ui.js';
 import { icon } from '../icons.js';
 import { XP } from '../game.js';
 
@@ -44,7 +44,7 @@ export default {
           return html`
             <li class="item">
               <div class="body"><p class="title">${h.name}</p>
-                <p class="sub">${s.n} session${s.n === 1 ? '' : 's'} · ${hrs(s.min)}${s.last ? ` · last ${relDate(s.last).toLowerCase()}` : ''}</p></div>
+                <p class="sub">${s.n} session${s.n === 1 ? '' : 's'} · ${hrs(s.min)}${s.last ? ` · last ${relDateInline(s.last)}` : ''}</p></div>
               <button class="icon-btn" data-act="delhobby" data-id="${h.id}" aria-label="Delete ${h.name}">${raw(icon('trash'))}</button>
             </li>`;
         })}</ul>` : empty('Add a hobby to start tracking time spent on it.')}

@@ -1,4 +1,4 @@
-import { html, raw, wire, mount, bar, today, relDate, fmtDate, greeting } from '../ui.js';
+import { html, raw, wire, mount, bar, today, relDate, relDateInline, fmtDate, greeting } from '../ui.js';
 import { icon } from '../icons.js';
 import { cachedTimes, loadMonth, nextPrayer } from '../prayertimes.js';
 import { addDays } from '../ui.js';
@@ -99,7 +99,7 @@ export default {
       mood: () => html`<a href="#/mood">${raw(icon('mood'))}<span class="t-label">Mood</span>
               <span class="t-val"><span class="t-txt">${moodToday[0] ? MOODS[moodToday[0].mood - 1] : 'Check in'}</span></span></a>`,
       mtg: () => html`<a href="#/mtg">${raw(icon('mtg'))}<span class="t-label">MTG</span>
-              <span class="t-val"><span class="t-txt">${lm ? `Last game ${relDate(lm.played_on).toLowerCase()} · ${lm.result}` : plural(decks.length, 'deck')}</span></span></a>`,
+              <span class="t-val"><span class="t-txt">${lm ? `Last game ${relDateInline(lm.played_on)} · ${lm.result}` : plural(decks.length, 'deck')}</span></span></a>`,
       watchlist: () => html`<a href="#/watchlist">${raw(icon('watchlist'))}<span class="t-label">Watching</span>
               <span class="t-val"><span class="t-txt">${watchingNow.length ? watchingNow.map((w) => w.title).join(', ') : 'Nothing on'}</span></span></a>`,
       people: () => html`<a href="#/people">${raw(icon('people'))}<span class="t-label">People</span>

@@ -1,4 +1,4 @@
-import { html, raw, wire, mount, today, relDate, empty } from '../ui.js';
+import { html, raw, wire, mount, today, relDate, relDateInline, empty } from '../ui.js';
 import { icon } from '../icons.js';
 import { XP, money, cents } from '../game.js';
 
@@ -33,7 +33,7 @@ export default {
         <li class="item">
           <div class="body">
             <p class="title"><span class="pill ${p.stage === 'active' ? 'solid' : ''}">${LABEL[p.stage]}</span>${p.title}</p>
-            <p class="sub ${late ? 'due-late' : ''}">${p.client}${p.value ? ` · ${$(p.value)}` : ''}${p.due_on ? ` · ${late ? 'overdue ' : 'due '}${relDate(p.due_on).toLowerCase()}` : ''}${p.note ? ` · ${p.note}` : ''}</p>
+            <p class="sub ${late ? 'due-late' : ''}">${p.client}${p.value ? ` · ${$(p.value)}` : ''}${p.due_on ? ` · ${late ? 'was due ' : 'due '}${relDateInline(p.due_on)}` : ''}${p.note ? ` · ${p.note}` : ''}</p>
           </div>
           ${next ? html`<button class="btn sm" data-act="advance" data-id="${p.id}">${next === 'paid' ? 'Paid' : LABEL[next]} ${raw(icon('right', 14))}</button>` : ''}
           <details class="more"><summary class="icon-btn" aria-label="More for ${p.title}">⋯</summary>

@@ -70,6 +70,11 @@ export function relDate(key) {
   if (key === addDays(t, 1)) return 'Tomorrow';
   return fmtDate(key);
 }
+// For mid-sentence use: "today", "yesterday", or "on Wed, 9 Oct".
+export function relDateInline(key) {
+  const r = relDate(key);
+  return /^(Today|Yesterday|Tomorrow)$/.test(r) ? r.toLowerCase() : `on ${r}`;
+}
 export function greeting() {
   const h = new Date().getHours();
   return h < 5 ? 'Good night' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
