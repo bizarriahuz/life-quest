@@ -1,6 +1,14 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.14', date: '2026-10-19', title: 'Sleep tracker',
+    items: [
+      'New Sleep section: log bedtime, wake time and how well you slept.',
+      'See your 7-night chart against your sleep goal, your average, and how consistent your bedtime is.',
+      'New Rest stat: 5 XP per night logged, +10 when you hit your goal.',
+    ],
+  },
+  {
     version: '1.13', date: '2026-10-19', title: 'About page',
     items: ['A public page to show Life Quest off, at /about. Share the link and it shows a proper preview card.'],
   },

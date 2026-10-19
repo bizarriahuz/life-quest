@@ -411,3 +411,9 @@ details.more[open] > summary { margin: 0; background: var(--surface-2); color: v
 .more-menu .text-btn { text-align: left; padding: 10px 12px; border-radius: 8px; font-size: 14px; color: var(--fg); }
 .more-menu .text-btn:hover { background: rgba(255,255,255,.07); }
 .item > .btn.sm { flex: none; }
+
+/* ---------- sleep ---------- */
+.sleep-chart { position: relative; }
+.sleep-chart .goal-line { position: absolute; left: 0; right: 0; height: 0; border-top: 1.5px dashed rgba(255,255,255,.45); z-index: 1; pointer-events: none; }
+.sleep-chart .goal-line span { position: absolute; right: 0; top: -20px; font-size: 11px; color: var(--muted); background: var(--surface); padding: 0 4px; }
+.sleep-chart .b i.under { background: rgba(255,255,255,.45); }

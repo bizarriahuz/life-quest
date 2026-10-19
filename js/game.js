@@ -6,6 +6,7 @@ export const SECTIONS = [
   { id: 'tasks',   label: 'Tasks',   hint: 'To-dos, jobs and daily habits' },
   { id: 'prayer',  label: 'Prayer',  hint: 'Five daily prayers and the Daily Awrad' },
   { id: 'fitness', label: 'Fitness', hint: 'Runs, workouts and sport' },
+  { id: 'sleep',   label: 'Sleep',   hint: 'Bedtime, wake time and how well you slept' },
   { id: 'books',   label: 'Books',   hint: 'Reading list and progress' },
   { id: 'comics',  label: 'Comics',  hint: 'Your collection and reading pile, with barcode scanning' },
   { id: 'notes',   label: 'Notes',   hint: 'Journal and notes' },
@@ -13,7 +14,7 @@ export const SECTIONS = [
   { id: 'hobbies', label: 'Hobbies', hint: 'Time spent on things you love' },
   { id: 'finance', label: 'Finance', hint: 'Spending, budgets and savings goals' },
 ];
-export const DEFAULT_SECTIONS = ['tasks', 'prayer', 'fitness', 'books', 'comics', 'notes', 'quotes', 'hobbies'];
+export const DEFAULT_SECTIONS = ['tasks', 'prayer', 'fitness', 'sleep', 'books', 'comics', 'notes', 'quotes', 'hobbies'];
 
 export function enabledSections(profile) {
   const s = profile?.sections;
@@ -27,6 +28,7 @@ export const STATS = {
   WIS: { name: 'Reflection', from: 'Notes & quotes', view: 'notes',   sections: ['notes', 'quotes'] },
   CHA: { name: 'Craft',      from: 'Hobbies',        view: 'hobbies', sections: ['hobbies'] },
   FTH: { name: 'Faith',      from: 'Prayer',         view: 'prayer',  sections: ['prayer'] },
+  RST: { name: 'Rest',       from: 'Sleep',          view: 'sleep',   sections: ['sleep'] },
   WLT: { name: 'Wealth',     from: 'Finance',        view: 'finance', sections: ['finance'] },
 };
 
@@ -46,6 +48,8 @@ export const XP = {
   quote: 5,
   bookFinished: 50,
   comicRead: 15,
+  sleepLog: 5,       // each night logged
+  sleepGoal: 10,     // extra when you hit your sleep goal
   pages: (pages) => (pages > 0 ? Math.max(1, Math.floor(pages / 10)) : 0),
   workout: (w) => Math.max(5, Math.min(120, Number(w.duration_min) || 0) + Math.round((Number(w.distance_km) || 0) * 5)),
   hobby: (min) => Math.max(5, Math.round((Number(min) || 0) / 2)),

@@ -75,12 +75,13 @@ const DEFAULTS = {
   hobby_sessions: { duration_min: 0, note: null },
   xp_events: {},
   finance_categories: { budget: null },
+  sleep_logs: { quality: null, note: null },
   comics: { issue: null, publisher: null, format: 'issue', status: 'queued', owned: true, barcode: null, cover_url: null, rating: null, read_on: null },
   transactions: { category_id: null, note: null },
   savings_goals: {},
   savings_contributions: {},
 };
-const UNIQUE = { prayer_logs: ['prayed_on', 'prayer'], hobbies: ['name'], finance_categories: ['kind', 'name'] };
+const UNIQUE = { prayer_logs: ['prayed_on', 'prayer'], hobbies: ['name'], finance_categories: ['kind', 'name'], sleep_logs: ['slept_on'] };
 
 const cmp = (a, b) => (a == null ? (b == null ? 0 : 1) : b == null ? -1 : a < b ? -1 : a > b ? 1 : 0);
 
@@ -140,7 +141,7 @@ export function localStore() {
       for (const e of tbl('xp_events')) t[e.stat] = (t[e.stat] || 0) + e.amount;
       return t;
     },
-    async profile() { db.profile ??= { hero_name: 'You', sections: null, currency: 'SGD' }; save(); return { ...db.profile }; },
+    async profile() { db.profile ??= { hero_name: 'You', sections: null, currency: 'SGD', sleep_goal_min: 480 }; save(); return { ...db.profile }; },
     async saveProfile(patch) { db.profile = { ...(db.profile || {}), ...patch }; save(); return { ...db.profile }; },
     async signOut() {},
   };

@@ -24,7 +24,7 @@ export default {
     const m = t.slice(0, 7);
     const [yy, mm] = m.split('-').map(Number);
     const monthEnd = `${m}-${String(new Date(yy, mm, 0).getDate()).padStart(2, '0')}`;
-    const [prayerLogs, openTasks, lastWorkout, reading, quotes, monthTxns, cats, comicsAll] = await Promise.all([
+    const [prayerLogs, openTasks, lastWorkout, reading, quotes, monthTxns, cats, comicsAll, sleepLogs] = await Promise.all([
       on.has('prayer') ? ctx.store.list('prayer_logs', { match: { prayed_on: t } }) : none,
       on.has('tasks') ? ctx.store.list('tasks', { match: { done: false } }) : none,
       on.has('fitness') ? ctx.store.list('workouts', { order: 'performed_on', limit: 1 }) : none,
@@ -33,6 +33,7 @@ export default {
       on.has('finance') ? ctx.store.list('transactions', { match: { kind: 'expense' }, gte: ['occurred_on', `${m}-01`], lte: ['occurred_on', monthEnd] }) : none,
       on.has('finance') ? ctx.store.list('finance_categories', { order: 'name', asc: true }) : none,
       on.has('comics') ? ctx.store.list('comics', {}) : none,
+      on.has('sleep') ? ctx.store.list('sleep_logs', { gte: ['slept_on', addDays(t, -7)] }) : none,
     ]);
     const spentMonth = monthTxns.reduce((n, x) => n + Number(x.amount), 0);
     const budgetMonth = cats.reduce((n, c) => n + (c.kind === 'expense' ? Number(c.budget) || 0 : 0), 0);
@@ -62,6 +63,10 @@ export default {
     const comicsReading = comicsAll.filter((c) => c.status === 'reading');
     const comicsPile = comicsAll.filter((c) => c.status === 'queued').length;
     const comicsMonth = comicsAll.filter((c) => c.status === 'read' && (c.read_on || '').startsWith(m)).length;
+    const sleepSorted = [...sleepLogs].sort((x, y) => y.slept_on.localeCompare(x.slept_on));
+    const lastSleep = sleepSorted[0];
+    const sleepAvg = sleepLogs.length ? sleepLogs.reduce((n, x) => n + x.duration_min, 0) / sleepLogs.length : 0;
+    const hmin = (n) => `${Math.floor(n / 60)}h ${String(Math.round(n % 60)).padStart(2, '0')}m`;
     const todayRows = {
       prayer: () => html`<a href="#/prayer">${raw(icon('prayer'))}<span class="t-label">Prayer</span>
               <span class="t-val"><span class="dots">${['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'].map((p) =>
@@ -74,6 +79,8 @@ export default {
               <span class="t-val">${w ? `${w.kind[0].toUpperCase()}${w.kind.slice(1)} · ${relDate(w.performed_on)}` : 'Nothing logged yet'}</span></a>`,
       comics: () => html`<a href="#/comics">${raw(icon('comics'))}<span class="t-label">Comics</span>
               <span class="t-val"><span class="t-txt">${comicsReading.length ? comicsReading.map((c) => c.title + (c.issue ? ` ${/^\d+$/.test(c.issue) ? '#' : ''}${c.issue}` : '')).join(', ') : `${comicsMonth} read this month · ${comicsPile} in pile`}</span></span></a>`,
+      sleep: () => html`<a href="#/sleep">${raw(icon('sleep'))}<span class="t-label">Sleep</span>
+              <span class="t-val"><span class="t-txt">${lastSleep ? `${hmin(lastSleep.duration_min)}${lastSleep.slept_on === t ? ' last night' : ''} · avg ${hmin(sleepAvg)}` : 'Log last night'}</span></span></a>`,
       books: () => html`<a href="#/books">${raw(icon('books'))}<span class="t-label">Reading</span>
               <span class="t-val">${reading.length ? reading.map((b) => b.title).join(', ') : 'Nothing in progress'}</span></a>`,
     };
@@ -146,6 +153,7 @@ export default {
             ${on.has('prayer') ? html`<li class="item">Prayer: ${XP.prayer} each, +${XP.prayerFullDay} for all five in a day · Daily Awrad: ${XP.awrad}</li>` : ''}
             ${on.has('finance') ? html`<li class="item">Finance: ${XP.financeDay} for each day you log, 1 per ${money(10, ctx.currency, { maximumFractionDigits: 0 })} saved toward a goal (5–50), ${XP.budgetMonth} for a month at or under budget</li>` : ''}
             ${on.has('fitness') ? html`<li class="item">Fitness: 1 per minute (up to 120) + 5 per km</li>` : ''}
+            ${on.has('sleep') ? html`<li class="item">Sleep: ${XP.sleepLog} per night logged, +${XP.sleepGoal} when you hit your goal</li>` : ''}
             ${on.has('books') ? html`<li class="item">Books: 1 per 10 pages, ${XP.bookFinished} for finishing</li>` : ''}
             ${on.has('comics') ? html`<li class="item">Comics: ${XP.comicRead} per comic read</li>` : ''}
             ${on.has('notes') || on.has('quotes') ? html`<li class="item">Notes: ${XP.note} per new note · Quotes: ${XP.quote} each</li>` : ''}

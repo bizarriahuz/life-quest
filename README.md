@@ -37,6 +37,7 @@ A personal companion app — tasks, prayer, fitness, books, notes, quotes, hobbi
 | Workout | 1 per minute (max 120) + 5 per km | Strength |
 | Reading | 1 per 10 pages, 50 for finishing | Knowledge |
 | Comic read | 15 | Knowledge |
+| Night of sleep logged (+10 if goal met) | 5 | Rest |
 | New note / quote | 10 / 5 | Reflection |
 | Hobby session | 1 per 2 min (min 5) | Craft |
 | First finance entry on a day | 10 | Wealth |

@@ -5,8 +5,9 @@
 create table public.profiles (
   user_id    uuid primary key default auth.uid() references auth.users(id) on delete cascade,
   hero_name  text not null default 'HERO' check (char_length(hero_name) between 1 and 24),
-  sections   text[] check (sections is null or sections <@ array['tasks','prayer','fitness','books','comics','notes','quotes','hobbies','finance']::text[]),
+  sections   text[] check (sections is null or sections <@ array['tasks','prayer','fitness','sleep','books','comics','notes','quotes','hobbies','finance']::text[]),
   currency   text not null default 'SGD' check (currency ~ '^[A-Z]{3}$'),
+  sleep_goal_min int not null default 480 check (sleep_goal_min between 240 and 720),
   created_at timestamptz not null default now()
 );
 
@@ -107,7 +108,7 @@ create index on public.hobby_sessions (hobby_id);
 create table public.xp_events (
   id         uuid primary key default gen_random_uuid(),
   user_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
-  stat       text not null check (stat in ('STR','DEX','INT','WIS','CHA','FTH','WLT')),
+  stat       text not null check (stat in ('STR','DEX','INT','WIS','CHA','FTH','WLT','RST')),
   amount     int not null check (amount between 0 and 1000),
   source     text not null,
   source_id  text not null,
@@ -272,3 +273,25 @@ create index on public.comics (user_id, barcode);
 grant select, insert, update, delete on public.comics to authenticated;
 create trigger row_limits before insert on public.comics
   for each row execute function public.enforce_row_limits('10000', 'comics');
+
+-- ---------- sleep ----------
+create table public.sleep_logs (
+  id           uuid primary key default gen_random_uuid(),
+  user_id      uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  slept_on     date not null,                                   -- the morning you woke up
+  bed_time     time not null,
+  wake_time    time not null,
+  duration_min int not null check (duration_min between 1 and 1440),
+  quality      smallint check (quality between 1 and 5),
+  note         text check (note is null or char_length(note) <= 200),
+  created_at   timestamptz not null default now(),
+  unique (user_id, slept_on)
+);
+alter table public.sleep_logs enable row level security;
+create policy "own rows" on public.sleep_logs for all to authenticated
+  using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
+create index on public.sleep_logs (user_id);
+create index sleep_logs_user_created_idx on public.sleep_logs (user_id, created_at);
+grant select, insert, update, delete on public.sleep_logs to authenticated;
+create trigger row_limits before insert on public.sleep_logs
+  for each row execute function public.enforce_row_limits('10000', 'sleep entries');
