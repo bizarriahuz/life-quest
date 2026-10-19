@@ -5,6 +5,9 @@ import { CHANGELOG, LATEST } from '../changelog.js';
 import { fmtDate } from '../ui.js';
 import { THEMES, DEFAULT_THEME, applyTheme } from '../theme.js';
 
+const swatch = (t) => html`<span class="sw" style="--s0:${t.swatch[0]};--s1:${t.swatch[1]};--s2:${t.swatch[2]};--s3:${t.swatch[3]}" aria-hidden="true"><i></i></span>`;
+const themeLabel = (t) => html`${swatch(t)}<span class="grow">${t.label} <span class="faint small">${t.group}</span></span>`;
+
 const logEntry = (e) => html`
   <article class="log-entry">
     <p class="log-head"><span class="pill">${e.version}</span><b>${e.title}</b><span class="faint small">${fmtDate(e.date, { day: 'numeric', month: 'short', year: 'numeric' })}</span></p>
@@ -16,6 +19,7 @@ export default {
   label: 'Settings',
   async render(el, ctx) {
     const on = ctx.sections;
+    const current = THEMES.find((t) => t.id === (ctx.profile?.theme || DEFAULT_THEME)) || THEMES[0];
     // Turned-on sections in your order, then the rest in the default order.
     const byId = Object.fromEntries(SECTIONS.map((x) => [x.id, x]));
     const ordered = [...[...on].map((id) => byId[id]).filter(Boolean), ...SECTIONS.filter((x) => !on.has(x.id))];
@@ -28,16 +32,18 @@ export default {
 
       <section class="card">
         <div class="card-head"><h2>Theme</h2><span class="meta">Changes straight away</span></div>
-        <div class="themes" role="radiogroup" aria-label="Theme">
-          ${THEMES.map((t) => html`
-            <label class="theme-opt">
-              <input type="radio" name="theme" value="${t.id}" data-change="theme" ${(ctx.profile?.theme || DEFAULT_THEME) === t.id ? 'checked' : ''}>
-              <span class="theme-card" style="--t-bg:${t.swatch[0]};--t-card:${t.swatch[1]};--t-acc:${t.swatch[2]};--t-fg:${t.swatch[3]}">
-                <span class="tp"><i class="tp-bar"></i><i class="tp-line"></i><i class="tp-line short"></i><i class="tp-dot"></i></span>
-                <span class="theme-name">${t.label}<span class="faint">${t.mode === 'light' ? 'Light' : 'Dark'}</span></span>
-              </span>
-            </label>`)}
-        </div>
+        <details class="theme-dd" id="theme-dd">
+          <summary class="theme-dd-btn" id="theme-current" aria-label="Theme">${themeLabel(current)}</summary>
+          <div class="theme-menu" role="radiogroup" aria-label="Theme">
+            ${['Dark', 'Light', 'Pastel'].map((g) => html`
+              <p class="theme-group">${g}</p>
+              ${THEMES.filter((t) => t.group === g).map((t) => html`
+                <label class="theme-row">
+                  <input type="radio" name="theme" value="${t.id}" data-change="theme" ${current.id === t.id ? 'checked' : ''}>
+                  ${swatch(t)}<span class="grow">${t.label}</span>${raw(icon('check', 16))}
+                </label>`)}`)}
+          </div>
+        </details>
       </section>
 
       <form data-form="save" class="form" style="gap:16px">
@@ -113,9 +119,20 @@ export default {
     refreshArrows();
     el.addEventListener('change', (e) => { if (e.target.closest('form')) markDirty(); });
 
+    // Close the theme dropdown when tapping elsewhere or pressing Escape.
+    const dd = el.querySelector('#theme-dd');
+    el.addEventListener('click', (e) => {
+      if (dd.open && !e.target.closest('#theme-dd')) dd.open = false;
+      if (e.target.closest('.theme-row')) setTimeout(() => { dd.open = false; }, 0); // also when re-picking the current one
+    });
+    dd.addEventListener('keydown', (e) => { if (e.key === 'Escape') { dd.open = false; dd.querySelector('summary').focus(); } });
+
     wire(el, {
       theme: async (r) => {
         const id = applyTheme(r.value);
+        const t = THEMES.find((x) => x.id === id);
+        el.querySelector('#theme-current').innerHTML = themeLabel(t).s;
+        el.querySelector('#theme-dd').open = false;
         await ctx.setProfile({ theme: id });
       },
       up: (b) => move(b, -1),

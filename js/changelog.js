@@ -1,6 +1,13 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.20', date: '2026-10-20', title: 'More themes',
+    items: [
+      'Seven new colourways: Peach, Mint, Sky, Butter, Cotton candy and Sage in pastels, plus Dusk, a soft dark theme with lilac.',
+      'The theme picker in Settings is now a dropdown with a colour preview for each one.',
+    ],
+  },
+  {
     version: '1.19', date: '2026-10-20', title: 'Music',
     items: [
       'New Music section: albums you want to hear and ones you’ve listened to, with dates and ratings.',

@@ -518,3 +518,8 @@ alter table public.profiles add column if not exists lastfm_user text
 alter table public.profiles drop constraint profiles_sections_check;
 alter table public.profiles add constraint profiles_sections_check check (sections is null or sections <@
   array['tasks','goals','clients','prayer','fitness','sleep','books','comics','learning','notes','mood','quotes','hobbies','mtg','watchlist','music','people','finance']::text[]);
+
+-- 2026-10-20 · More themes
+alter table public.profiles drop constraint if exists profiles_theme_check;
+alter table public.profiles add constraint profiles_theme_check check (theme in
+  ('midnight','ocean','forest','plum','dusk','paper','sand','blush','lavender','peach','mint','sky','butter','candy','sage'));
