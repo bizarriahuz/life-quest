@@ -7,12 +7,13 @@ export const SECTIONS = [
   { id: 'prayer',  label: 'Prayer',  hint: 'Five daily prayers and the Daily Awrad' },
   { id: 'fitness', label: 'Fitness', hint: 'Runs, workouts and sport' },
   { id: 'books',   label: 'Books',   hint: 'Reading list and progress' },
+  { id: 'comics',  label: 'Comics',  hint: 'Your collection and reading pile, with barcode scanning' },
   { id: 'notes',   label: 'Notes',   hint: 'Journal and notes' },
   { id: 'quotes',  label: 'Quotes',  hint: 'Words to live by' },
   { id: 'hobbies', label: 'Hobbies', hint: 'Time spent on things you love' },
   { id: 'finance', label: 'Finance', hint: 'Spending, budgets and savings goals' },
 ];
-export const DEFAULT_SECTIONS = ['tasks', 'prayer', 'fitness', 'books', 'notes', 'quotes', 'hobbies'];
+export const DEFAULT_SECTIONS = ['tasks', 'prayer', 'fitness', 'books', 'comics', 'notes', 'quotes', 'hobbies'];
 
 export function enabledSections(profile) {
   const s = profile?.sections;
@@ -22,7 +23,7 @@ export function enabledSections(profile) {
 export const STATS = {
   STR: { name: 'Strength',   from: 'Fitness',        view: 'fitness', sections: ['fitness'] },
   DEX: { name: 'Discipline', from: 'Tasks',          view: 'tasks',   sections: ['tasks'] },
-  INT: { name: 'Knowledge',  from: 'Books',          view: 'books',   sections: ['books'] },
+  INT: { name: 'Knowledge',  from: 'Books & comics', view: 'books',   sections: ['books', 'comics'] },
   WIS: { name: 'Reflection', from: 'Notes & quotes', view: 'notes',   sections: ['notes', 'quotes'] },
   CHA: { name: 'Craft',      from: 'Hobbies',        view: 'hobbies', sections: ['hobbies'] },
   FTH: { name: 'Faith',      from: 'Prayer',         view: 'prayer',  sections: ['prayer'] },
@@ -44,6 +45,7 @@ export const XP = {
   note: 10,
   quote: 5,
   bookFinished: 50,
+  comicRead: 15,
   pages: (pages) => (pages > 0 ? Math.max(1, Math.floor(pages / 10)) : 0),
   workout: (w) => Math.max(5, Math.min(120, Number(w.duration_min) || 0) + Math.round((Number(w.distance_km) || 0) * 5)),
   hobby: (min) => Math.max(5, Math.round((Number(min) || 0) / 2)),

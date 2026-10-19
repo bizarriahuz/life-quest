@@ -2,6 +2,7 @@ import { html, raw, wire, mount, today, fmtDate, bar, empty } from '../ui.js';
 import { icon } from '../icons.js';
 import { XP } from '../game.js';
 import { cleanIsbn, lookupIsbn } from '../isbn.js';
+import { scanBarcode } from '../scanner.js';
 
 const stars = (b) => html`<span class="stars" role="group" aria-label="Rating">${[1, 2, 3, 4, 5].map((n) => html`
   <button class="star ${b.rating >= n ? 'on' : ''}" data-act="rate" data-id="${b.id}" data-n="${n}" aria-label="${n} star${n > 1 ? 's' : ''}">★</button>`)}</span>`;
@@ -32,6 +33,7 @@ export default {
         <form data-form="add" class="form">
           <div class="row">
             <input name="isbn" class="grow" placeholder="ISBN (fills in the rest)" inputmode="numeric" autocomplete="off" aria-label="ISBN">
+            <button type="button" class="btn" data-act="scan" aria-label="Scan barcode">${raw(icon('scan', 18))}</button>
             <button type="button" class="btn" data-act="lookup">Look up</button>
           </div>
           <div class="isbn-result" id="isbn-result" aria-live="polite"></div>
@@ -135,6 +137,14 @@ export default {
 
     wire(el, {
       lookup: () => lookup(true),
+      scan: async () => {
+        const r = await scanBarcode({ title: 'Scan a book', hint: 'Line the ISBN barcode on the back cover up inside the box' });
+        if (!r) return;
+        isbnInput.value = r.code;
+        form.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        if (!cleanIsbn(r.code)) { result.innerHTML = html`<p class="small muted">That barcode (${r.code}) isn't an ISBN. Books usually have it on the back, above the price barcode.</p>`.s; return; }
+        await lookup(true);
+      },
       add: async (v, form) => {
         await ctx.store.insert('books', {
           title: v.title,

@@ -385,3 +385,29 @@ main { padding-bottom: 36px; }
 .today .t-label { min-width: 0; margin-right: auto; }
 .today .dots { gap: 4px; margin-right: 6px; }
 .today .dots i { width: 7px; height: 7px; }
+
+/* ---------- barcode scanner ---------- */
+.scanner { position: fixed; inset: 0; z-index: 160; background: #000; display: grid; grid-template-rows: auto 1fr auto auto; padding: max(12px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom)); gap: 12px; }
+.scan-top { display: flex; align-items: center; justify-content: space-between; }
+.scan-title { font-weight: 600; font-size: 17px; }
+.scan-close { color: var(--fg); }
+.scan-stage { position: relative; overflow: hidden; border-radius: var(--r); background: #0b0b0b; min-height: 0; }
+.scan-stage video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.scan-box { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
+.scan-box::before { content: ''; width: min(82%, 520px); aspect-ratio: 2 / 1; border-radius: 14px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, .55); outline: 2px solid var(--fg); }
+.scan-box i { position: absolute; width: min(74%, 470px); height: 2px; background: rgba(255, 255, 255, .85); animation: scanline 1.6s ease-in-out infinite alternate; }
+@keyframes scanline { from { transform: translateY(-46px); } to { transform: translateY(46px); } }
+.scan-hint { text-align: center; color: var(--muted); font-size: 14px; min-height: 1.4em; }
+.scan-manual input { flex: 1; }
+.scan-btn { flex: none; }
+
+/* ---------- comics ---------- */
+.cover-blank { display: grid; place-items: center; color: var(--faint); }
+details.more { position: relative; flex: none; }
+details.more > summary { list-style: none; font-size: 20px; line-height: 1; margin: 0; }
+details.more > summary::after { content: none; }
+details.more[open] > summary { margin: 0; background: var(--surface-2); color: var(--fg); }
+.more-menu { position: absolute; right: 0; top: 40px; z-index: 30; min-width: 170px; display: grid; padding: 6px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line-2); box-shadow: 0 12px 30px rgba(0,0,0,.6); }
+.more-menu .text-btn { text-align: left; padding: 10px 12px; border-radius: 8px; font-size: 14px; color: var(--fg); }
+.more-menu .text-btn:hover { background: rgba(255,255,255,.07); }
+.item > .btn.sm { flex: none; }

@@ -9,13 +9,14 @@ import tasks from './views/tasks.js';
 import prayer from './views/prayer.js';
 import fitness from './views/fitness.js';
 import books from './views/books.js';
+import comics from './views/comics.js';
 import notes from './views/notes.js';
 import quotes from './views/quotes.js';
 import hobbies from './views/hobbies.js';
 import finance from './views/finance.js';
 import settings from './views/settings.js';
 
-const VIEWS = [home, tasks, prayer, fitness, books, notes, quotes, hobbies, finance, settings];
+const VIEWS = [home, tasks, prayer, fitness, books, comics, notes, quotes, hobbies, finance, settings];
 const root = document.getElementById('app');
 const S = { store: null, profile: null, rawTotals: {}, routeToken: 0 };
 const sections = () => enabledSections(S.profile);

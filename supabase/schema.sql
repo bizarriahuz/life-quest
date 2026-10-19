@@ -5,7 +5,7 @@
 create table public.profiles (
   user_id    uuid primary key default auth.uid() references auth.users(id) on delete cascade,
   hero_name  text not null default 'HERO' check (char_length(hero_name) between 1 and 24),
-  sections   text[] check (sections is null or sections <@ array['tasks','prayer','fitness','books','notes','quotes','hobbies','finance']::text[]),
+  sections   text[] check (sections is null or sections <@ array['tasks','prayer','fitness','books','comics','notes','quotes','hobbies','finance']::text[]),
   currency   text not null default 'SGD' check (currency ~ '^[A-Z]{3}$'),
   created_at timestamptz not null default now()
 );
@@ -246,3 +246,29 @@ create trigger notes_total before insert or update of title, body on public.note
 
 revoke all on function public.enforce_row_limits() from public, anon, authenticated;
 revoke all on function public.enforce_notes_total() from public, anon, authenticated;
+
+-- ---------- comics ----------
+create table public.comics (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  title      text not null check (char_length(title) between 1 and 200),       -- series or book title
+  issue      text check (issue is null or char_length(issue) <= 20),          -- "12", "Vol. 3"
+  publisher  text check (publisher is null or char_length(publisher) <= 120),
+  format     text not null default 'issue' check (format in ('issue','trade','manga','graphic_novel','omnibus')),
+  status     text not null default 'queued' check (status in ('queued','reading','read')),
+  owned      boolean not null default true,
+  barcode    text check (barcode is null or barcode ~ '^[0-9X]{8,18}$'),
+  cover_url  text check (cover_url is null or (cover_url ~ '^https://' and char_length(cover_url) <= 500)),
+  rating     smallint check (rating between 1 and 5),
+  read_on    date,
+  created_at timestamptz not null default now()
+);
+alter table public.comics enable row level security;
+create policy "own rows" on public.comics for all to authenticated
+  using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
+create index on public.comics (user_id);
+create index comics_user_created_idx on public.comics (user_id, created_at);
+create index on public.comics (user_id, barcode);
+grant select, insert, update, delete on public.comics to authenticated;
+create trigger row_limits before insert on public.comics
+  for each row execute function public.enforce_row_limits('10000', 'comics');

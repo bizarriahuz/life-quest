@@ -36,6 +36,7 @@ A personal companion app — tasks, prayer, fitness, books, notes, quotes, hobbi
 | Daily Awrad | 20 | Faith |
 | Workout | 1 per minute (max 120) + 5 per km | Strength |
 | Reading | 1 per 10 pages, 50 for finishing | Knowledge |
+| Comic read | 15 | Knowledge |
 | New note / quote | 10 / 5 | Reflection |
 | Hobby session | 1 per 2 min (min 5) | Craft |
 | First finance entry on a day | 10 | Wealth |
@@ -64,6 +65,8 @@ js/store.js           Supabase + offline data stores (same interface)
 js/game.js            XP rules and level maths
 js/changelog.js       What's new entries
 js/prayertimes.js     MUIS prayer times (api.prayertimes.sg)
+js/scanner.js         camera barcode scanner (native BarcodeDetector or bundled ZXing)
+js/vendor/zxing.js    ZXing 0.21.3 1D decoder + a working EAN 5-digit add-on reader (bundled with esbuild)
 js/views/*.js         one file per section
 supabase/schema.sql   database schema
 _headers              Cloudflare security headers

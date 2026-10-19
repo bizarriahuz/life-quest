@@ -1,6 +1,14 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.12', date: '2026-10-19', title: 'Comics & barcode scanner',
+    items: [
+      'New Comics section: series, issues, trades and manga, with a reading pile, collection and ratings.',
+      'Scan barcodes with your camera on Books and Comics. ISBNs fill in title and cover; single issues pick up the issue number.',
+      'Comics count toward Knowledge: 15 XP per comic read.',
+    ],
+  },
+  {
     version: '1.11', date: '2026-10-19', title: 'Fair-use limits',
     items: [
       'Generous limits keep the app healthy for everyone, e.g. 20,000 characters per note and 2,000 notes.',

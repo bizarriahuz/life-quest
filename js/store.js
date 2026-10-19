@@ -75,6 +75,7 @@ const DEFAULTS = {
   hobby_sessions: { duration_min: 0, note: null },
   xp_events: {},
   finance_categories: { budget: null },
+  comics: { issue: null, publisher: null, format: 'issue', status: 'queued', owned: true, barcode: null, cover_url: null, rating: null, read_on: null },
   transactions: { category_id: null, note: null },
   savings_goals: {},
   savings_contributions: {},
