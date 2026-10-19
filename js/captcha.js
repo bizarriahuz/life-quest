@@ -33,7 +33,7 @@ export async function mountCaptcha(el) {
     sitekey: SITE_KEY,
     theme: dark ? 'dark' : 'light',
     size: 'flexible',
-    appearance: 'interaction-only',     // stays hidden unless Cloudflare needs a click
+    appearance: 'always',               // visible box that usually ticks itself ("Success")
     callback: (tok) => { failed = false; settle(tok); },
     'expired-callback': () => { current = null; ts.reset(id); },
     'error-callback': (code) => { console.warn('Turnstile error', code); current = null; failed = true; settle(null); return true; },

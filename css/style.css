@@ -674,5 +674,5 @@ details.more[open] > summary { margin: 0; background: var(--surface-2); color: v
 .top-artists .item { padding: 8px 0; }
 .top-artists .bar { margin-top: 6px; height: 4px; }
 
-.captcha { min-height: 0; display: flex; justify-content: center; }
+.captcha { min-height: 65px; display: flex; justify-content: center; }
 .captcha:empty { display: none; }
