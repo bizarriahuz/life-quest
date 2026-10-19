@@ -183,8 +183,7 @@ function setupSwipe() {
     if (t.dir !== 'h' || !t.el) return;
     const edge = !neighbour(dx < 0 ? 1 : -1);                             // nothing that way: resist harder
     t.el.style.transition = 'none';
-    t.el.style.transform = `translateX(${dx * (edge ? 0.12 : 0.35)}px)`;
-    t.el.style.opacity = String(1 - Math.min(0.35, Math.abs(dx) / 900));
+    t.el.style.transform = `translateX(${edge ? dx * 0.15 : dx}px)`;      // moves with the finger
   }, { passive: true });
   const end = (e) => {
     if (!t) return;
@@ -196,13 +195,12 @@ function setupSwipe() {
     const go = (Math.abs(dx) > Math.min(110, innerWidth * 0.28) || fast) && Math.abs(dx) > Math.abs(dy) * 1.4;
     const target = go ? neighbour(dx < 0 ? 1 : -1) : null;
     if (s.el) {
-      s.el.style.transition = 'transform .18s var(--ease), opacity .18s';
-      s.el.style.transform = target ? `translateX(${dx < 0 ? -40 : 40}px)` : '';
-      s.el.style.opacity = target ? '0' : '';
+      s.el.style.transition = 'transform .2s cubic-bezier(.2, .7, .2, 1)';
+      s.el.style.transform = target ? `translateX(${dx < 0 ? '-100%' : '100%'})` : '';   // slide fully off, or spring back
     }
     if (target) {
       S.swipe = dx < 0 ? 'next' : 'prev';
-      setTimeout(() => { location.hash = `#/${target.id}`; }, 90);
+      setTimeout(() => { location.hash = `#/${target.id}`; }, 150);
     }
   };
   document.addEventListener('touchend', end, { passive: true });
