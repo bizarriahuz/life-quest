@@ -46,6 +46,10 @@ Only stats for the sections someone has switched on count toward their level.
 
 Undoing or deleting something removes its XP. Tune values in `js/game.js`.
 
+## Updating
+
+When you ship something, add an entry at the top of `js/changelog.js`. It shows under Settings → What's new, and a dot appears on Settings until each person has seen it.
+
 ## Project layout
 
 ```
@@ -54,6 +58,8 @@ css/style.css         all styling
 js/app.js             routing, sign-in, level-ups
 js/store.js           Supabase + offline data stores (same interface)
 js/game.js            XP rules and level maths
+js/changelog.js       What's new entries
+js/prayertimes.js     MUIS prayer times (api.prayertimes.sg)
 js/views/*.js         one file per section
 supabase/schema.sql   database schema
 _headers              Cloudflare security headers

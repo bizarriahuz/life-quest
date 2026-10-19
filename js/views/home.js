@@ -1,5 +1,7 @@
 import { html, raw, wire, mount, bar, today, relDate, fmtDate, greeting } from '../ui.js';
 import { icon } from '../icons.js';
+import { cachedTimes, loadMonth, nextPrayer } from '../prayertimes.js';
+import { addDays } from '../ui.js';
 import { STATS, XP, overallLevel, statLevel, totalXP, strongest, statVisible, money } from '../game.js';
 
 let renaming = false;
@@ -49,10 +51,17 @@ export default {
     const w = lastWorkout[0];
     const top = strongest(totals);
 
+    let nextP = null;
+    if (on.has('prayer')) {
+      const tm = addDays(t, 1);
+      for (const d of [t, tm]) if (cachedTimes(d) === undefined) loadMonth(d.slice(0, 7)).then((f) => { if (f && el.isConnected) ctx.rerender(); });
+      nextP = nextPrayer(t, tm);
+    }
+    const PNAME = { fajr: 'Fajr', dhuhr: 'Dhuhr', asr: 'Asr', maghrib: 'Maghrib', isha: 'Isha' };
     const todayRows = {
       prayer: () => html`<a href="#/prayer">${raw(icon('prayer'))}<span class="t-label">Prayer</span>
               <span class="t-val"><span class="dots">${['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'].map((p) =>
-                html`<i class="${prayers.some((x) => x.prayer === p) ? 'on' : ''}"></i>`)}</span>${prayers.length}/5 · awrad ${awradDone ? '✓' : '–'}</span></a>`,
+                html`<i class="${prayers.some((x) => x.prayer === p) ? 'on' : ''}"></i>`)}</span>${prayers.length}/5${nextP ? ` · ${PNAME[nextP.key]} ${nextP.label}` : ` · awrad ${awradDone ? '✓' : '–'}`}</span></a>`,
       tasks: () => html`<a href="#/tasks">${raw(icon('tasks'))}<span class="t-label">Tasks</span>
               <span class="t-val">${jobsOpen ? `${jobsOpen} job${jobsOpen === 1 ? '' : 's'} · ` : ''}${dailies.length ? `${dailyLeft} daily left` : 'No dailies'}${due ? ` · ${due} due` : ''}</span></a>`,
       finance: () => html`<a href="#/finance">${raw(icon('finance'))}<span class="t-label">Money</span>

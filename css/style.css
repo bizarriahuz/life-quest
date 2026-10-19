@@ -344,3 +344,25 @@ details[open] > summary { margin-bottom: 12px; }
 .mover .icon-btn { width: 30px; height: 24px; border-radius: 6px; }
 .mover .icon-btn:disabled { opacity: .2; cursor: default; background: none; }
 #dirty { margin-right: auto; }
+
+/* ---------- prayer times ---------- */
+.ptime { font-size: 14px; font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
+.prayer.on .ptime { color: rgba(0, 0, 0, .6); }
+.prayer.next:not(.on) { border-color: var(--fg); }
+.prayer .pill { margin-left: 6px; vertical-align: 2px; }
+.daynav .hijri { display: block; font-size: 12px; color: var(--faint); }
+.pt-source { text-align: center; font-size: 12px; color: var(--faint); margin-top: 6px; }
+.pt-source a { text-decoration: underline; }
+.next-name { font-weight: 600; color: var(--fg); }
+
+/* ---------- what's new ---------- */
+.nav a.has-new { position: relative; }
+.nav a.has-new::after { content: ''; position: absolute; top: 7px; right: 7px; width: 7px; height: 7px; border-radius: 50%; background: var(--fg); box-shadow: 0 0 0 2px var(--bg); }
+.nav a.has-new.active::after { background: var(--bg); box-shadow: 0 0 0 2px var(--fg); }
+.log { display: grid; gap: 14px; }
+.log-entry { padding-top: 14px; border-top: 1px solid var(--line); }
+.log-entry:first-child { padding-top: 0; border-top: 0; }
+.log-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.log-head b { font-weight: 600; }
+.log-head .faint { margin-left: auto; }
+.log-entry ul { margin: 0; padding-left: 18px; color: var(--muted); font-size: 14px; display: grid; gap: 3px; }

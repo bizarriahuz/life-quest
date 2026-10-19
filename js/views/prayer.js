@@ -2,6 +2,7 @@ import { html, raw, wire, mount, today, addDays, fmtDate, relDate } from '../ui.
 import { icon } from '../icons.js';
 import { XP } from '../game.js';
 import { AWRAD_URL } from '../config.js';
+import { cachedTimes, loadMonth, nextPrayer, untilText } from '../prayertimes.js';
 
 export const PRAYERS = [
   ['fajr', 'Fajr'], ['dhuhr', 'Dhuhr'], ['asr', 'Asr'], ['maghrib', 'Maghrib'], ['isha', 'Isha'],
@@ -31,28 +32,37 @@ export default {
     let awradStreak = 0;
     for (let d = awrad(t) ? t : addDays(t, -1); awrad(d); d = addDays(d, -1)) awradStreak++;
     const awradWeek = week.filter(awrad).length;
+    // Prayer times: show what's cached now, fetch the month in the background if needed.
+    const pt = cachedTimes(day);
+    for (const d of new Set([day, t, addDays(t, 1)])) {
+      if (cachedTimes(d) === undefined) loadMonth(d.slice(0, 7)).then((fresh) => { if (fresh && el.isConnected) ctx.rerender(); });
+    }
+    const next = day === t ? nextPrayer(t, addDays(t, 1)) : null;
+    const PRAYER_NAME = Object.fromEntries(PRAYERS);
     const fullDays30 = Array.from({ length: 30 }, (_, i) => addDays(t, -i)).filter((d) => count(d) === 5).length;
 
     mount(el, html`
-      <header class="page-head"><div><h1>Prayer</h1><p>${count(t)}/5 today</p></div></header>
+      <header class="page-head"><div><h1>Prayer</h1><p>${count(t)}/5 today${next ? html` · next <b class="next-name">${PRAYER_NAME[next.key]}</b> ${next.label} <span id="pt-until">${untilText(next.when)}</span>` : ''}</p></div></header>
 
       <section class="card">
         <div class="daynav">
           <button class="icon-btn" data-act="prev" aria-label="Previous day">${raw(icon('left'))}</button>
-          <div class="date"><b>${relDate(day)}</b><span>${fmtDate(day, { weekday: 'long', day: 'numeric', month: 'long' })}</span></div>
+          <div class="date"><b>${relDate(day)}</b><span>${fmtDate(day, { weekday: 'long', day: 'numeric', month: 'long' })}</span>${pt?.hijri ? html`<span class="hijri">${pt.hijri}</span>` : ''}</div>
           <button class="icon-btn" data-act="next" aria-label="Next day" ${day >= t ? 'disabled style="visibility:hidden"' : ''}>${raw(icon('right'))}</button>
         </div>
         <ul class="prayers">
           ${PRAYERS.map(([k, label]) => html`
             <li>
-              <button class="prayer ${has(day, k) ? 'on' : ''}" data-act="toggle" data-p="${k}" aria-pressed="${has(day, k)}">
+              <button class="prayer ${has(day, k) ? 'on' : ''} ${next && next.date === day && next.key === k ? 'next' : ''}" data-act="toggle" data-p="${k}" aria-pressed="${has(day, k)}">
                 <span class="check">${raw(icon('check'))}</span>
-                <span class="name">${label}</span>
+                <span class="name">${label}${next && next.date === day && next.key === k ? html` <span class="pill">Next</span>` : ''}</span>
+                ${pt?.ampm?.[k] ? html`<span class="ptime">${pt.ampm[k]}</span>` : ''}
                 <span class="xp">+${XP.prayer}</span>
               </button>
             </li>`)}
         </ul>
         <p class="fullday">${count(day) === 5 ? `All five prayed · +${XP.prayerFullDay} bonus` : `${5 - count(day)} remaining`}</p>
+        <p class="pt-source">${pt?.ampm?.syuruk ? html`Syuruk ${pt.ampm.syuruk} · ` : ''}${pt === null ? 'MUIS times not published for this date yet · ' : ''}Times: MUIS via <a href="https://prayertimes.sg" target="_blank" rel="noopener">prayertimes.sg</a></p>
       </section>
 
       <section class="card">
@@ -86,6 +96,15 @@ export default {
         <div class="kpi"><b>${awradStreak}</b><span>Awrad streak</span></div>
       </div>
     `);
+
+    // Keep the countdown fresh while this page is open.
+    if (next) {
+      const timer = setInterval(() => {
+        if (!el.isConnected) { clearInterval(timer); return; }
+        if (new Date() >= next.when) { clearInterval(timer); ctx.rerender(); return; }
+        const u = el.querySelector('#pt-until'); if (u) u.textContent = untilText(next.when);
+      }, 20000);
+    }
 
     wire(el, {
       prev: () => { day = addDays(day, -1); ctx.rerender(); },

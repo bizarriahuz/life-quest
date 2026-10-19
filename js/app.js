@@ -1,5 +1,6 @@
 import { cloudEnabled, getClient, cloudStore, localStore } from './store.js';
 import { withCache } from './cache.js';
+import { hasUnseen, markSeen } from './changelog.js';
 import { html, raw, mount, wire, toast, levelUpModal } from './ui.js';
 import { icon } from './icons.js';
 import { STATS, overallLevel, statLevel, enabledSections, visibleTotals } from './game.js';
@@ -65,7 +66,7 @@ function renderShell() {
       <aside class="side">
         <div class="brand" id="brand"></div>
         <nav class="nav" aria-label="Sections">
-          ${shownViews().map((v) => html`<a href="#/${v.id}" data-view="${v.id}">${raw(icon(v.id))}<span>${v.label}</span></a>`)}
+          ${shownViews().map((v) => html`<a href="#/${v.id}" data-view="${v.id}" class="${v.id === 'settings' && hasUnseen() ? 'has-new' : ''}">${raw(icon(v.id))}<span>${v.label}</span></a>`)}
         </nav>
         <div class="side-foot">
           ${S.store.mode === 'cloud' ? html`
@@ -121,6 +122,7 @@ async function route() {
   if (sameView) fresh.style.animation = 'none';
   main.replaceChildren(fresh);
   main.dataset.view = view.id;
+  if (view.id === 'settings') { markSeen(); document.querySelector('.nav a[data-view=settings]')?.classList.remove('has-new'); }
   if (!sameView) {
     window.scrollTo(0, 0);
     document.querySelector('.nav a.active')?.scrollIntoView({ block: 'nearest', inline: 'center' });

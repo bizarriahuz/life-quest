@@ -1,6 +1,14 @@
 import { html, raw, wire, mount } from '../ui.js';
 import { icon } from '../icons.js';
 import { SECTIONS, CURRENCIES } from '../game.js';
+import { CHANGELOG, LATEST } from '../changelog.js';
+import { fmtDate } from '../ui.js';
+
+const logEntry = (e) => html`
+  <article class="log-entry">
+    <p class="log-head"><span class="pill">${e.version}</span><b>${e.title}</b><span class="faint small">${fmtDate(e.date, { day: 'numeric', month: 'short', year: 'numeric' })}</span></p>
+    <ul>${e.items.map((i) => html`<li>${i}</li>`)}</ul>
+  </article>`;
 
 export default {
   id: 'settings',
@@ -48,6 +56,17 @@ export default {
 
         <div class="row end"><span class="small muted" id="dirty" hidden>Unsaved changes</span><button class="btn primary">Save changes</button></div>
       </form>
+
+      <section class="card" id="whats-new">
+        <div class="card-head"><h2>What's new</h2><span class="meta">Version ${LATEST}</span></div>
+        <div class="log">
+          ${CHANGELOG.slice(0, 3).map((e) => logEntry(e))}
+        </div>
+        ${CHANGELOG.length > 3 ? html`
+          <details style="margin-top:12px"><summary class="small muted" style="font-weight:500">Earlier updates</summary>
+            <div class="log">${CHANGELOG.slice(3).map((e) => logEntry(e))}</div>
+          </details>` : ''}
+      </section>
 
       <section class="card">
         <div class="card-head"><h2>Account</h2></div>
