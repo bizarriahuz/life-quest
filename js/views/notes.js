@@ -29,7 +29,7 @@ export default {
             </div>
           </div>
           <input name="title" class="editor-title" value="${current?.title || ''}" maxlength="120" placeholder="Title" aria-label="Title">
-          <textarea name="body" class="editor-body" rows="12" placeholder="Start writing…" aria-label="Note">${current?.body || ''}</textarea>
+          <textarea name="body" class="editor-body" rows="12" maxlength="20000" placeholder="Start writing…" aria-label="Note">${current?.body || ''}</textarea>
           ${current ? html`<p class="small faint">Created ${fmtDate(current.created_at)} · edited ${fmtDate(current.updated_at)}</p>` : ''}
         </form>
       </section>`;

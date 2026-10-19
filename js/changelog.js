@@ -1,6 +1,13 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.11', date: '2026-10-19', title: 'Fair-use limits',
+    items: [
+      'Generous limits keep the app healthy for everyone, e.g. 20,000 characters per note and 2,000 notes.',
+      'Adding more than 60 entries in a minute asks you to wait a moment.',
+    ],
+  },
+  {
     version: '1.10', date: '2026-10-19', title: 'Support Life Quest',
     items: ['A small "buy me a coffee" note at the bottom of every page.'],
   },

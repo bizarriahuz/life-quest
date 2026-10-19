@@ -46,6 +46,10 @@ Only stats for the sections someone has switched on count toward their level.
 
 Undoing or deleting something removes its XP. Tune values in `js/game.js`.
 
+## Limits
+
+The database enforces fair-use limits so one account can't fill the free plan: size caps on all text (notes 20,000 characters each, 2 million in total), per-person row caps per section (e.g. 5,000 tasks, 20,000 finance entries, 100 hobbies), and at most 60 new rows per section per minute. See the end of `supabase/schema.sql`.
+
 ## Updating
 
 When you ship something, add an entry at the top of `js/changelog.js`. It shows under Settings → What's new, and a dot appears on Settings until each person has seen it.

@@ -185,3 +185,64 @@ create view public.stat_totals with (security_invoker = true) as
   group by user_id, stat;
 
 grant select on public.stat_totals to authenticated;
+
+-- ---------- abuse limits ----------
+-- Size limits on free text
+alter table public.notes          add constraint notes_title_len    check (char_length(title) <= 120),
+                                  add constraint notes_body_len     check (char_length(body) <= 20000);
+alter table public.quotes         add constraint quotes_source_len  check (source is null or char_length(source) <= 120);
+alter table public.books          add constraint books_author_len   check (author is null or char_length(author) <= 120),
+                                  add constraint books_cover_len    check (cover_url is null or char_length(cover_url) <= 500);
+alter table public.workouts       add constraint workouts_notes_len check (notes is null or char_length(notes) <= 200);
+alter table public.hobby_sessions add constraint hobby_note_len     check (note is null or char_length(note) <= 200);
+alter table public.xp_events      add constraint xp_source_len      check (char_length(source) <= 32),
+                                  add constraint xp_source_id_len   check (char_length(source_id) <= 80);
+
+-- Per-person row caps + at most 60 new rows per table per minute
+create or replace function public.enforce_row_limits()
+returns trigger language plpgsql set search_path = '' as $$
+declare cap int := TG_ARGV[0]::int; per_minute int := 60; total int; recent int;
+begin
+  execute format('select count(*), count(*) filter (where created_at > now() - interval ''1 minute'') from %I.%I where user_id = $1',
+                 TG_TABLE_SCHEMA, TG_TABLE_NAME) into total, recent using new.user_id;
+  if total >= cap then
+    raise exception 'Limit reached: % % at most. Delete some old ones to add more.', to_char(cap, 'FM999,999'), TG_ARGV[1] using errcode = 'P0001';
+  end if;
+  if recent >= per_minute then
+    raise exception 'Too many changes at once. Wait a minute and try again.' using errcode = 'P0001';
+  end if;
+  return new;
+end $$;
+
+do $$
+declare r record;
+begin
+  for r in select * from (values
+    ('tasks', 5000, 'tasks'), ('books', 2000, 'books'), ('notes', 2000, 'notes'),
+    ('quotes', 2000, 'quotes'), ('workouts', 10000, 'workouts'), ('prayer_logs', 25000, 'prayer entries'),
+    ('hobbies', 100, 'hobbies'), ('hobby_sessions', 10000, 'hobby sessions'), ('xp_events', 60000, 'XP entries'),
+    ('finance_categories', 100, 'categories'), ('transactions', 20000, 'finance entries'),
+    ('savings_goals', 50, 'savings goals'), ('savings_contributions', 10000, 'savings entries')
+  ) as t(tbl, cap, label) loop
+    execute format('create trigger row_limits before insert on public.%I for each row execute function public.enforce_row_limits(%L, %L)', r.tbl, r.cap, r.label);
+    execute format('create index if not exists %I on public.%I (user_id, created_at)', r.tbl || '_user_created_idx', r.tbl);
+  end loop;
+end $$;
+
+-- Notes: at most 2,000,000 characters in total per person
+create or replace function public.enforce_notes_total()
+returns trigger language plpgsql set search_path = '' as $$
+declare used bigint;
+begin
+  select coalesce(sum(char_length(title) + char_length(body)), 0) into used
+  from public.notes where user_id = new.user_id and id is distinct from new.id;
+  if used + char_length(new.title) + char_length(new.body) > 2000000 then
+    raise exception 'Notes are full (2 million characters in total). Delete some old notes to make room.' using errcode = 'P0001';
+  end if;
+  return new;
+end $$;
+create trigger notes_total before insert or update of title, body on public.notes
+  for each row execute function public.enforce_notes_total();
+
+revoke all on function public.enforce_row_limits() from public, anon, authenticated;
+revoke all on function public.enforce_notes_total() from public, anon, authenticated;
