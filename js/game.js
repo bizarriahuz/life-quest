@@ -4,6 +4,7 @@
 // Sections a person can switch on or off in Settings (Home is always on).
 export const SECTIONS = [
   { id: 'tasks',   label: 'Tasks',   hint: 'To-dos, jobs and daily habits' },
+  { id: 'calendar', label: 'Calendar', hint: 'Your events, due dates from every section, and your phone calendar' },
   { id: 'goals',   label: 'Goals',   hint: 'Bigger goals broken into milestones' },
   { id: 'projects', label: 'Projects', hint: 'Shared with friends: tasks, notes and split costs' },
   { id: 'clients', label: 'Clients', hint: 'Side-gig pipeline: leads, quotes, invoices' },
@@ -23,7 +24,7 @@ export const SECTIONS = [
   { id: 'people',  label: 'People',  hint: 'Keep in touch with friends and family' },
   { id: 'finance', label: 'Finance', hint: 'Spending, budgets, savings goals and sadaqah' },
 ];
-export const DEFAULT_SECTIONS = ['tasks', 'goals', 'prayer', 'fitness', 'sleep', 'books', 'comics', 'learning', 'notes', 'mood', 'quotes', 'hobbies', 'watchlist', 'people'];
+export const DEFAULT_SECTIONS = ['tasks', 'calendar', 'goals', 'prayer', 'fitness', 'sleep', 'books', 'comics', 'learning', 'notes', 'mood', 'quotes', 'hobbies', 'watchlist', 'people'];
 
 export function enabledSections(profile) {
   const s = profile?.sections;

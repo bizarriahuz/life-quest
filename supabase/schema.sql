@@ -817,3 +817,35 @@ grant update (role) on public.project_members to authenticated;
 
 -- Live updates for people looking at the same project.
 alter publication supabase_realtime add table public.project_entries, public.project_members, public.projects;
+
+-- ---------- 1.26: calendar ----------
+alter table public.profiles drop constraint if exists profiles_sections_check;
+alter table public.profiles add constraint profiles_sections_check check (sections is null or sections <@ array[
+  'tasks','goals','projects','calendar','clients','prayer','fitness','sleep','books','comics','learning','notes','mood','quotes',
+  'hobbies','mtg','watchlist','music','people','finance']::text[]);
+create table public.calendar_events (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  title      text not null check (char_length(title) between 1 and 200),
+  starts_on  date not null,
+  ends_on    date,
+  start_time time,
+  end_time   time,
+  repeat     text check (repeat is null or repeat in ('weekly','fortnightly','monthly','yearly')),
+  note       text check (note is null or char_length(note) <= 500),
+  created_at timestamptz not null default now(),
+  check (ends_on is null or ends_on >= starts_on),
+  check (end_time is null or start_time is not null)
+);
+alter table public.calendar_events enable row level security;
+create policy "own rows" on public.calendar_events for all to authenticated
+  using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
+create index calendar_events_user_idx on public.calendar_events (user_id, starts_on);
+create trigger row_limits before insert on public.calendar_events
+  for each row execute function public.enforce_row_limits('5000', 'calendar events');
+grant all on public.calendar_events to authenticated;
+revoke truncate, references, trigger on public.calendar_events from authenticated;
+revoke all on public.calendar_events from anon;
+-- Private calendar links, read through /api/ics (functions/api/ics.js)
+alter table public.profiles add column if not exists calendar_feeds jsonb not null default '[]'::jsonb
+  check (jsonb_typeof(calendar_feeds) = 'array' and jsonb_array_length(calendar_feeds) <= 5 and pg_column_size(calendar_feeds) < 4000);

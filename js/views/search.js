@@ -8,6 +8,7 @@ let lastQuery = '';
 // section → [table, how to read a row]
 const SOURCES = {
   tasks:    ['tasks', (r) => ({ title: r.title, sub: [r.kind === 'daily' ? 'Daily' : r.done ? 'Done' : r.due_on ? `Due ${fmtDate(r.due_on)}` : 'To do', r.repeat && `repeats ${REPEAT_SHORT[r.repeat]}`] })],
+  calendar: ['calendar_events', (r) => ({ title: r.title, text: r.note, sub: [fmtDate(r.starts_on), r.start_time && r.start_time.slice(0, 5), r.repeat && `repeats ${REPEAT_SHORT[r.repeat]}`] })],
   goals:    ['goals', (r) => ({ title: r.title, text: r.why, sub: [r.status === 'done' ? 'Achieved' : r.status === 'dropped' ? 'Let go' : 'Active'] })],
   clients:  ['client_projects', (r) => ({ title: `${r.client} · ${r.title}`, text: r.note, sub: [r.stage[0].toUpperCase() + r.stage.slice(1)] })],
   books:    ['books', (r) => ({ title: r.title, text: r.author, sub: [r.author, { queued: 'To read', reading: 'Reading', finished: 'Finished' }[r.status]] })],
@@ -24,7 +25,7 @@ const SOURCES = {
   projects: ['project_entries', (r) => ({ title: r.title, text: r.body, sub: [{ task: r.done ? 'Done task' : 'Task', note: 'Note', expense: `Cost · $${Number(r.amount).toFixed(2)}` }[r.kind], r.author_name], href: `#/projects/${r.project_id}` })],
   finance:  ['transactions', (r) => ({ title: r.note, sub: [fmtDate(r.occurred_on), r.kind === 'sadaqah' ? 'Sadaqah' : r.kind === 'income' ? 'Income' : 'Spent', `$${Number(r.amount).toFixed(2)}`] })],
 };
-const LABEL = { tasks: 'Tasks', goals: 'Goals', projects: 'Projects', clients: 'Clients', books: 'Books', comics: 'Comics', learning: 'Learning', notes: 'Notes', mood: 'Mood', quotes: 'Quotes', hobbies: 'Hobbies', mtg: 'MTG', watchlist: 'Watchlist', music: 'Music', people: 'People', finance: 'Finance' };
+const LABEL = { calendar: 'Calendar', tasks: 'Tasks', goals: 'Goals', projects: 'Projects', clients: 'Clients', books: 'Books', comics: 'Comics', learning: 'Learning', notes: 'Notes', mood: 'Mood', quotes: 'Quotes', hobbies: 'Hobbies', mtg: 'MTG', watchlist: 'Watchlist', music: 'Music', people: 'People', finance: 'Finance' };
 
 const fold = (s) => String(s ?? '').normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase();
 

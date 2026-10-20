@@ -2,6 +2,7 @@ import { html, raw, wire, mount, bar, today, relDate, relDateInline, fmtDate, gr
 import { icon } from '../icons.js';
 import { cachedTimes, loadMonth, nextPrayer, untilText } from '../prayertimes.js';
 import { weekStart } from './review.js';
+import { collect as calCollect, clock } from './calendar.js';
 import { addDays } from '../ui.js';
 import { STATS, XP, overallLevel, statLevel, totalXP, strongest, statVisible, money } from '../game.js';
 
@@ -56,6 +57,9 @@ export default {
       ctx.store.list('projects', {}).catch(() => []),
       ctx.store.list('project_entries', { match: { kind: 'task', done: false } }).catch(() => []),
     ]) : [[], []];
+    const calToday = on.has('calendar') ? (await calCollect(ctx, t, t).catch(() => [])).filter((x) => x.src === 'event' || x.src === 'feed') : [];
+    const nowHM = new Date().toTimeString().slice(0, 5);
+    const calNext = calToday.find((x) => x.time && (x.end || x.time) >= nowHM) || calToday.find((x) => !x.time);
     const projMine = projOpen.filter((x) => x.assignee_id === ctx.store.user.id).length;
     const spentMonth = monthTxns.reduce((n, x) => n + Number(x.amount), 0);
     const budgetMonth = cats.reduce((n, c) => n + (c.kind === 'expense' ? Number(c.budget) || 0 : 0), 0);
@@ -101,6 +105,8 @@ export default {
     const overdue = contacts.filter((c) => !lastSeen[c.id] || addDays(lastSeen[c.id], c.every_days) <= t);
     const lm = lastMatch[0];
     const todayRows = {
+      calendar: () => html`<a href="#/calendar">${raw(icon('calendar'))}<span class="t-label">Calendar</span>
+              <span class="t-val"><span class="t-txt">${calToday.length ? `${calNext ? `${calNext.time ? `${clock(calNext.time)} ` : ''}${calNext.title}` : `${calToday.length} today, all done`}${calToday.length > 1 ? ` · +${calToday.length - 1}` : ''}` : 'Nothing today'}</span></span></a>`,
       projects: () => html`<a href="#/projects">${raw(icon('projects'))}<span class="t-label">Projects</span>
               <span class="t-val"><span class="t-txt">${projAll.length ? `${projAll.length} shared${projMine ? ` · ${projMine} task${projMine === 1 ? '' : 's'} for you` : ` · ${projOpen.length} open`}` : 'Start one with friends'}</span></span></a>`,
       goals: () => html`<a href="#/goals">${raw(icon('goals'))}<span class="t-label">Goals</span>

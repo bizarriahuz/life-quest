@@ -1,6 +1,15 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.26', date: '2026-10-20', title: 'Calendar',
+    items: [
+      'New Calendar section: a month view with your own events (with times, repeats and multi-day trips).',
+      'It also shows what’s due across Life Quest: tasks (tick them off right there), goal dates, shared project tasks and client deadlines.',
+      'Add your phone calendar: paste the private iCal link from Google, iPhone/iCloud or Outlook and its events appear too.',
+      'Today’s next event shows on Home. Switch Calendar on in Settings if you don’t see it.',
+    ],
+  },
+  {
     version: '1.25', date: '2026-10-20', title: 'Shared projects',
     items: [
       'New Projects section: plan things together with friends and family. Switch it on in Settings.',
