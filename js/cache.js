@@ -5,7 +5,7 @@
 const FRESH_MS = 3000;           // don't re-check the same list more often than this
 const CASCADE = {
   hobbies: ['hobby_sessions'], savings_goals: ['savings_contributions'], finance_categories: ['transactions'],
-  goals: ['goal_milestones'], learning_items: ['learning_sessions'], mtg_decks: ['mtg_matches'], contacts: ['contact_logs'],
+  goals: ['goal_milestones', 'tasks'], learning_items: ['learning_sessions'], mtg_decks: ['mtg_matches'], contacts: ['contact_logs'],
 }; // deleting a hobby deletes its sessions
 
 export function withCache(store, onStale) {

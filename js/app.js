@@ -26,8 +26,11 @@ import mtg from './views/mtg.js';
 import watchlist from './views/watchlist.js';
 import people from './views/people.js';
 import music from './views/music.js';
+import search from './views/search.js';
+import review from './views/review.js';
 
 const VIEWS = [home, tasks, goals, clients, prayer, fitness, sleep, books, comics, learning, notes, mood, quotes, hobbies, mtg, watchlist, music, people, finance, settings];
+const HIDDEN = [search, review];   // pages reached from buttons, not the menu
 const root = document.getElementById('app');
 const S = { store: null, profile: null, rawTotals: {}, routeToken: 0, swipe: null };
 const sections = () => enabledSections(S.profile);
@@ -110,6 +113,7 @@ function renderBrand() {
       <p class="brand-name">${name}</p>
       <div class="brand-lv"><span>Level ${lv.level}</span><div class="bar" role="progressbar" aria-label="Progress to next level" aria-valuenow="${lv.pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${lv.pct}%"></i></div></div>
     </div>
+    <a href="#/search" class="icon-btn search-btn" aria-label="Search everything" title="Search (/)">${raw(icon('search'))}</a>
     ${S.store?.mode === 'local' ? html`<span class="badge" title="Data is saved in this browser only">Offline</span>` : ''}
     ${S.store?.mode === 'cloud' ? html`<button class="icon-btn mobile-only" data-signout aria-label="Sign out">${raw(icon('logout'))}</button>` : ''}
   `.s;
@@ -118,7 +122,7 @@ function renderBrand() {
 async function route() {
   const token = ++S.routeToken;
   const id = (location.hash.match(/^#\/(\w+)/) || [])[1];
-  const view = shownViews().find((v) => v.id === id) || home;
+  const view = shownViews().find((v) => v.id === id) || HIDDEN.find((v) => v.id === id) || home;
   document.querySelectorAll('.nav a').forEach((a) => {
     const active = a.dataset.view === view.id;
     a.classList.toggle('active', active);
@@ -308,6 +312,15 @@ function renderLogin(sb, notice = '') {
     },
   });
 }
+
+// ---------- keyboard: "/" opens search ----------
+document.addEventListener('keydown', (e) => {
+  if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey || !S.store) return;
+  const a = document.activeElement;
+  if (a && (/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) || a.isContentEditable)) return;
+  e.preventDefault();
+  if (location.hash === '#/search') document.getElementById('q')?.focus(); else location.hash = '#/search';
+});
 
 // ---------- global clicks ----------
 document.addEventListener('click', async (e) => {

@@ -1,6 +1,16 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.23', date: '2026-10-20', title: 'Week in review, search and repeating tasks',
+    items: [
+      'Week in review: XP day by day, highlights and every section’s numbers, Monday to Sunday. Open it from the “This week” tile on Home.',
+      'Search everything: tap the magnifying glass (or press /) to find a task, note, book, quote or person across all your sections.',
+      'Repeating tasks: choose every week, every 2 weeks, every month or every year. Tick one off and the next one appears with its new date.',
+      'Link tasks to a goal, from Tasks or right on the goal. They count toward the goal’s progress.',
+      'Home now opens with four summary tiles: XP today, what’s due, the next prayer and your week so far.',
+    ],
+  },
+  {
     version: '1.22', date: '2026-10-20', title: 'Tidier to-do list',
     items: ['To do and Jobs are sorted by due date: the soonest at the top. Tasks with no due date sit below, oldest first.'],
   },

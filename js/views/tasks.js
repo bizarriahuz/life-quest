@@ -1,38 +1,51 @@
 import { html, raw, wire, mount, today, relDate, empty } from '../ui.js';
 import { icon } from '../icons.js';
 import { XP } from '../game.js';
+import { REPEATS, REPEAT_SHORT, toggleTask } from '../tasklogic.js';
 
 const KIND = { side: 'Side', main: 'Main', job: 'Job', daily: 'Daily' };
 const byDue = (a, b) => (a.due_on || '9999').localeCompare(b.due_on || '9999');
+const soonest = (a, b) => byDue(a, b) || a.created_at.localeCompare(b.created_at);
+
+// One task row. Shared with Goals (linked tasks) so they look the same.
+export function taskItem(q, isDone, { goalName = null, canDelete = true } = {}) {
+  const t = today();
+  const subs = [];
+  if (q.due_on && !isDone) subs.push(html`<span class="${q.due_on < t ? 'due-late' : ''}">${q.due_on < t ? 'Overdue · ' : 'Due '}${relDate(q.due_on)}</span>`);
+  if (q.repeat) subs.push(html`<span class="rep">${raw(icon('repeat', 13))}${REPEAT_SHORT[q.repeat]}</span>`);
+  if (goalName) subs.push(html`<span class="goal-tag">${raw(icon('goals', 13))}${goalName}</span>`);
+  return html`
+    <li class="item ${isDone ? 'done' : ''}">
+      <button class="check ${isDone ? 'on' : ''}" data-act="toggle" data-id="${q.id}" aria-pressed="${isDone}"
+        aria-label="${isDone ? 'Mark not done' : 'Complete'}: ${q.title}">${raw(icon('check'))}</button>
+      <div class="body">
+        <p class="title">${q.kind === 'main' ? html`<span class="pill solid">Main</span>` : ''}${q.title}</p>
+        ${subs.length ? html`<p class="sub task-sub">${subs}</p>` : ''}
+      </div>
+      <span class="xp">+${XP.task[q.kind]}</span>
+      ${canDelete && (!isDone || q.kind === 'daily')
+        ? html`<button class="icon-btn" data-act="delete" data-id="${q.id}" aria-label="Delete ${q.title}">${raw(icon('trash'))}</button>` : ''}
+    </li>`;
+}
 
 export default {
   id: 'tasks',
   label: 'Tasks',
   async render(el, ctx) {
     const t = today();
-    const all = await ctx.store.list('tasks', { order: 'created_at', asc: true });   // oldest first
+    const [all, goals] = await Promise.all([
+      ctx.store.list('tasks', { order: 'created_at', asc: true }),
+      ctx.sections.has('goals') ? ctx.store.list('goals', { match: { status: 'active' } }) : Promise.resolve([]),
+    ]);
+    const goalName = Object.fromEntries(goals.map((g) => [g.id, g.title]));
     const daily = all.filter((q) => q.kind === 'daily');
-    const jobs = all.filter((q) => q.kind === 'job' && !q.done)
-      .sort((a, b) => byDue(a, b) || a.created_at.localeCompare(b.created_at));   // soonest due first
+    const jobs = all.filter((q) => q.kind === 'job' && !q.done).sort(soonest);       // soonest due first
     // To do: soonest due date on top. No due date goes below, in the order added (earliest first).
-    const active = all.filter((q) => (q.kind === 'main' || q.kind === 'side') && !q.done)
-      .sort((a, b) => byDue(a, b) || a.created_at.localeCompare(b.created_at));
+    const active = all.filter((q) => (q.kind === 'main' || q.kind === 'side') && !q.done).sort(soonest);
     const done = all.filter((q) => q.kind !== 'daily' && q.done)
       .sort((a, b) => (b.done_on || '').localeCompare(a.done_on || '')).slice(0, 25);
     const dailyDone = daily.filter((q) => q.done_on === t).length;
-
-    const item = (q, isDone) => html`
-      <li class="item ${isDone ? 'done' : ''}">
-        <button class="check ${isDone ? 'on' : ''}" data-act="toggle" data-id="${q.id}" aria-pressed="${isDone}"
-          aria-label="${isDone ? 'Mark not done' : 'Complete'}: ${q.title}">${raw(icon('check'))}</button>
-        <div class="body">
-          <p class="title">${q.kind === 'main' ? html`<span class="pill solid">Main</span>` : ''}${q.title}</p>
-          ${q.due_on && !isDone ? html`<p class="sub ${q.due_on < t ? 'due-late' : ''}">${q.due_on < t ? 'Overdue · ' : 'Due '}${relDate(q.due_on)}</p>` : ''}
-        </div>
-        <span class="xp">+${XP.task[q.kind]}</span>
-        ${!isDone || q.kind === 'daily'
-          ? html`<button class="icon-btn" data-act="delete" data-id="${q.id}" aria-label="Delete ${q.title}">${raw(icon('trash'))}</button>` : ''}
-      </li>`;
+    const item = (q, isDone) => taskItem(q, isDone, { goalName: goalName[q.goal_id] || null });
 
     mount(el, html`
       <header class="page-head"><div><h1>Tasks</h1><p>${jobs.length} job${jobs.length === 1 ? '' : 's'} · ${active.length} to do · ${dailyDone}/${daily.length} dailies done</p></div></header>
@@ -42,12 +55,22 @@ export default {
           <input name="title" placeholder="Add a task…" maxlength="200" required aria-label="New task">
           <div class="row wrap spread">
             <div class="seg" role="radiogroup" aria-label="Type">
-              ${Object.keys(KIND).map((k, i) => html`<label><input type="radio" name="kind" value="${k}" ${i === 0 ? 'checked' : ''}><span>${KIND[k]}</span></label>`)}
+              ${Object.keys(KIND).map((k, i) => html`<label><input type="radio" name="kind" value="${k}" data-change="kind" ${i === 0 ? 'checked' : ''}><span>${KIND[k]}</span></label>`)}
             </div>
             <div class="row">
               <input type="date" name="due_on" aria-label="Due date" style="width:auto">
               <button class="btn primary">${raw(icon('plus', 18))}Add</button>
             </div>
+          </div>
+          <div class="fields task-extra">
+            <label class="field">Repeats<select name="repeat">
+              <option value="">Doesn’t repeat</option>
+              ${Object.entries(REPEATS).map(([k, v]) => html`<option value="${k}">${v}</option>`)}
+            </select></label>
+            ${goals.length ? html`<label class="field">For a goal<select name="goal_id">
+              <option value="">No goal</option>
+              ${goals.map((g) => html`<option value="${g.id}">${g.title}</option>`)}
+            </select></label>` : ''}
           </div>
         </form>
       </section>
@@ -79,38 +102,35 @@ export default {
         </section>` : ''}
     `);
 
+    // Daily tasks don't have due dates or repeats: hide those while Daily is picked.
+    const form = el.querySelector('form[data-form=add]');
+    const syncKind = () => {
+      const daily = form.querySelector('input[name=kind]:checked')?.value === 'daily';
+      form.querySelector('input[name=due_on]').hidden = daily;
+      form.querySelector('.task-extra label:first-child').hidden = daily;
+    };
+
     wire(el, {
-      add: async (v, form) => {
+      kind: syncKind,
+      add: async (v, f) => {
         if (!v.title) return;
-        await ctx.store.insert('tasks', { title: v.title, kind: v.kind || 'side', due_on: v.kind === 'daily' ? null : v.due_on || null });
-        form.reset();
-        ctx.say('Task added');
+        const kind = v.kind || 'side';
+        const repeat = kind === 'daily' ? null : v.repeat || null;
+        const due = kind === 'daily' ? null : v.due_on || (repeat ? t : null);   // a repeat needs a start date
+        await ctx.store.insert('tasks', { title: v.title, kind, due_on: due, repeat, goal_id: v.goal_id || null });
+        f.reset(); syncKind();
+        ctx.say(repeat ? `Task added · repeats ${REPEAT_SHORT[repeat]}` : 'Task added');
         ctx.rerender();
       },
       toggle: async (btn) => {
         const q = all.find((x) => x.id === btn.dataset.id);
         if (!q) return;
-        if (q.kind === 'daily') {
-          const sid = `${q.id}:${t}`;
-          if (q.done_on === t) {
-            await ctx.store.update('tasks', q.id, { done_on: null });
-            await ctx.revoke('task', sid);
-          } else {
-            await ctx.store.update('tasks', q.id, { done_on: t });
-            await ctx.award('DEX', XP.task.daily, 'task', sid, q.title);
-          }
-        } else if (q.done) {
-          await ctx.store.update('tasks', q.id, { done: false, done_on: null });
-          await ctx.revoke('task', q.id);
-        } else {
-          await ctx.store.update('tasks', q.id, { done: true, done_on: t });
-          await ctx.award('DEX', XP.task[q.kind], 'task', q.id, q.title);
-        }
+        await toggleTask(ctx, q);
         ctx.rerender();
       },
       delete: async (btn) => {
         const q = all.find((x) => x.id === btn.dataset.id);
-        if (!q || !confirm(`Delete "${q.title}"?`)) return;
+        if (!q || !confirm(q.repeat ? `Delete "${q.title}"? It will stop repeating.` : `Delete "${q.title}"?`)) return;
         await ctx.store.remove('tasks', q.id);
         await ctx.revoke('task', q.kind === 'daily' ? `${q.id}:${t}` : q.id);
         ctx.rerender();

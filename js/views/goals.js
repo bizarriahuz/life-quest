@@ -1,6 +1,8 @@
 import { html, raw, wire, mount, today, relDate, fmtDate, bar, empty } from '../ui.js';
 import { icon } from '../icons.js';
 import { XP } from '../game.js';
+import { toggleTask } from '../tasklogic.js';
+import { taskItem } from './tasks.js';
 
 let showDone = false;
 
@@ -9,10 +11,15 @@ export default {
   label: 'Goals',
   async render(el, ctx) {
     const t = today();
-    const [goals, steps] = await Promise.all([
+    const tasksOn = ctx.sections.has('tasks');
+    const [goals, steps, tasks] = await Promise.all([
       ctx.store.list('goals', { order: 'created_at', asc: true }),
       ctx.store.list('goal_milestones', { order: 'position', asc: true }),
+      tasksOn ? ctx.store.list('tasks', { order: 'created_at', asc: true }) : Promise.resolve([]),
     ]);
+    const soonest = (a, b) => (a.due_on || '9999').localeCompare(b.due_on || '9999') || a.created_at.localeCompare(b.created_at);
+    const tasksOf = (id) => tasks.filter((q) => q.goal_id === id && q.kind !== 'daily');
+    const unlinked = tasks.filter((q) => !q.goal_id && !q.done && q.kind !== 'daily').sort(soonest);
     const stepsOf = (id) => steps.filter((s) => s.goal_id === id).sort((a, b) => a.position - b.position || a.created_at.localeCompare(b.created_at));
     const active = goals.filter((g) => g.status === 'active')
       .sort((a, b) => (a.target_date || '9999').localeCompare(b.target_date || '9999'));
@@ -21,8 +28,12 @@ export default {
 
     const card = (g) => {
       const own = stepsOf(g.id);
-      const n = own.filter((s) => s.done).length;
-      const pct = own.length ? (n / own.length) * 100 : 0;
+      const linked = tasksOf(g.id);
+      const openT = linked.filter((q) => !q.done).sort(soonest);
+      const doneT = linked.filter((q) => q.done);
+      const n = own.filter((s) => s.done).length + doneT.length;     // milestones and linked tasks both count
+      const total = own.length + linked.length;
+      const pct = total ? (n / total) * 100 : 0;
       const late = g.target_date && g.target_date < t;
       return html`
         <section class="card goal-card">
@@ -39,21 +50,35 @@ export default {
                 <button class="text-btn" data-act="delgoal" data-id="${g.id}">Delete</button>
               </div></details>
           </div>
+          ${total ? html`
+            <div class="lv-row"><span><b>${n}</b> / ${total} ${own.length && linked.length ? 'milestones & tasks' : own.length ? 'milestones' : 'tasks'} done</span><span>${Math.round(pct)}%</span></div>
+            ${bar(pct, 'thick')}` : ''}
           ${own.length ? html`
-            <div class="lv-row"><span><b>${n}</b> / ${own.length} milestones</span><span>${Math.round(pct)}%</span></div>
-            ${bar(pct, 'thick')}
             <ul class="list">${own.map((s) => html`
               <li class="item ${s.done ? 'done' : ''}">
                 <button class="check ${s.done ? 'on' : ''}" data-act="step" data-id="${s.id}" aria-pressed="${s.done}" aria-label="${s.done ? 'Undo' : 'Complete'}: ${s.title}">${raw(icon('check'))}</button>
                 <div class="body"><p class="title">${s.title}</p>${s.done && s.done_on ? html`<p class="sub">${relDate(s.done_on)}</p>` : ''}</div>
                 <span class="xp">+${XP.milestone}</span>
                 <button class="icon-btn" data-act="delstep" data-id="${s.id}" aria-label="Delete ${s.title}">${raw(icon('trash'))}</button>
-              </li>`)}</ul>` : html`<p class="small muted">Break it into a few milestones you can tick off.</p>`}
+              </li>`)}</ul>` : !linked.length ? html`<p class="small muted">Break it into a few milestones you can tick off${tasksOn ? ', or link tasks to it' : ''}.</p>` : ''}
           <form data-form="addstep" data-id="${g.id}" class="row">
             <input name="title" maxlength="120" placeholder="Add a milestone" required aria-label="New milestone for ${g.title}" class="grow">
             <button class="btn sm">Add</button>
           </form>
-          ${own.length && n === own.length ? html`<button class="btn primary" data-act="finish" data-id="${g.id}">${raw(icon('goals', 18))}All done. Mark goal achieved (+${XP.goalDone})</button>` : ''}
+          ${tasksOn ? html`
+            <div class="goal-tasks">
+              <h3>Tasks${doneT.length ? html` <span class="faint">· ${doneT.length} done</span>` : ''}</h3>
+              ${openT.length ? html`<ul class="list">${openT.map((q) => taskItem(q, false, { canDelete: false }))}</ul>` : ''}
+              <form data-form="addtask" data-id="${g.id}" class="row">
+                <input name="title" maxlength="200" placeholder="Add a task for this goal" required aria-label="New task for ${g.title}" class="grow">
+                <button class="btn sm">Add</button>
+              </form>
+              ${unlinked.length ? html`<select data-change="link" data-id="${g.id}" aria-label="Link an existing task to ${g.title}" class="link-task">
+                <option value="">Link an existing task…</option>
+                ${unlinked.map((q) => html`<option value="${q.id}">${q.title}</option>`)}
+              </select>` : ''}
+            </div>` : ''}
+          ${total && n === total ? html`<button class="btn primary" data-act="finish" data-id="${g.id}">${raw(icon('goals', 18))}All done. Mark goal achieved (+${XP.goalDone})</button>` : ''}
         </section>`;
     };
 
@@ -112,6 +137,21 @@ export default {
           await ctx.store.update('goal_milestones', s.id, { done: true, done_on: t });
           await ctx.award('DEX', XP.milestone, 'milestone', s.id, s.title);
         }
+        ctx.rerender();
+      },
+      toggle: async (b) => {
+        const q = tasks.find((x) => x.id === b.dataset.id);
+        if (q) { await toggleTask(ctx, q); ctx.rerender(); }
+      },
+      addtask: async (v, form) => {
+        await ctx.store.insert('tasks', { title: v.title, kind: 'side', goal_id: form.dataset.id });
+        ctx.say('Task added to this goal');
+        ctx.rerender();
+      },
+      link: async (sel) => {
+        if (!sel.value) return;
+        await ctx.store.update('tasks', sel.value, { goal_id: sel.dataset.id });
+        ctx.say('Task linked');
         ctx.rerender();
       },
       delstep: async (b) => {

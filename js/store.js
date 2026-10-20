@@ -65,7 +65,7 @@ export function cloudStore(sb, user) {
 // ---------------------------------------------------------------------------
 const KEY = 'lifequest:v1';
 const DEFAULTS = {
-  tasks: { kind: 'side', due_on: null, done: false, done_on: null },
+  tasks: { kind: 'side', due_on: null, done: false, done_on: null, repeat: null, goal_id: null },
   books: { isbn: null, cover_url: null, author: null, status: 'queued', pages_total: null, pages_read: 0, rating: null, started_on: null, finished_on: null },
   notes: { title: '', body: '', pinned: false },
   quotes: { source: null },
@@ -139,6 +139,7 @@ export function localStore() {
       if (table === 'savings_goals') db.savings_contributions = tbl('savings_contributions').filter((c) => c.goal_id !== id);
       const KIDS = { goals: ['goal_milestones', 'goal_id'], learning_items: ['learning_sessions', 'item_id'], mtg_decks: ['mtg_matches', 'deck_id'], contacts: ['contact_logs', 'contact_id'] };
       if (KIDS[table]) { const [kt, fk] = KIDS[table]; db[kt] = tbl(kt).filter((r) => r[fk] !== id); }
+      if (table === 'goals') for (const x of tbl('tasks')) if (x.goal_id === id) x.goal_id = null;
       if (table === 'finance_categories') for (const x of tbl('transactions')) if (x.category_id === id) x.category_id = null;
       save();
     },

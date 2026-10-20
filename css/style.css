@@ -682,3 +682,71 @@ details.more[open] > summary { margin: 0; background: var(--surface-2); color: v
 .view.in-left { animation: in-left .24s cubic-bezier(.2, .7, .2, 1); }
 @keyframes in-right { from { transform: translateX(100%); } }
 @keyframes in-left { from { transform: translateX(-100%); } }
+
+/* ---------- 1.23: repeating tasks, goal links ---------- */
+.task-sub { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
+.task-sub .rep, .task-sub .goal-tag { display: inline-flex; align-items: center; gap: 4px; }
+.task-sub .i { width: 13px; height: 13px; }
+.task-sub .goal-tag { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.goal-tasks { border-top: 1px solid var(--line); padding-top: 10px; }
+.goal-tasks h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
+.task-extra [hidden], form input[hidden] { display: none; }
+.link-task { margin-top: 8px; }
+
+/* ---------- 1.23: search ---------- */
+.search-box { display: flex; align-items: center; gap: 10px; color: var(--muted); }
+.search-box input { border: 0; background: transparent; padding: 6px 0; font-size: 17px; flex: 1; min-width: 0; outline: none; box-shadow: none; }
+.search-card:focus-within { border-color: var(--accent); }
+.search-results { display: grid; gap: 16px; }
+.search-results .card-head h2 { display: inline-flex; align-items: center; gap: 8px; }
+.search-count { padding: 0 4px; }
+a.item.hit { color: inherit; text-decoration: none; display: flex; align-items: center; gap: 12px; }
+a.item.hit > .i { color: var(--faint); flex: none; }
+.hit .snip { color: var(--muted); }
+mark { background: color-mix(in srgb, var(--accent) 28%, transparent); color: inherit; border-radius: 3px; padding: 0 1px; }
+.brand .search-btn { margin-left: auto; }
+.brand .search-btn + .badge, .brand .search-btn ~ .icon-btn { margin-left: 0; }
+.search-results li:not(:first-child) > a.item { border-top: 1px solid var(--line); padding-top: 12px; }
+
+/* ---------- 1.23: week in review ---------- */
+.week-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.week-nav .btn .i { margin: 0 2px; }
+.review-hero { display: grid; gap: 16px; }
+.rh-top { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
+.rh-xp { font-size: 40px; font-weight: 700; letter-spacing: -.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+.rh-xp span { font-size: 16px; font-weight: 600; color: var(--muted); letter-spacing: 0; }
+.rh-best { text-align: right; }
+.rh-best b { color: var(--fg); font-weight: 600; }
+.up { color: var(--accent-text); font-weight: 600; }
+.down { color: var(--muted); font-weight: 600; }
+.week-bars { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; height: 120px; align-items: end; }
+.wb { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; gap: 4px; }
+.wb i { display: block; width: 100%; max-width: 34px; min-height: 3px; border-radius: 6px; background: var(--accent); }
+.wb.future i { background: var(--line-2); }
+.wb-v { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; min-height: 14px; }
+.wb-d { font-size: 12px; color: var(--muted); }
+.wb.today .wb-d { color: var(--fg); font-weight: 700; }
+.stat-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 12.5px; padding: 4px 10px; border-radius: 999px; background: var(--surface-2); color: var(--muted); }
+.chip b { color: var(--fg); font-weight: 650; }
+.highlights { display: grid; gap: 8px; padding-left: 0; list-style: none; }
+.highlights li { position: relative; padding-left: 22px; }
+.highlights li::before { content: '✦'; position: absolute; left: 0; color: var(--accent-text); }
+.review-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.rtile { display: grid; gap: 4px; padding: 14px; color: inherit; text-decoration: none; align-content: start; min-width: 0; }
+.rt-label { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); font-weight: 500; }
+.rt-val { font-size: 24px; font-weight: 650; letter-spacing: -.02em; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rt-sub { font-size: 12.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mood-week { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 12px; color: var(--muted); }
+.mood-week b { display: block; font-size: 22px; font-weight: 400; color: var(--fg); }
+.mood-week .future { opacity: .4; }
+
+/* ---------- 1.23: Home summary tiles ---------- */
+.tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+@media (max-width: 720px) { .tiles { grid-template-columns: repeat(2, 1fr); } }
+.tile { display: grid; gap: 2px; padding: 14px; border-radius: var(--r); background: var(--surface); border: 1px solid var(--line); color: inherit; text-decoration: none; min-width: 0; align-content: start; }
+.tile:active { transform: scale(.98); }
+.tl-label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tl-val { font-size: 26px; font-weight: 700; letter-spacing: -.03em; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 4px; }
+.tl-sub { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tile.hot .tl-sub { color: var(--accent-text); font-weight: 600; }

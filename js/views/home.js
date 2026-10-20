@@ -1,6 +1,7 @@
 import { html, raw, wire, mount, bar, today, relDate, relDateInline, fmtDate, greeting } from '../ui.js';
 import { icon } from '../icons.js';
-import { cachedTimes, loadMonth, nextPrayer } from '../prayertimes.js';
+import { cachedTimes, loadMonth, nextPrayer, untilText } from '../prayertimes.js';
+import { weekStart } from './review.js';
 import { addDays } from '../ui.js';
 import { STATS, XP, overallLevel, statLevel, totalXP, strongest, statVisible, money } from '../game.js';
 
@@ -47,6 +48,10 @@ export default {
       on.has('people') ? ctx.store.list('contacts', {}) : none,
       on.has('people') ? ctx.store.list('contact_logs', { gte: ['contacted_on', addDays(t, -366)] }) : none,
     ]);
+    // XP since Monday (for the summary tiles). Day boundaries are local time.
+    const wk = weekStart(t);
+    const isoOf = (k) => { const [y, mo, d] = k.split('-').map(Number); return new Date(y, mo - 1, d).toISOString(); };
+    const xpWeek = await ctx.store.list('xp_events', { gte: ['created_at', isoOf(wk)] }).catch(() => []);
     const spentMonth = monthTxns.reduce((n, x) => n + Number(x.amount), 0);
     const budgetMonth = cats.reduce((n, c) => n + (c.kind === 'expense' ? Number(c.budget) || 0 : 0), 0);
     const budgetIds = new Set(cats.filter((c) => Number(c.budget) > 0).map((c) => c.id));
@@ -124,6 +129,28 @@ export default {
               <span class="t-val">${reading.length ? reading.map((b) => b.title).join(', ') : 'Nothing in progress'}</span></a>`,
     };
 
+    // ---- summary tiles (like phone widgets) ----
+    const localDay = (ts) => new Date(ts).toLocaleDateString('en-CA');
+    const xpToday = xpWeek.filter((e) => localDay(e.created_at) === t).reduce((n, e) => n + e.amount, 0);
+    const xpWk = xpWeek.reduce((n, e) => n + e.amount, 0);
+    const overdueN = openTasks.filter((q) => q.kind !== 'daily' && q.due_on && q.due_on < t).length;
+    const dueToday = openTasks.filter((q) => q.kind !== 'daily' && q.due_on === t).length;
+    const tiles = [{ go: 'review', icon: 'spark', label: 'Today', value: `+${xpToday}`, sub: xpToday ? 'XP earned' : 'No XP yet today' }];
+    if (on.has('tasks')) {
+      const n = overdueN + dueToday + dailyLeft;
+      tiles.push({ go: 'tasks', icon: 'tasks', label: 'To do today', value: n, hot: overdueN > 0,
+        sub: n ? [overdueN && `${overdueN} overdue`, dueToday && `${dueToday} due`, dailyLeft && `${dailyLeft} daily`].filter(Boolean).join(' · ') : 'All clear' });
+    }
+    if (on.has('prayer')) tiles.push(prayers.length === 5
+      ? { go: 'prayer', icon: 'prayer', label: 'Prayer', value: '5/5', sub: 'All done today' }
+      : nextP ? { go: 'prayer', icon: 'prayer', label: `Next · ${PNAME[nextP.key]}`, value: nextP.label, sub: untilText(nextP.when) }
+        : { go: 'prayer', icon: 'prayer', label: 'Prayer', value: `${prayers.length}/5`, sub: 'today' });
+    if (on.has('mood') && !moodToday[0]) tiles.push({ go: 'mood', icon: 'mood', label: 'Mood', value: 'Check in', sub: 'How are you today?' });
+    if (on.has('sleep') && !sleepLogs.some((x) => x.slept_on === t)) tiles.push({ go: 'sleep', icon: 'sleep', label: 'Sleep', value: 'Log it', sub: 'How did you sleep?' });
+    tiles.splice(Math.min(3, tiles.length), 0, { go: 'review', icon: 'review', label: 'This week', value: xpWk, sub: 'XP · see review' });
+    const dow = new Date().getDay();
+    const reviewReady = dow === 0 || dow === 1;    // Sunday and Monday
+
     mount(el, html`
       <header class="page-head">
         <div><h1>${greeting()}</h1><p>${fmtDate(t, { weekday: 'long', day: 'numeric', month: 'long' })}</p></div>
@@ -133,6 +160,20 @@ export default {
         <a class="card banner" href="#/settings">
           <span class="i-wrap">${raw(icon('settings'))}</span>
           <span class="grow"><p>Make it yours</p><p class="small muted">Choose the sections you want: tasks, prayer, fitness, books, finance and more.</p></span>
+          ${raw(icon('right', 18))}
+        </a>` : ''}
+
+      <div class="tiles">${tiles.slice(0, 4).map((x) => html`
+        <a class="tile ${x.hot ? 'hot' : ''}" href="#/${x.go}">
+          <span class="tl-label">${raw(icon(x.icon, 15))}${x.label}</span>
+          <b class="tl-val">${x.value}</b>
+          <span class="tl-sub">${x.sub}</span>
+        </a>`)}</div>
+
+      ${reviewReady ? html`
+        <a class="card banner" href="#/review">
+          <span class="i-wrap">${raw(icon('review'))}</span>
+          <span class="grow"><p>Your week in review</p><p class="small muted">${new Date().getDay() === 0 ? 'See how this week went.' : 'See how last week went.'}</p></span>
           ${raw(icon('right', 18))}
         </a>` : ''}
 

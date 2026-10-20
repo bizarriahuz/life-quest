@@ -523,3 +523,14 @@ alter table public.profiles add constraint profiles_sections_check check (sectio
 alter table public.profiles drop constraint if exists profiles_theme_check;
 alter table public.profiles add constraint profiles_theme_check check (theme in
   ('midnight','ocean','forest','plum','dusk','paper','sand','blush','lavender','peach','mint','sky','butter','candy','sage'));
+
+-- ---------- 1.23: repeating tasks and tasks linked to a goal ----------
+alter table public.tasks
+  add column if not exists repeat text check (repeat is null or repeat in ('weekly','fortnightly','monthly','yearly')),
+  add column if not exists goal_id uuid;
+alter table public.tasks drop constraint if exists tasks_goal_fk;
+alter table public.tasks add constraint tasks_goal_fk
+  foreign key (goal_id, user_id) references public.goals(id, user_id) on delete set null (goal_id);
+alter table public.tasks drop constraint if exists tasks_repeat_kind;
+alter table public.tasks add constraint tasks_repeat_kind check (repeat is null or kind <> 'daily');
+create index if not exists tasks_goal_idx on public.tasks(goal_id) where goal_id is not null;
