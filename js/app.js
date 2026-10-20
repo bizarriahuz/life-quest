@@ -214,6 +214,19 @@ function setupSwipe() {
   document.addEventListener('touchcancel', end, { passive: true });
 }
 
+// Only for the app's maker: a dot on Settings when new feedback has arrived.
+let isAdmin = null;
+async function checkInbox() {
+  if (!S.store || S.store.mode !== 'cloud' || document.hidden) return;
+  try {
+    isAdmin ??= Boolean(await S.store.rpc('is_admin', {}));
+    if (!isAdmin) return;
+    const fresh = await S.store.list('feedback', { match: { status: 'new' }, limit: 50 });
+    const a = document.querySelector('.nav a[data-view=settings]');
+    if (a && fresh.length) { a.classList.add('has-new'); a.title = `${fresh.length} new feedback`; }
+  } catch { /* ignore */ }
+}
+
 // Background refresh found newer data: redraw, unless you're mid-typing.
 function onStale() {
   const a = document.activeElement;
@@ -253,6 +266,8 @@ async function start(rawStore) {
   window.onhashchange = route;
   await route();
   prefetch(document.getElementById('view')?.dataset.view);
+  checkInbox();
+  setInterval(checkInbox, 5 * 60 * 1000);
 }
 
 // ---------- sign in ----------

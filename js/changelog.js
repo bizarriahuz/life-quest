@@ -1,6 +1,13 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.29', date: '2026-10-21', title: 'Send feedback',
+    items: [
+      'Found a bug or have an idea? There’s a Feedback box in Settings that goes straight to the person who makes Life Quest.',
+      'Choose whether to include your email for a reply. You can see what you sent and whether it’s been seen.',
+    ],
+  },
+  {
     version: '1.28', date: '2026-10-21', title: 'Repeat every day',
     items: ['Tasks and calendar events can now repeat every day. Tick off a daily-repeating task and the next one appears for tomorrow.'],
   },

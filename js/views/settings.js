@@ -5,6 +5,26 @@ import { CHANGELOG, LATEST } from '../changelog.js';
 import { fmtDate } from '../ui.js';
 import { THEMES, DEFAULT_THEME, applyTheme } from '../theme.js';
 
+const KINDS = { bug: 'Something’s wrong', idea: 'Idea', other: 'Other' };
+const HINT = {
+  bug: 'What happened, and what did you expect? Which section were you in?',
+  idea: 'What would make Life Quest better for you?',
+  other: 'Anything you’d like to say',
+};
+const STATUS = { new: 'Sent', read: 'Seen', done: 'Done' };
+let inboxAll = false;     // admin: show handled feedback too
+
+// Short, non-identifying device description for bug reports.
+function device() {
+  const ua = navigator.userAgent;
+  const os = /iPhone|iPod/.test(ua) ? 'iPhone' : /iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) ? 'iPad'
+    : /Android/.test(ua) ? 'Android' : /Mac OS X/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : /Linux/.test(ua) ? 'Linux' : 'Other';
+  const br = /Edg\//.test(ua) ? 'Edge' : /SamsungBrowser/.test(ua) ? 'Samsung Internet' : /CriOS|Chrome\//.test(ua) ? 'Chrome' : /FxiOS|Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : 'Browser';
+  const app = matchMedia('(display-mode: standalone)').matches || navigator.standalone ? ' · home-screen app' : '';
+  return `${os} · ${br}${app} · ${innerWidth}px`;
+}
+const when = (ts) => new Date(ts).toLocaleString('en-SG', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+
 const swatch = (t) => html`<span class="sw" style="--s0:${t.swatch[0]};--s1:${t.swatch[1]};--s2:${t.swatch[2]};--s3:${t.swatch[3]}" aria-hidden="true"><i></i></span>`;
 const themeLabel = (t) => html`${swatch(t)}<span class="grow">${t.label} <span class="faint small">${t.group}</span></span>`;
 
@@ -26,6 +46,14 @@ export default {
     const name = ctx.profile?.hero_name || '';
     const currency = ctx.currency;
     const currencies = CURRENCIES.includes(currency) ? CURRENCIES : [currency, ...CURRENCIES];
+    const cloud = ctx.store.mode === 'cloud';
+    const [mine, admin] = await Promise.all([
+      ctx.store.list('feedback', { match: { user_id: ctx.store.user.id }, order: 'created_at', limit: 5 }).catch(() => []),
+      cloud ? ctx.store.rpc('is_admin', {}).catch(() => false) : Promise.resolve(false),
+    ]);
+    const inbox = admin ? await ctx.store.list('feedback', { order: 'created_at', limit: 200 }).catch(() => []) : [];
+    const fresh = inbox.filter((f) => f.status === 'new').length;
+    const shown = inboxAll ? inbox : inbox.filter((f) => f.status !== 'done');
 
     mount(el, html`
       <header class="page-head"><div><h1>Settings</h1><p>Make Life Quest yours</p></div></header>
@@ -89,6 +117,42 @@ export default {
           </details>` : ''}
       </section>
 
+      ${admin ? html`<section class="card" id="inbox">
+        <div class="card-head"><h2>Feedback inbox${fresh ? html` <span class="pill solid">${fresh} new</span>` : ''}</h2>
+          <label class="tick small muted"><input type="checkbox" data-change="inboxall" ${inboxAll ? 'checked' : ''}> Show done</label></div>
+        ${shown.length ? html`<ul class="list fb-list">${shown.map((f) => html`<li class="item fb ${f.status}">
+          <div class="body">
+            <p class="fb-meta"><span class="pill ${f.kind === 'bug' ? 'solid' : ''}">${f.kind === 'bug' ? 'Bug' : f.kind === 'idea' ? 'Idea' : 'Other'}</span>
+              <b>${f.sender_name || 'Someone'}</b><span class="faint small">${when(f.created_at)}</span></p>
+            <p class="fb-msg">${f.message}</p>
+            <p class="sub">${[f.app_version && `v${f.app_version}`, f.device].filter(Boolean).join(' · ')}</p>
+            <div class="row wrap fb-actions">
+              ${f.reply_to ? html`<a class="btn sm" href="mailto:${f.reply_to}?subject=${encodeURIComponent('Re: your Life Quest feedback')}&body=${encodeURIComponent(`\n\n> ${f.message.replace(/\n/g, '\n> ')}`)}">${raw(icon('mail', 15))}Reply</a>` : html`<span class="small faint">No email shared</span>`}
+              ${f.status === 'new' ? html`<button class="btn sm" data-act="fbstatus" data-id="${f.id}" data-s="read">Mark read</button>` : ''}
+              ${f.status !== 'done' ? html`<button class="btn sm" data-act="fbstatus" data-id="${f.id}" data-s="done">${raw(icon('check', 15))}Done</button>`
+                : html`<button class="btn sm" data-act="fbstatus" data-id="${f.id}" data-s="read">Reopen</button>`}
+            </div>
+          </div></li>`)}</ul>` : html`<p class="empty">${inbox.length ? 'All handled.' : 'No feedback yet.'}</p>`}
+      </section>` : ''}
+
+      <section class="card" id="feedback">
+        <div class="card-head"><h2>Feedback</h2><span class="meta">Goes straight to the maker</span></div>
+        <form data-form="feedback" class="form">
+          <div class="seg" role="radiogroup" aria-label="Kind of feedback">
+            ${Object.entries(KINDS).map(([k, v], i) => html`<label><input type="radio" name="kind" value="${k}" data-change="fbkind" ${i === 1 ? 'checked' : ''}><span>${v}</span></label>`)}
+          </div>
+          <textarea name="message" rows="4" minlength="3" maxlength="2000" required placeholder="${HINT.idea}" aria-label="Your feedback"></textarea>
+          <div class="row spread wrap">
+            ${cloud ? html`<label class="tick small muted"><input type="checkbox" name="reply" checked> Include my email so I can get a reply</label>` : html`<span></span>`}
+            <button class="btn primary sm">Send feedback</button>
+          </div>
+        </form>
+        ${mine.length ? html`<details class="fb-mine"><summary class="small muted">Your recent feedback</summary>
+          <ul class="list">${mine.map((f) => html`<li class="item"><div class="body"><p class="title fb-msg">${f.message}</p>
+            <p class="sub">${KINDS[f.kind]} · ${when(f.created_at)}</p></div><span class="pill ${f.status === 'done' ? 'solid' : ''}">${STATUS[f.status]}</span></li>`)}</ul>
+        </details>` : ''}
+      </section>
+
       <section class="card">
         <div class="card-head"><h2>Account</h2></div>
         ${ctx.store.mode === 'cloud' ? html`
@@ -117,7 +181,7 @@ export default {
       (btn.disabled ? li.querySelector(`[data-act=${dir < 0 ? 'down' : 'up'}]`) : btn).focus();
     };
     refreshArrows();
-    el.addEventListener('change', (e) => { if (e.target.closest('form')) markDirty(); });
+    el.addEventListener('change', (e) => { if (e.target.closest('form[data-form=save]')) markDirty(); });
 
     // Close the theme dropdown when tapping elsewhere or pressing Escape.
     const dd = el.querySelector('#theme-dd');
@@ -135,6 +199,22 @@ export default {
         el.querySelector('#theme-dd').open = false;
         await ctx.setProfile({ theme: id });
       },
+      fbkind: (r) => { el.querySelector('form[data-form=feedback] textarea').placeholder = HINT[r.value]; },
+      feedback: async (v, f) => {
+        if ((v.message || '').length < 3) return;
+        await ctx.store.insert('feedback', {
+          kind: v.kind || 'idea', message: v.message.slice(0, 2000), reply_to: v.reply ? 'yes' : null,
+          app_version: LATEST, device: device().slice(0, 120), page: 'settings',
+        });
+        f.reset();
+        ctx.say('Thank you! Your feedback was sent');
+        ctx.rerender();
+      },
+      fbstatus: async (b) => {
+        await ctx.store.update('feedback', b.dataset.id, { status: b.dataset.s });
+        ctx.rerender();
+      },
+      inboxall: (c) => { inboxAll = c.checked; ctx.rerender(); },
       up: (b) => move(b, -1),
       down: (b) => move(b, 1),
       save: async (v, form) => {

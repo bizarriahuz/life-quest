@@ -829,3 +829,18 @@ a.cal-item > .i { align-self: center; color: var(--faint); }
 .email-to { font-weight: 650; font-size: 16px; margin-top: 6px; overflow-wrap: anywhere; }
 .check-email .steps { margin: 0; padding-left: 20px; display: grid; gap: 8px; font-size: 14.5px; color: var(--muted); text-align: left; }
 .check-email .steps b { color: var(--fg); font-weight: 600; }
+
+/* ---------- 1.29: feedback ---------- */
+.fb-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.fb-meta .pill { margin-right: 0; }
+.fb-msg { white-space: pre-wrap; overflow-wrap: anywhere; margin: 6px 0 4px; font-size: 15px; }
+.fb-actions { margin-top: 8px; gap: 8px; }
+.fb.done .fb-msg { color: var(--muted); }
+.fb.new { box-shadow: inset 3px 0 0 var(--accent); padding-left: 12px; }
+.fb-mine { margin-top: 14px; }
+.fb-mine summary { cursor: pointer; }
+.fb-mine .fb-msg { margin: 0; font-size: 14.5px; }
+#feedback .seg span { padding: 6px 12px; }
+label.tick { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; white-space: nowrap; }
+label.tick input[type=checkbox] { width: 18px; height: 18px; min-height: 0; padding: 0; margin: 0; flex: none; accent-color: var(--accent); appearance: auto; -webkit-appearance: checkbox; border-radius: 4px; }
+#feedback .row.spread { gap: 10px; }

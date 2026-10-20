@@ -105,6 +105,7 @@ const DEFAULTS = {
   albums: { artist: null, year: null, tracks: null, genre: null, art_url: null, itunes_id: null, apple_url: null, status: 'want', listened_on: null, rating: null, note: null },
   contacts: { relation: null, every_days: 30, note: null },
   contact_logs: { how: 'message', note: null },
+  feedback: { status: 'new', reply_to: null, sender_name: null, app_version: null, device: null, page: null },
   calendar_events: { ends_on: null, start_time: null, end_time: null, repeat: null, note: null },
   projects: { description: null, currency: 'SGD' },
   project_members: {},
@@ -147,6 +148,7 @@ export function localStore() {
         Object.assign(rec, { author_id: 'local', author_name: db.profile?.hero_name || 'You', updated_at: rec.created_at });
         if (rec.done) Object.assign(rec, { done_by: 'local', done_on: new Date().toLocaleDateString('en-CA') });
       }
+      if (table === 'feedback') Object.assign(rec, { user_id: 'local', sender_name: db.profile?.hero_name || null, reply_to: rec.reply_to ? 'offline' : null, status: 'new' });
       if (table === 'project_invites') Object.assign(rec, { token: crypto.randomUUID().replace(/-/g, ''), expires_at: new Date(Date.now() + 7 * 864e5).toISOString() });
       if (table === 'projects') {
         rec.owner_id = 'local';

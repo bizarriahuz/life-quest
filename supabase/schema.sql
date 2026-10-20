@@ -855,3 +855,63 @@ alter table public.tasks drop constraint if exists tasks_repeat_check;
 alter table public.tasks add constraint tasks_repeat_check check (repeat is null or repeat in ('daily','weekly','fortnightly','monthly','yearly'));
 alter table public.calendar_events drop constraint if exists calendar_events_repeat_check;
 alter table public.calendar_events add constraint calendar_events_repeat_check check (repeat is null or repeat in ('daily','weekly','fortnightly','monthly','yearly'));
+
+-- ---------- 1.29: feedback ----------
+create table public.app_admins (user_id uuid primary key references auth.users(id) on delete cascade);
+alter table public.app_admins enable row level security;
+-- (the maker's account id is inserted here by hand)
+create or replace function public.is_admin()
+returns boolean language sql stable security definer set search_path = '' as $$
+  select exists (select 1 from public.app_admins where user_id = auth.uid())
+$$;
+revoke all on function public.is_admin() from public, anon;
+grant execute on function public.is_admin() to authenticated;
+
+create table public.feedback (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid default auth.uid() references auth.users(id) on delete set null,
+  kind        text not null default 'idea' check (kind in ('bug','idea','other')),
+  message     text not null check (char_length(message) between 3 and 2000),
+  reply_to    text check (reply_to is null or char_length(reply_to) <= 254),
+  sender_name text check (sender_name is null or char_length(sender_name) <= 24),
+  app_version text check (app_version is null or char_length(app_version) <= 12),
+  device      text check (device is null or char_length(device) <= 120),
+  page        text check (page is null or char_length(page) <= 40),
+  status      text not null default 'new' check (status in ('new','read','done')),
+  created_at  timestamptz not null default now()
+);
+create index feedback_created_idx on public.feedback (created_at desc);
+create index feedback_user_idx on public.feedback (user_id, created_at);
+alter table public.feedback enable row level security;
+create or replace function public.feedback_before_insert()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare uid uuid := auth.uid(); want_reply boolean := new.reply_to is not null;
+begin
+  new.user_id := uid; new.status := 'new'; new.created_at := now();
+  new.sender_name := (select hero_name from public.profiles where user_id = uid);
+  new.reply_to := case when want_reply then (select email from auth.users where id = uid) end;
+  if (select count(*) from public.feedback where user_id = uid and created_at > now() - interval '1 hour') >= 10 then
+    raise exception 'Thanks! That''s a lot of feedback in one hour. Please try again a bit later.' using errcode = 'P0001';
+  end if;
+  if (select count(*) from public.feedback where user_id = uid) >= 500 then
+    raise exception 'Feedback limit reached.' using errcode = 'P0001';
+  end if;
+  return new;
+end $$;
+create trigger feedback_before_insert before insert on public.feedback for each row execute function public.feedback_before_insert();
+revoke all on function public.feedback_before_insert() from public, anon, authenticated;
+create or replace function public.feedback_before_update()
+returns trigger language plpgsql set search_path = '' as $$
+begin
+  new.id := old.id; new.user_id := old.user_id; new.kind := old.kind; new.message := old.message; new.reply_to := old.reply_to;
+  new.sender_name := old.sender_name; new.app_version := old.app_version; new.device := old.device; new.page := old.page; new.created_at := old.created_at;
+  return new;
+end $$;
+create trigger feedback_before_update before update on public.feedback for each row execute function public.feedback_before_update();
+create policy "send own" on public.feedback for insert to authenticated with check (user_id = (select auth.uid()));
+create policy "see own or admin" on public.feedback for select to authenticated using (user_id = (select auth.uid()) or public.is_admin());
+create policy "admin marks" on public.feedback for update to authenticated using (public.is_admin()) with check (public.is_admin());
+grant select, insert on public.feedback to authenticated;
+grant update (status) on public.feedback to authenticated;
+revoke all on public.feedback from anon;
+revoke all on public.app_admins from anon, authenticated;
