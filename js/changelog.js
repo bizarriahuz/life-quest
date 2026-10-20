@@ -1,6 +1,10 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.24', date: '2026-10-20', title: 'Edit tasks',
+    items: ['Tap the pencil on any task to change its name, type, due date, repeat or goal.'],
+  },
+  {
     version: '1.23', date: '2026-10-20', title: 'Week in review, search and repeating tasks',
     items: [
       'Week in review: XP day by day, highlights and every section’s numbers, Monday to Sunday. Open it from the “This week” tile on Home.',

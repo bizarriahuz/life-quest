@@ -4,11 +4,12 @@ import { XP } from '../game.js';
 import { REPEATS, REPEAT_SHORT, toggleTask } from '../tasklogic.js';
 
 const KIND = { side: 'Side', main: 'Main', job: 'Job', daily: 'Daily' };
+let editing = null;     // id of the task being edited
 const byDue = (a, b) => (a.due_on || '9999').localeCompare(b.due_on || '9999');
 const soonest = (a, b) => byDue(a, b) || a.created_at.localeCompare(b.created_at);
 
 // One task row. Shared with Goals (linked tasks) so they look the same.
-export function taskItem(q, isDone, { goalName = null, canDelete = true } = {}) {
+export function taskItem(q, isDone, { goalName = null, canDelete = true, canEdit = false } = {}) {
   const t = today();
   const subs = [];
   if (q.due_on && !isDone) subs.push(html`<span class="${q.due_on < t ? 'due-late' : ''}">${q.due_on < t ? 'Overdue · ' : 'Due '}${relDate(q.due_on)}</span>`);
@@ -23,6 +24,8 @@ export function taskItem(q, isDone, { goalName = null, canDelete = true } = {}) 
         ${subs.length ? html`<p class="sub task-sub">${subs}</p>` : ''}
       </div>
       <span class="xp">+${XP.task[q.kind]}</span>
+      ${canEdit && !(isDone && q.kind !== 'daily')
+        ? html`<button class="icon-btn" data-act="edit" data-id="${q.id}" aria-label="Edit ${q.title}">${raw(icon('edit'))}</button>` : ''}
       ${canDelete && (!isDone || q.kind === 'daily')
         ? html`<button class="icon-btn" data-act="delete" data-id="${q.id}" aria-label="Delete ${q.title}">${raw(icon('trash'))}</button>` : ''}
     </li>`;
@@ -45,7 +48,33 @@ export default {
     const done = all.filter((q) => q.kind !== 'daily' && q.done)
       .sort((a, b) => (b.done_on || '').localeCompare(a.done_on || '')).slice(0, 25);
     const dailyDone = daily.filter((q) => q.done_on === t).length;
-    const item = (q, isDone) => taskItem(q, isDone, { goalName: goalName[q.goal_id] || null });
+    const goalOpts = (sel) => html`${goals.map((g) => html`<option value="${g.id}" ${sel === g.id ? 'selected' : ''}>${g.title}</option>`)}`;
+    const editForm = (q) => html`
+      <li class="item editing">
+        <form data-form="saveedit" data-id="${q.id}" class="form grow">
+          <input name="title" value="${q.title}" maxlength="200" required aria-label="Task name">
+          <div class="fields">
+            <label class="field">Type<select name="kind" data-change="editkind">
+              ${Object.entries(KIND).map(([k, v]) => html`<option value="${k}" ${q.kind === k ? 'selected' : ''}>${v}</option>`)}
+            </select></label>
+            <label class="field ed-notdaily">Due<input type="date" name="due_on" value="${q.due_on || ''}"></label>
+            <label class="field ed-notdaily">Repeats<select name="repeat">
+              <option value="">Doesn’t repeat</option>
+              ${Object.entries(REPEATS).map(([k, v]) => html`<option value="${k}" ${q.repeat === k ? 'selected' : ''}>${v}</option>`)}
+            </select></label>
+            ${goals.length || q.goal_id ? html`<label class="field">Goal<select name="goal_id">
+              <option value="">No goal</option>${goalOpts(q.goal_id)}
+            </select></label>` : ''}
+          </div>
+          <div class="row end">
+            <button type="button" class="btn sm" data-act="canceledit">Cancel</button>
+            <button class="btn primary sm">Save</button>
+          </div>
+        </form>
+      </li>`;
+    const item = (q, isDone) => (q.id === editing && !(isDone && q.kind !== 'daily')
+      ? editForm(q)
+      : taskItem(q, isDone, { goalName: goalName[q.goal_id] || null, canEdit: true }));
 
     mount(el, html`
       <header class="page-head"><div><h1>Tasks</h1><p>${jobs.length} job${jobs.length === 1 ? '' : 's'} · ${active.length} to do · ${dailyDone}/${daily.length} dailies done</p></div></header>
@@ -110,8 +139,42 @@ export default {
       form.querySelector('.task-extra label:first-child').hidden = daily;
     };
 
+    // Edit form: Daily has no due date or repeat.
+    const syncEdit = () => {
+      const f = el.querySelector('form[data-form=saveedit]');
+      if (!f) return;
+      const daily = f.elements.kind.value === 'daily';
+      f.querySelectorAll('.ed-notdaily').forEach((x) => { x.hidden = daily; });
+    };
+    syncEdit();
+    const ef = el.querySelector('form[data-form=saveedit]');
+    if (ef) {
+      requestAnimationFrame(() => { if (ef.isConnected) { ef.elements.title.focus(); ef.scrollIntoView({ block: 'nearest' }); } });
+      ef.addEventListener('keydown', (e) => { if (e.key === 'Escape') { editing = null; ctx.rerender(); } });
+    }
+
     wire(el, {
       kind: syncKind,
+      editkind: syncEdit,
+      edit: (btn) => { editing = btn.dataset.id; ctx.rerender(); },
+      canceledit: () => { editing = null; ctx.rerender(); },
+      saveedit: async (v, f) => {
+        const q = all.find((x) => x.id === f.dataset.id);
+        if (!q || !v.title) return;
+        const kind = v.kind || q.kind;
+        const daily = kind === 'daily';
+        const repeat = daily ? null : v.repeat || null;
+        const patch = {
+          title: v.title.slice(0, 200), kind,
+          due_on: daily ? null : v.due_on || (repeat ? t : null),
+          repeat, goal_id: v.goal_id || null,
+        };
+        if (daily !== (q.kind === 'daily')) Object.assign(patch, { done: false, done_on: null });   // switching to/from Daily starts fresh
+        await ctx.store.update('tasks', q.id, patch);
+        editing = null;
+        ctx.say('Task updated');
+        ctx.rerender();
+      },
       add: async (v, f) => {
         if (!v.title) return;
         const kind = v.kind || 'side';

@@ -750,3 +750,6 @@ mark { background: color-mix(in srgb, var(--accent) 28%, transparent); color: in
 .tl-val { font-size: 26px; font-weight: 700; letter-spacing: -.03em; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 4px; }
 .tl-sub { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tile.hot .tl-sub { color: var(--accent-text); font-weight: 600; }
+.item.editing { display: block; }
+.item.editing .form { gap: 10px; }
+.ed-notdaily[hidden] { display: none; }
