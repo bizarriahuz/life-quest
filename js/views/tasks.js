@@ -12,10 +12,11 @@ export default {
     const t = today();
     const all = await ctx.store.list('tasks', { order: 'created_at', asc: true });   // oldest first
     const daily = all.filter((q) => q.kind === 'daily');
-    const jobs = all.filter((q) => q.kind === 'job' && !q.done).sort(byDue);
-    // To do keeps the order you added things: earliest on top, latest at the bottom.
+    const jobs = all.filter((q) => q.kind === 'job' && !q.done)
+      .sort((a, b) => byDue(a, b) || a.created_at.localeCompare(b.created_at));   // soonest due first
+    // To do: soonest due date on top. No due date goes below, in the order added (earliest first).
     const active = all.filter((q) => (q.kind === 'main' || q.kind === 'side') && !q.done)
-      .sort((a, b) => a.created_at.localeCompare(b.created_at));
+      .sort((a, b) => byDue(a, b) || a.created_at.localeCompare(b.created_at));
     const done = all.filter((q) => q.kind !== 'daily' && q.done)
       .sort((a, b) => (b.done_on || '').localeCompare(a.done_on || '')).slice(0, 25);
     const dailyDone = daily.filter((q) => q.done_on === t).length;

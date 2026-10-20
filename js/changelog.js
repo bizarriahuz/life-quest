@@ -2,7 +2,7 @@
 export const CHANGELOG = [
   {
     version: '1.22', date: '2026-10-20', title: 'Tidier to-do list',
-    items: ['To do now keeps the order you added things: earliest at the top, newest at the bottom.'],
+    items: ['To do and Jobs are sorted by due date: the soonest at the top. Tasks with no due date sit below, oldest first.'],
   },
   {
     version: '1.21', date: '2026-10-20', title: 'Swipe between sections',
