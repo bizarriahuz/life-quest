@@ -1,6 +1,6 @@
 import { cloudEnabled, getClient, cloudStore, localStore } from './store.js';
 import { withCache } from './cache.js';
-import { hasUnseen, markSeen } from './changelog.js';
+import { hasUnseen } from './changelog.js';
 import { applyTheme } from './theme.js';
 import { captchaEnabled, mountCaptcha } from './captcha.js';
 import { html, raw, mount, wire, toast, levelUpModal } from './ui.js';
@@ -154,7 +154,12 @@ async function route() {
   S.swipe = null;
   main.replaceChildren(fresh);
   main.dataset.view = view.id;
-  if (view.id === 'settings') { markSeen(); document.querySelector('.nav a[data-view=settings]')?.classList.remove('has-new'); }
+  // Settings dot: unread What's new, or (for the maker) new feedback.
+  if (view.id === 'settings') {
+    if (location.hash.startsWith('#/settings/inbox')) S.inboxNew = 0;
+    document.querySelector('.nav a[data-view=settings]')?.classList.toggle('has-new', hasUnseen() || S.inboxNew > 0);
+    if (!/^#\/settings\/\w/.test(location.hash)) checkInbox();
+  }
   if (!sameView) {
     window.scrollTo(0, 0);
     document.querySelector('.nav a.active')?.scrollIntoView({ block: 'nearest', inline: 'center' });
@@ -227,8 +232,9 @@ async function checkInbox() {
     isAdmin ??= Boolean(await S.store.rpc('is_admin', {}));
     if (!isAdmin) return;
     const fresh = await S.store.list('feedback', { match: { status: 'new' }, limit: 50 });
+    S.inboxNew = location.hash.startsWith('#/settings/inbox') ? 0 : fresh.length;
     const a = document.querySelector('.nav a[data-view=settings]');
-    if (a && fresh.length) { a.classList.add('has-new'); a.title = `${fresh.length} new feedback`; }
+    if (a) { a.classList.toggle('has-new', hasUnseen() || S.inboxNew > 0); a.title = S.inboxNew ? `${S.inboxNew} new feedback` : ''; }
   } catch { /* ignore */ }
 }
 

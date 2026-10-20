@@ -1,6 +1,13 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.32', date: '2026-10-21', title: 'Settings, tidied',
+    items: [
+      'Settings is now a short menu: Appearance, Sections, Profile, What’s new, Feedback and Account, each on its own page.',
+      'Each row shows your current choice at a glance, like your theme and how many sections are on.',
+    ],
+  },
+  {
     version: '1.31', date: '2026-10-21', title: 'A simpler start',
     items: [
       'New here? A welcome screen lets you choose what to track before you begin.',
