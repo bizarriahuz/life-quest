@@ -5,7 +5,7 @@
 const FRESH_MS = 3000;           // don't re-check the same list more often than this
 const CASCADE = {
   hobbies: ['hobby_sessions'], savings_goals: ['savings_contributions'], finance_categories: ['transactions'],
-  goals: ['goal_milestones', 'tasks'], learning_items: ['learning_sessions'], mtg_decks: ['mtg_matches'], contacts: ['contact_logs'],
+  goals: ['goal_milestones', 'tasks'], projects: ['project_members', 'project_invites', 'project_entries'], learning_items: ['learning_sessions'], mtg_decks: ['mtg_matches'], contacts: ['contact_logs'],
 }; // deleting a hobby deletes its sessions
 
 export function withCache(store, onStale) {
@@ -50,6 +50,9 @@ export function withCache(store, onStale) {
     update: (t, id, patch) => after(t, store.update)(t, id, patch),
     remove: (t, id) => after(t, store.remove)(t, id),
     removeWhere: (t, match) => after(t, store.removeWhere)(t, match),
+    updateWhere: (t, match, patch) => after(t, store.updateWhere)(t, match, patch),
+    rpc: async (fn, args) => { try { return await store.rpc(fn, args); } finally { if (fn === 'join_project') { invalidate('projects'); } } },
+    invalidate,
     clear: () => cache.clear(),
   };
 }

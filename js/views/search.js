@@ -21,9 +21,10 @@ const SOURCES = {
   watchlist: ['watchlist', (r) => ({ title: r.title, text: r.note, sub: [r.year, r.kind, r.status === 'done' ? 'Watched' : r.status === 'watching' ? 'Watching' : 'Want to watch'] })],
   music:    ['albums', (r) => ({ title: r.title, text: `${r.artist || ''} ${r.note || ''}`, sub: [r.artist, r.year, r.status === 'listened' ? 'Listened' : 'Want to listen'] })],
   people:   ['contacts', (r) => ({ title: r.name, text: `${r.relation || ''} ${r.note || ''}`, sub: [r.relation] })],
+  projects: ['project_entries', (r) => ({ title: r.title, text: r.body, sub: [{ task: r.done ? 'Done task' : 'Task', note: 'Note', expense: `Cost · $${Number(r.amount).toFixed(2)}` }[r.kind], r.author_name], href: `#/projects/${r.project_id}` })],
   finance:  ['transactions', (r) => ({ title: r.note, sub: [fmtDate(r.occurred_on), r.kind === 'sadaqah' ? 'Sadaqah' : r.kind === 'income' ? 'Income' : 'Spent', `$${Number(r.amount).toFixed(2)}`] })],
 };
-const LABEL = { tasks: 'Tasks', goals: 'Goals', clients: 'Clients', books: 'Books', comics: 'Comics', learning: 'Learning', notes: 'Notes', mood: 'Mood', quotes: 'Quotes', hobbies: 'Hobbies', mtg: 'MTG', watchlist: 'Watchlist', music: 'Music', people: 'People', finance: 'Finance' };
+const LABEL = { tasks: 'Tasks', goals: 'Goals', projects: 'Projects', clients: 'Clients', books: 'Books', comics: 'Comics', learning: 'Learning', notes: 'Notes', mood: 'Mood', quotes: 'Quotes', hobbies: 'Hobbies', mtg: 'MTG', watchlist: 'Watchlist', music: 'Music', people: 'People', finance: 'Finance' };
 
 const fold = (s) => String(s ?? '').normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
@@ -110,7 +111,7 @@ export default {
               const titleHit = words.some((w) => fold(v.title).includes(w));
               const snip = !titleHit || (v.text && words.some((w) => fold(v.text).includes(w))) ? snippet(v.text, words) : '';
               const sub = v.sub.filter(Boolean).join(' · ');
-              return html`<li><a class="item hit" href="#/${k}">
+              return html`<li><a class="item hit" href="${v.href || `#/${k}`}">
                 <div class="body">
                   <p class="title">${raw(mark(v.title || snip || '', words))}</p>
                   ${snip && v.title && !v.deck ? html`<p class="sub snip">${raw(mark(snip, words))}</p>` : ''}

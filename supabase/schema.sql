@@ -534,3 +534,286 @@ alter table public.tasks add constraint tasks_goal_fk
 alter table public.tasks drop constraint if exists tasks_repeat_kind;
 alter table public.tasks add constraint tasks_repeat_kind check (repeat is null or kind <> 'daily');
 create index if not exists tasks_goal_idx on public.tasks(goal_id) where goal_id is not null;
+
+-- ---------- 1.25: shared projects ----------
+-- Everything else in Life Quest is private to its owner. Projects are the one place
+-- other people can see your rows: only members of a project can read it, only
+-- owners and editors can write to it, and you join only through an invite link.
+
+alter table public.profiles drop constraint if exists profiles_sections_check;
+alter table public.profiles add constraint profiles_sections_check check (sections is null or sections <@ array[
+  'tasks','goals','clients','prayer','fitness','sleep','books','comics','learning','notes','mood','quotes',
+  'hobbies','mtg','watchlist','music','people','finance','projects']::text[]);
+
+create table public.projects (
+  id          uuid primary key default gen_random_uuid(),
+  owner_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  name        text not null check (char_length(name) between 1 and 80),
+  description text check (description is null or char_length(description) <= 300),
+  currency    text not null default 'SGD' check (currency ~ '^[A-Z]{3}$'),
+  created_at  timestamptz not null default now()
+);
+
+create table public.project_members (
+  project_id   uuid not null references public.projects(id) on delete cascade,
+  user_id      uuid not null references auth.users(id) on delete cascade,
+  role         text not null default 'editor' check (role in ('owner','editor','viewer')),
+  display_name text not null default 'Member' check (char_length(display_name) between 1 and 24),
+  joined_at    timestamptz not null default now(),
+  primary key (project_id, user_id)
+);
+create index project_members_user_idx on public.project_members (user_id);
+
+create table public.project_invites (
+  token      text primary key default (replace(gen_random_uuid()::text, '-', '') || replace(gen_random_uuid()::text, '-', '')),
+  project_id uuid not null references public.projects(id) on delete cascade,
+  role       text not null default 'editor' check (role in ('editor','viewer')),
+  created_by uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  expires_at timestamptz not null default now() + interval '7 days',
+  created_at timestamptz not null default now()
+);
+create index project_invites_project_idx on public.project_invites (project_id);
+
+create table public.project_entries (
+  id          uuid primary key default gen_random_uuid(),
+  project_id  uuid not null references public.projects(id) on delete cascade,
+  author_id   uuid default auth.uid() references auth.users(id) on delete set null,
+  author_name text not null default 'Member' check (char_length(author_name) <= 24),
+  kind        text not null check (kind in ('task','note','expense')),
+  title       text not null check (char_length(title) between 1 and 200),
+  body        text check (body is null or char_length(body) <= 5000),
+  amount      numeric(12,2) check (amount is null or amount > 0),
+  paid_by     uuid references auth.users(id) on delete set null,
+  assignee_id uuid references auth.users(id) on delete set null,
+  due_on      date,
+  done        boolean not null default false,
+  done_by     uuid references auth.users(id) on delete set null,
+  done_on     date,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now(),
+  check (kind <> 'expense' or amount is not null)
+);
+create index project_entries_project_idx on public.project_entries (project_id, created_at);
+create index project_entries_author_idx on public.project_entries (author_id, created_at);
+
+-- ---------- membership helpers (security definer so policies don't recurse) ----------
+create or replace function public.project_role(p uuid)
+returns text language sql stable security definer set search_path = '' as $$
+  select role from public.project_members where project_id = p and user_id = auth.uid()
+$$;
+create or replace function public.member_name()
+returns text language sql stable security definer set search_path = '' as $$
+  select coalesce(nullif(nullif(trim(hero_name), 'HERO'), 'You'), 'Member') from public.profiles where user_id = auth.uid()
+$$;
+revoke all on function public.project_role(uuid) from public, anon;
+revoke all on function public.member_name() from public, anon;
+grant execute on function public.project_role(uuid) to authenticated;
+
+-- The person who creates a project becomes its owner. Caps: 50 projects owned, 100 joined.
+create or replace function public.projects_before_insert()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  new.owner_id := auth.uid();
+  if (select count(*) from public.projects where owner_id = new.owner_id) >= 50 then
+    raise exception 'Limit reached: 50 projects at most.' using errcode = 'P0001';
+  end if;
+  if (select count(*) from public.projects where owner_id = new.owner_id and created_at > now() - interval '1 minute') >= 10 then
+    raise exception 'Too many changes at once. Wait a minute and try again.' using errcode = 'P0001';
+  end if;
+  return new;
+end $$;
+create trigger projects_before_insert before insert on public.projects
+  for each row execute function public.projects_before_insert();
+
+create or replace function public.projects_after_insert()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  insert into public.project_members (project_id, user_id, role, display_name)
+  values (new.id, new.owner_id, 'owner', coalesce(public.member_name(), 'Owner'));
+  return new;
+end $$;
+create trigger projects_after_insert after insert on public.projects
+  for each row execute function public.projects_after_insert();
+
+-- The owner can't be changed by editing the row.
+create or replace function public.projects_before_update()
+returns trigger language plpgsql set search_path = '' as $$
+begin
+  new.owner_id := old.owner_id; new.created_at := old.created_at;
+  return new;
+end $$;
+create trigger projects_before_update before update on public.projects
+  for each row execute function public.projects_before_update();
+
+-- Members: only role can be changed, by the owner, and never to/from owner.
+create or replace function public.members_before_update()
+returns trigger language plpgsql set search_path = '' as $$
+begin
+  if old.role = 'owner' or new.role = 'owner' then
+    raise exception 'The owner''s role can''t be changed.' using errcode = 'P0001';
+  end if;
+  new.project_id := old.project_id; new.user_id := old.user_id; new.joined_at := old.joined_at;
+  return new;
+end $$;
+create trigger members_before_update before update on public.project_members
+  for each row execute function public.members_before_update();
+
+-- Invites: at most 20 live links per project.
+create or replace function public.invites_before_insert()
+returns trigger language plpgsql set search_path = '' as $$
+begin
+  new.created_by := auth.uid();
+  new.expires_at := least(coalesce(new.expires_at, now() + interval '7 days'), now() + interval '30 days');
+  if (select count(*) from public.project_invites where project_id = new.project_id and expires_at > now()) >= 20 then
+    raise exception 'Too many invite links. Delete an old one first.' using errcode = 'P0001';
+  end if;
+  return new;
+end $$;
+create trigger invites_before_insert before insert on public.project_invites
+  for each row execute function public.invites_before_insert();
+
+-- Entries: the server fills in who wrote it and who ticked it; people named must be members.
+create or replace function public.entries_guard()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare uid uuid := auth.uid();
+begin
+  if tg_op = 'INSERT' then
+    new.author_id := uid;
+    new.author_name := coalesce((select display_name from public.project_members where project_id = new.project_id and user_id = uid), 'Member');
+    new.created_at := now();
+    if (select count(*) from public.project_entries where project_id = new.project_id) >= 5000 then
+      raise exception 'This project is full (5,000 entries). Remove some old ones to add more.' using errcode = 'P0001';
+    end if;
+    if (select count(*) from public.project_entries where author_id = uid and created_at > now() - interval '1 minute') >= 60 then
+      raise exception 'Too many changes at once. Wait a minute and try again.' using errcode = 'P0001';
+    end if;
+  else
+    new.project_id := old.project_id; new.author_id := old.author_id; new.author_name := old.author_name;
+    new.created_at := old.created_at; new.kind := old.kind;
+  end if;
+  if new.assignee_id is not null and not exists (select 1 from public.project_members where project_id = new.project_id and user_id = new.assignee_id) then
+    raise exception 'That person isn''t in this project.' using errcode = 'P0001';
+  end if;
+  if new.paid_by is not null and not exists (select 1 from public.project_members where project_id = new.project_id and user_id = new.paid_by) then
+    raise exception 'That person isn''t in this project.' using errcode = 'P0001';
+  end if;
+  if new.kind <> 'task' then new.done := false; new.assignee_id := null; new.due_on := null; end if;
+  if new.kind <> 'expense' then new.amount := null; new.paid_by := null; end if;
+  if not new.done then
+    new.done_by := null; new.done_on := null;
+  elsif tg_op = 'INSERT' then
+    new.done_by := uid; new.done_on := current_date;
+  elsif not old.done then
+    new.done_by := uid; new.done_on := current_date;
+  else
+    new.done_by := old.done_by; new.done_on := old.done_on;
+  end if;
+  new.updated_at := now();
+  return new;
+end $$;
+create trigger entries_guard before insert or update on public.project_entries
+  for each row execute function public.entries_guard();
+
+-- Your name in projects follows your Life Quest name.
+create or replace function public.profiles_sync_member_name()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if new.hero_name is distinct from old.hero_name then
+    update public.project_members
+       set display_name = coalesce(nullif(nullif(trim(new.hero_name), 'HERO'), 'You'), 'Member')
+     where user_id = new.user_id;
+  end if;
+  return new;
+end $$;
+create trigger profiles_sync_member_name after update of hero_name on public.profiles
+  for each row execute function public.profiles_sync_member_name();
+
+-- ---------- joining by invite link ----------
+create or replace function public.invite_info(p_token text)
+returns table (project_id uuid, name text, members int, role text, already boolean)
+language plpgsql stable security definer set search_path = '' as $$
+begin
+  if auth.uid() is null then raise exception 'Sign in first.' using errcode = 'P0001'; end if;
+  return query
+    select p.id, p.name, (select count(*)::int from public.project_members m where m.project_id = p.id), i.role,
+           exists (select 1 from public.project_members m where m.project_id = p.id and m.user_id = auth.uid())
+      from public.project_invites i join public.projects p on p.id = i.project_id
+     where i.token = p_token and i.expires_at > now();
+end $$;
+
+create or replace function public.join_project(p_token text)
+returns uuid language plpgsql security definer set search_path = '' as $$
+declare inv public.project_invites; uid uuid := auth.uid();
+begin
+  if uid is null then raise exception 'Sign in first.' using errcode = 'P0001'; end if;
+  select * into inv from public.project_invites where token = p_token and expires_at > now();
+  if not found then raise exception 'This invite link has expired or isn''t valid. Ask for a new one.' using errcode = 'P0001'; end if;
+  if exists (select 1 from public.project_members where project_id = inv.project_id and user_id = uid) then return inv.project_id; end if;
+  if (select count(*) from public.project_members where project_id = inv.project_id) >= 50 then
+    raise exception 'This project is full (50 people).' using errcode = 'P0001';
+  end if;
+  if (select count(*) from public.project_members where user_id = uid) >= 100 then
+    raise exception 'You''re in 100 projects already. Leave one to join another.' using errcode = 'P0001';
+  end if;
+  insert into public.project_members (project_id, user_id, role, display_name)
+  values (inv.project_id, uid, inv.role, coalesce(public.member_name(), 'Member'));
+  return inv.project_id;
+end $$;
+revoke all on function public.invite_info(text) from public, anon;
+revoke all on function public.join_project(text) from public, anon;
+grant execute on function public.invite_info(text) to authenticated;
+grant execute on function public.join_project(text) to authenticated;
+revoke all on function public.member_name() from authenticated;
+revoke all on function public.projects_before_insert() from public, anon, authenticated;
+revoke all on function public.projects_after_insert() from public, anon, authenticated;
+revoke all on function public.entries_guard() from public, anon, authenticated;
+revoke all on function public.profiles_sync_member_name() from public, anon, authenticated;
+
+-- ---------- row level security ----------
+alter table public.projects        enable row level security;
+alter table public.project_members enable row level security;
+alter table public.project_invites enable row level security;
+alter table public.project_entries enable row level security;
+
+create policy "members read" on public.projects for select to authenticated
+  using (owner_id = (select auth.uid()) or public.project_role(id) is not null);
+create policy "create own" on public.projects for insert to authenticated
+  with check (owner_id = (select auth.uid()));
+create policy "owner edits" on public.projects for update to authenticated
+  using (public.project_role(id) = 'owner') with check (public.project_role(id) = 'owner');
+create policy "owner deletes" on public.projects for delete to authenticated
+  using (public.project_role(id) = 'owner');
+
+create policy "members read" on public.project_members for select to authenticated
+  using (public.project_role(project_id) is not null);
+create policy "owner sets roles" on public.project_members for update to authenticated
+  using (public.project_role(project_id) = 'owner' and user_id <> (select auth.uid()))
+  with check (role in ('editor','viewer'));
+create policy "leave or remove" on public.project_members for delete to authenticated
+  using ((user_id = (select auth.uid()) and role <> 'owner')
+      or (public.project_role(project_id) = 'owner' and user_id <> (select auth.uid())));
+
+create policy "owner reads invites" on public.project_invites for select to authenticated
+  using (public.project_role(project_id) = 'owner');
+create policy "owner makes invites" on public.project_invites for insert to authenticated
+  with check (public.project_role(project_id) = 'owner');
+create policy "owner removes invites" on public.project_invites for delete to authenticated
+  using (public.project_role(project_id) = 'owner');
+
+create policy "members read" on public.project_entries for select to authenticated
+  using (public.project_role(project_id) is not null);
+create policy "editors add" on public.project_entries for insert to authenticated
+  with check (public.project_role(project_id) in ('owner','editor'));
+create policy "editors change" on public.project_entries for update to authenticated
+  using (public.project_role(project_id) in ('owner','editor'))
+  with check (public.project_role(project_id) in ('owner','editor'));
+create policy "author or owner deletes" on public.project_entries for delete to authenticated
+  using ((author_id = (select auth.uid()) and public.project_role(project_id) in ('owner','editor'))
+      or public.project_role(project_id) = 'owner');
+
+grant select, insert, update, delete on public.projects, public.project_entries, public.project_invites to authenticated;
+grant select, delete on public.project_members to authenticated;
+grant update (role) on public.project_members to authenticated;
+
+-- Live updates for people looking at the same project.
+alter publication supabase_realtime add table public.project_entries, public.project_members, public.projects;

@@ -14,6 +14,9 @@ export async function getClient() {
   return client;
 }
 
+// Shared project tables have no user_id: the server decides who owns or wrote a row.
+const SHARED = new Set(['projects', 'project_members', 'project_invites', 'project_entries']);
+
 export function cloudStore(sb, user) {
   const ok = ({ data, error }) => { if (error) throw error; return data; };
   const store = {
@@ -29,12 +32,23 @@ export function cloudStore(sb, user) {
       return ok(await q);
     },
     async insert(table, row) {
-      return ok(await sb.from(table).insert({ ...row, user_id: user.id }).select().single());
+      return ok(await sb.from(table).insert(SHARED.has(table) ? row : { ...row, user_id: user.id }).select().single());
     },
     async update(table, id, patch) {
       return ok(await sb.from(table).update(patch).eq('id', id).select().single());
     },
     async remove(table, id) { ok(await sb.from(table).delete().eq('id', id)); },
+    async updateWhere(table, match, patch) { return ok(await sb.from(table).update(patch).match(match).select()); },
+    async rpc(fn, args) { return ok(await sb.rpc(fn, args)); },
+    // Live changes to one project. Returns a function that stops listening.
+    subscribe(projectId, onChange) {
+      const ch = sb.channel(`project:${projectId}:${Math.random().toString(36).slice(2)}`);
+      for (const table of ['project_entries', 'project_members'])
+        ch.on('postgres_changes', { event: '*', schema: 'public', table, filter: `project_id=eq.${projectId}` }, () => onChange(table));
+      ch.on('postgres_changes', { event: '*', schema: 'public', table: 'projects', filter: `id=eq.${projectId}` }, () => onChange('projects'));
+      ch.subscribe();
+      return () => { try { sb.removeChannel(ch); } catch { /* ignore */ } };
+    },
     async removeWhere(table, match) { ok(await sb.from(table).delete().match(match)); },
     async award(stat, amount, source, sourceId) {
       ok(await sb.from('xp_events').upsert(
@@ -91,6 +105,10 @@ const DEFAULTS = {
   albums: { artist: null, year: null, tracks: null, genre: null, art_url: null, itunes_id: null, apple_url: null, status: 'want', listened_on: null, rating: null, note: null },
   contacts: { relation: null, every_days: 30, note: null },
   contact_logs: { how: 'message', note: null },
+  projects: { description: null, currency: 'SGD' },
+  project_members: {},
+  project_invites: { role: 'editor' },
+  project_entries: { body: null, amount: null, paid_by: null, assignee_id: null, due_on: null, done: false, done_by: null, done_on: null },
   watchlist: { kind: 'film', status: 'queued', rating: null, note: null, done_on: null, tmdb_id: null, tmdb_type: null, imdb_id: null, year: null, poster_url: null, details: null, overview: null },
 };
 const UNIQUE = { prayer_logs: ['prayed_on', 'prayer'], hobbies: ['name'], finance_categories: ['kind', 'name'], sleep_logs: ['slept_on'], moods: ['logged_on'] };
@@ -124,12 +142,24 @@ export function localStore() {
       }
       const rec = { ...DEFAULTS[table], ...row, id: crypto.randomUUID(), user_id: 'local', created_at: now() };
       if (table === 'notes') rec.updated_at = rec.created_at;
+      if (table === 'project_entries') {
+        Object.assign(rec, { author_id: 'local', author_name: db.profile?.hero_name || 'You', updated_at: rec.created_at });
+        if (rec.done) Object.assign(rec, { done_by: 'local', done_on: new Date().toLocaleDateString('en-CA') });
+      }
+      if (table === 'project_invites') Object.assign(rec, { token: crypto.randomUUID().replace(/-/g, ''), expires_at: new Date(Date.now() + 7 * 864e5).toISOString() });
+      if (table === 'projects') {
+        rec.owner_id = 'local';
+        tbl('project_members').push({ project_id: rec.id, user_id: 'local', role: 'owner', display_name: db.profile?.hero_name || 'You', joined_at: rec.created_at });
+      }
       tbl(table).push(rec); save();
       return structuredClone(rec);
     },
     async update(table, id, patch) {
       const rec = tbl(table).find((r) => r.id === id);
       if (!rec) throw new Error('Not found.');
+      if (table === 'project_entries' && 'done' in patch && patch.done !== rec.done) {
+        Object.assign(patch, patch.done ? { done_by: 'local', done_on: new Date().toLocaleDateString('en-CA') } : { done_by: null, done_on: null });
+      }
       Object.assign(rec, patch); save();
       return structuredClone(rec);
     },
@@ -139,11 +169,18 @@ export function localStore() {
       if (table === 'savings_goals') db.savings_contributions = tbl('savings_contributions').filter((c) => c.goal_id !== id);
       const KIDS = { goals: ['goal_milestones', 'goal_id'], learning_items: ['learning_sessions', 'item_id'], mtg_decks: ['mtg_matches', 'deck_id'], contacts: ['contact_logs', 'contact_id'] };
       if (KIDS[table]) { const [kt, fk] = KIDS[table]; db[kt] = tbl(kt).filter((r) => r[fk] !== id); }
+      if (table === 'projects') for (const t of ['project_members', 'project_invites', 'project_entries']) db[t] = tbl(t).filter((r) => r.project_id !== id);
       if (table === 'goals') for (const x of tbl('tasks')) if (x.goal_id === id) x.goal_id = null;
       if (table === 'finance_categories') for (const x of tbl('transactions')) if (x.category_id === id) x.category_id = null;
       save();
     },
     async removeWhere(table, match) { db[table] = tbl(table).filter((r) => !matches(r, match)); save(); },
+    async updateWhere(table, match, patch) { const rows = tbl(table).filter((r) => matches(r, match)); rows.forEach((r) => Object.assign(r, patch)); save(); return structuredClone(rows); },
+    async rpc(fn) {
+      if (fn === 'invite_info') return [];
+      throw new Error('Joining shared projects needs a Life Quest account.');
+    },
+    subscribe() { return () => {}; },
     async award(stat, amount, source, sourceId) {
       const id = String(sourceId);
       if (tbl('xp_events').some((e) => e.source === source && e.source_id === id)) return;

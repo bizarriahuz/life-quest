@@ -52,6 +52,11 @@ export default {
     const wk = weekStart(t);
     const isoOf = (k) => { const [y, mo, d] = k.split('-').map(Number); return new Date(y, mo - 1, d).toISOString(); };
     const xpWeek = await ctx.store.list('xp_events', { gte: ['created_at', isoOf(wk)] }).catch(() => []);
+    const [projAll, projOpen] = on.has('projects') ? await Promise.all([
+      ctx.store.list('projects', {}).catch(() => []),
+      ctx.store.list('project_entries', { match: { kind: 'task', done: false } }).catch(() => []),
+    ]) : [[], []];
+    const projMine = projOpen.filter((x) => x.assignee_id === ctx.store.user.id).length;
     const spentMonth = monthTxns.reduce((n, x) => n + Number(x.amount), 0);
     const budgetMonth = cats.reduce((n, c) => n + (c.kind === 'expense' ? Number(c.budget) || 0 : 0), 0);
     const budgetIds = new Set(cats.filter((c) => Number(c.budget) > 0).map((c) => c.id));
@@ -96,6 +101,8 @@ export default {
     const overdue = contacts.filter((c) => !lastSeen[c.id] || addDays(lastSeen[c.id], c.every_days) <= t);
     const lm = lastMatch[0];
     const todayRows = {
+      projects: () => html`<a href="#/projects">${raw(icon('projects'))}<span class="t-label">Projects</span>
+              <span class="t-val"><span class="t-txt">${projAll.length ? `${projAll.length} shared${projMine ? ` · ${projMine} task${projMine === 1 ? '' : 's'} for you` : ` · ${projOpen.length} open`}` : 'Start one with friends'}</span></span></a>`,
       goals: () => html`<a href="#/goals">${raw(icon('goals'))}<span class="t-label">Goals</span>
               <span class="t-val"><span class="t-txt">${nextGoal ? `${nextGoal.title} · ${goalSteps.filter((s) => s.done).length}/${goalSteps.length}` : 'Set a goal'}</span></span></a>`,
       clients: () => html`<a href="#/clients">${raw(icon('clients'))}<span class="t-label">Clients</span>

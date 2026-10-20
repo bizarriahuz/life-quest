@@ -1,6 +1,15 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.25', date: '2026-10-20', title: 'Shared projects',
+    items: [
+      'New Projects section: plan things together with friends and family. Switch it on in Settings.',
+      'Each project has tasks (with who it’s for and a due date), notes, and costs split equally with a settle-up list.',
+      'Invite people with a link. They join as an editor or view-only, and changes show up for everyone straight away.',
+      'Only members can see a project. Everything else in Life Quest stays private to you.',
+    ],
+  },
+  {
     version: '1.24', date: '2026-10-20', title: 'Edit tasks',
     items: ['Tap the pencil on any task to change its name, type, due date, repeat or goal.'],
   },

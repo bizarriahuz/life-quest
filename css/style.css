@@ -753,3 +753,39 @@ mark { background: color-mix(in srgb, var(--accent) 28%, transparent); color: in
 .item.editing { display: block; }
 .item.editing .form { gap: 10px; }
 .ed-notdaily[hidden] { display: none; }
+
+/* ---------- 1.25: shared projects ---------- */
+.back { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); font-size: 14px; margin-bottom: -6px; justify-self: start; }
+.proj-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.proj-card { display: grid; gap: 8px; color: inherit; text-decoration: none; }
+.proj-card h2 { font-size: 18px; font-weight: 650; min-width: 0; overflow-wrap: anywhere; }
+.proj-foot { margin-top: 6px; }
+.faces { display: inline-flex; }
+.faces i, .face { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; font-style: normal; font-size: 11.5px; font-weight: 700;
+  background: var(--surface-2); color: var(--fg); border: 2px solid var(--surface); }
+.faces i + i { margin-left: -8px; }
+.face { width: 36px; height: 36px; flex: none; border: 0; font-size: 13px; }
+.accent { color: var(--accent-text); }
+.ptabs { display: flex; width: 100%; }
+.ptabs label { flex: 1; text-align: center; }
+.ptabs span { padding: 8px 6px; }
+.ptabs em { font-style: normal; opacity: .7; font-size: 12px; }
+.item.mine .title { font-weight: 600; }
+.pnote { display: grid; gap: 8px; }
+.pnote h3 { font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
+.pnote-body { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--fg); font-size: 15px; }
+.bal { font-size: 13.5px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.bal.pos { color: var(--accent-text); }
+.settle { list-style: none; padding: 0; display: grid; gap: 6px; }
+.settle li { display: flex; flex-wrap: wrap; gap: 4px; align-items: baseline; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); }
+.settle .amt { margin-left: auto; font-weight: 650; }
+.item .amt { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.role-sel { width: auto; padding: 6px 28px 6px 10px; font-size: 13px; }
+.invites .item { flex-wrap: wrap; }
+.invites .body { flex-basis: 100%; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+.text-btn.danger { color: var(--muted); text-decoration: underline; }
+.join-card { display: grid; justify-items: center; text-align: center; gap: 12px; padding: 32px 20px; max-width: 520px; margin: 24px auto 0; width: 100%; }
+.join-card h1 { font-size: 24px; }
+.join-note { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; padding: 12px; border-radius: 12px; background: var(--surface-2); }
+.check[disabled] { opacity: .45; cursor: default; }

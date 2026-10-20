@@ -5,6 +5,7 @@
 export const SECTIONS = [
   { id: 'tasks',   label: 'Tasks',   hint: 'To-dos, jobs and daily habits' },
   { id: 'goals',   label: 'Goals',   hint: 'Bigger goals broken into milestones' },
+  { id: 'projects', label: 'Projects', hint: 'Shared with friends: tasks, notes and split costs' },
   { id: 'clients', label: 'Clients', hint: 'Side-gig pipeline: leads, quotes, invoices' },
   { id: 'prayer',  label: 'Prayer',  hint: 'Five daily prayers and the Daily Awrad' },
   { id: 'fitness', label: 'Fitness', hint: 'Runs, workouts and sport' },
@@ -31,7 +32,7 @@ export function enabledSections(profile) {
 
 export const STATS = {
   STR: { name: 'Strength',   from: 'Fitness',        view: 'fitness', sections: ['fitness'] },
-  DEX: { name: 'Discipline', from: 'Tasks & goals',  view: 'tasks',   sections: ['tasks', 'goals'] },
+  DEX: { name: 'Discipline', from: 'Tasks, goals & projects', view: 'tasks', sections: ['tasks', 'goals', 'projects'] },
   INT: { name: 'Knowledge',  from: 'Reading & learning', view: 'books', sections: ['books', 'comics', 'learning'] },
   WIS: { name: 'Reflection', from: 'Notes, mood & quotes', view: 'notes', sections: ['notes', 'mood', 'quotes'] },
   CHA: { name: 'Craft',      from: 'Hobbies, MTG & media', view: 'hobbies', sections: ['hobbies', 'mtg', 'watchlist', 'music'] },
@@ -79,6 +80,7 @@ export const XP = {
   contact: 10,
   watched: 5,
   listened: 5,
+  projectTask: 15,   // a shared task you tick off (only the person who ticks it gets XP)
 };
 
 // Overall level: 100 XP for level 2, then +50 more per level.

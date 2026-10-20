@@ -28,9 +28,11 @@ import people from './views/people.js';
 import music from './views/music.js';
 import search from './views/search.js';
 import review from './views/review.js';
+import projects from './views/projects.js';
+import join from './views/join.js';
 
-const VIEWS = [home, tasks, goals, clients, prayer, fitness, sleep, books, comics, learning, notes, mood, quotes, hobbies, mtg, watchlist, music, people, finance, settings];
-const HIDDEN = [search, review];   // pages reached from buttons, not the menu
+const VIEWS = [home, tasks, goals, projects, clients, prayer, fitness, sleep, books, comics, learning, notes, mood, quotes, hobbies, mtg, watchlist, music, people, finance, settings];
+const HIDDEN = [search, review, join];   // pages reached from buttons, not the menu
 const root = document.getElementById('app');
 const S = { store: null, profile: null, rawTotals: {}, routeToken: 0, swipe: null };
 const sections = () => enabledSections(S.profile);
@@ -242,14 +244,22 @@ async function start(rawStore) {
   }
   renderShell();
   setupSwipe();
+  // Opened an invite link while signed out: carry on to it now.
+  try {
+    const pending = localStorage.getItem(JOIN_KEY);
+    if (pending) { localStorage.removeItem(JOIN_KEY); if (!location.hash.startsWith('#/join/')) location.hash = pending; }
+  } catch { /* ignore */ }
   window.onhashchange = route;
   await route();
   prefetch(document.getElementById('view')?.dataset.view);
 }
 
 // ---------- sign in ----------
+const JOIN_KEY = 'lifequest:join';
 function renderLogin(sb, notice = '') {
   S.store = null;
+  const joining = location.hash.startsWith('#/join/');
+  if (joining) try { localStorage.setItem(JOIN_KEY, location.hash); } catch { /* ignore */ }
   window.onhashchange = null;
   // Arrived from "Start your quest" on the About page: lead with Create account.
   const starting = new URLSearchParams(location.search).has('start');
@@ -269,6 +279,7 @@ function renderLogin(sb, notice = '') {
             <button type="button" class="btn" data-act="signup">Create account</button>`}
         </div>
         ${captchaEnabled ? html`<div id="captcha" class="captcha"></div>` : ''}
+        ${joining ? html`<p class="join-note">${raw(icon('projects', 18))}You’ve been invited to a shared project. Sign in or create a free account to join.</p>` : ''}
         <p class="msg" id="login-msg" role="status">${notice || (starting ? 'Welcome! Enter your email and choose a password (8+ characters). We’ll email you a link to confirm your account.' : '')}</p>
       </form>
       ${finePrint()}
