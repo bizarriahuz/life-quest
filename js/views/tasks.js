@@ -10,11 +10,12 @@ export default {
   label: 'Tasks',
   async render(el, ctx) {
     const t = today();
-    const all = await ctx.store.list('tasks', { order: 'created_at' });
+    const all = await ctx.store.list('tasks', { order: 'created_at', asc: true });   // oldest first
     const daily = all.filter((q) => q.kind === 'daily');
     const jobs = all.filter((q) => q.kind === 'job' && !q.done).sort(byDue);
-    const active = all.filter((q) => (q.kind === 'main' || q.kind === 'side') && !q.done).sort((a, b) =>
-      (a.kind === 'main' ? 0 : 1) - (b.kind === 'main' ? 0 : 1) || byDue(a, b));
+    // To do keeps the order you added things: earliest on top, latest at the bottom.
+    const active = all.filter((q) => (q.kind === 'main' || q.kind === 'side') && !q.done)
+      .sort((a, b) => a.created_at.localeCompare(b.created_at));
     const done = all.filter((q) => q.kind !== 'daily' && q.done)
       .sort((a, b) => (b.done_on || '').localeCompare(a.done_on || '')).slice(0, 25);
     const dailyDone = daily.filter((q) => q.done_on === t).length;

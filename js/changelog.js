@@ -1,6 +1,10 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.22', date: '2026-10-20', title: 'Tidier to-do list',
+    items: ['To do now keeps the order you added things: earliest at the top, newest at the bottom.'],
+  },
+  {
     version: '1.21', date: '2026-10-20', title: 'Swipe between sections',
     items: ['On your phone, swipe left or right to move to the next or previous section, in your menu order.'],
   },
