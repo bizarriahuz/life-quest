@@ -169,13 +169,6 @@ export default {
         <div><h1>${greeting()}</h1><p>${fmtDate(t, { weekday: 'long', day: 'numeric', month: 'long' })}</p></div>
       </header>
 
-      ${ctx.profile && ctx.profile.sections == null ? html`
-        <a class="card banner" href="#/settings">
-          <span class="i-wrap">${raw(icon('settings'))}</span>
-          <span class="grow"><p>Make it yours</p><p class="small muted">Choose the sections you want: tasks, prayer, fitness, books, finance and more.</p></span>
-          ${raw(icon('right', 18))}
-        </a>` : ''}
-
       <div class="tiles">${tiles.slice(0, 4).map((x) => html`
         <a class="tile ${x.hot ? 'hot' : ''}" href="#/${x.go}">
           <span class="tl-label">${raw(icon(x.icon, 15))}${x.label}</span>

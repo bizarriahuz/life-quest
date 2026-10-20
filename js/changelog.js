@@ -1,6 +1,13 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.31', date: '2026-10-21', title: 'A simpler start',
+    items: [
+      'New here? A welcome screen lets you choose what to track before you begin.',
+      'Life Quest now starts small: Tasks, Notes, Calendar, Fitness, Sleep, Mood and Finance. Add the rest any time in Settings.',
+    ],
+  },
+  {
     version: '1.30', date: '2026-10-21', title: 'Photos in projects',
     items: [
       'Shared projects have a new Photos tab. Add several at once from your camera or gallery, with an optional caption.',

@@ -24,7 +24,7 @@ export const SECTIONS = [
   { id: 'people',  label: 'People',  hint: 'Keep in touch with friends and family' },
   { id: 'finance', label: 'Finance', hint: 'Spending, budgets, savings goals and sadaqah' },
 ];
-export const DEFAULT_SECTIONS = ['tasks', 'calendar', 'goals', 'prayer', 'fitness', 'sleep', 'books', 'comics', 'learning', 'notes', 'mood', 'quotes', 'hobbies', 'watchlist', 'people'];
+export const DEFAULT_SECTIONS = ['tasks', 'notes', 'calendar', 'fitness', 'sleep', 'mood', 'finance'];
 
 export function enabledSections(profile) {
   const s = profile?.sections;

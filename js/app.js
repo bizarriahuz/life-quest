@@ -31,9 +31,10 @@ import review from './views/review.js';
 import projects from './views/projects.js';
 import join from './views/join.js';
 import calendar from './views/calendar.js';
+import welcome from './views/welcome.js';
 
 const VIEWS = [home, tasks, calendar, goals, projects, clients, prayer, fitness, sleep, books, comics, learning, notes, mood, quotes, hobbies, mtg, watchlist, music, people, finance, settings];
-const HIDDEN = [search, review, join];   // pages reached from buttons, not the menu
+const HIDDEN = [search, review, join, welcome];   // pages reached from buttons, not the menu
 const root = document.getElementById('app');
 const S = { store: null, profile: null, rawTotals: {}, routeToken: 0, swipe: null };
 const sections = () => enabledSections(S.profile);
@@ -125,7 +126,11 @@ function renderBrand() {
 async function route() {
   const token = ++S.routeToken;
   const id = (location.hash.match(/^#\/(\w+)/) || [])[1];
-  const view = shownViews().find((v) => v.id === id) || HIDDEN.find((v) => v.id === id) || home;
+  let view = shownViews().find((v) => v.id === id) || HIDDEN.find((v) => v.id === id) || home;
+  // First time in: choose sections before anything else (an invite link can go first).
+  const choosing = S.profile && S.profile.sections == null && view.id !== 'join';
+  if (choosing) view = welcome;
+  document.body.classList.toggle('onboarding', choosing);
   document.querySelectorAll('.nav a').forEach((a) => {
     const active = a.dataset.view === view.id;
     a.classList.toggle('active', active);
