@@ -3,8 +3,9 @@
 import { html, raw, wire, mount, today, relDate, fmtDate, empty } from '../ui.js';
 import { icon } from '../icons.js';
 import { XP, money } from '../game.js';
+import { shrink } from '../photo.js';
 
-const TABS = { task: 'Tasks', note: 'Notes', expense: 'Money', people: 'People' };
+const TABS = { task: 'Tasks', note: 'Notes', expense: 'Money', photo: 'Photos', people: 'People' };
 const ROLE = { owner: 'Owner', editor: 'Editor', viewer: 'Viewer' };
 const tabs = {};              // project id → open tab
 let live = null;              // { id, stop } live updates for the open project
@@ -27,6 +28,18 @@ const typing = () => {
   const a = document.activeElement;
   return a && a.closest?.('#view') && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.value;
 };
+// Signed photo links last an hour; reuse them for 50 minutes so images don't reload on every redraw.
+const photoUrl = new Map();   // path → { url, at }
+async function urlsFor(ctx, paths) {
+  const now = Date.now();
+  const need = paths.filter((p) => !(photoUrl.get(p)?.at > now - 50 * 60 * 1000));
+  for (let i = 0; i < need.length; i += 100) {
+    const got = await ctx.store.photoUrls(need.slice(i, i + 100)).catch(() => ({}));
+    for (const [p, url] of Object.entries(got)) photoUrl.set(p, { url, at: now });
+  }
+  return Object.fromEntries(paths.map((p) => [p, photoUrl.get(p)?.url]).filter(([, u]) => u));
+}
+
 function stopLive() { live?.stop(); live = null; clearInterval(poll); poll = null; }
 
 // Who owes whom, split equally between the people sharing costs.
@@ -174,10 +187,12 @@ async function renderProject(el, ctx, pid) {
   const doneT = tasks.filter((x) => x.done).sort((a, b) => (b.done_on || '').localeCompare(a.done_on || ''));
   const notes = entries.filter((x) => x.kind === 'note').reverse();
   const costs = entries.filter((x) => x.kind === 'expense').reverse();
+  const photos = entries.filter((x) => x.kind === 'photo').reverse();
   const money_ = settle(members, costs);
   const others = members.filter((m) => m.user_id !== me);
   const memberOpts = (sel) => html`<option value="${me}" ${sel === me ? 'selected' : ''}>Me</option>${others.map((m) => html`<option value="${m.user_id}" ${sel === m.user_id ? 'selected' : ''}>${m.display_name}</option>`)}`;
-  const counts = { task: openT.length, note: notes.length, expense: costs.length, people: members.length };
+  const counts = { task: openT.length, note: notes.length, expense: costs.length, photo: photos.length, people: members.length };
+  const known = tab === 'photo' ? Object.fromEntries(photos.map((x) => [x.photo_path, photoUrl.get(x.photo_path)?.url]).filter(([, u]) => u)) : {};
 
   const taskRow = (x) => html`
     <li class="item ${x.done ? 'done' : ''} ${x.assignee_id === me && !x.done ? 'mine' : ''}">
@@ -262,6 +277,21 @@ async function renderProject(el, ctx, pid) {
           ${canDelete(x) ? html`<button class="icon-btn" data-act="del" data-id="${x.id}" aria-label="Delete ${x.title}">${raw(icon('trash'))}</button>` : ''}</li>`)}</ul>
       </section>` : ''}`,
 
+    photo: () => html`
+      ${canEdit ? html`<section class="card">
+        <div class="row wrap ph-add">
+          <input name="caption" id="ph-caption" maxlength="200" placeholder="Caption (optional)" aria-label="Caption" class="grow">
+          <label class="btn primary sm ph-pick">${raw(icon('plus', 16))}Add photos
+            <input type="file" accept="image/*" multiple data-change="pickphotos" hidden></label>
+        </div>
+        <p class="small faint" id="ph-status" role="status" style="margin-top:8px">Only people in this project can see these photos.</p>
+      </section>` : ''}
+      ${photos.length ? html`<section class="card ph-card"><div class="ph-grid">${photos.map((x, i) => html`
+        <button class="ph" data-act="openphoto" data-i="${i}" aria-label="${x.title === 'Photo' ? 'Photo' : x.title} by ${x.author_id === me ? 'you' : x.author_name}">
+          <img alt="" loading="lazy" decoding="async" data-path="${x.photo_path}" ${known[x.photo_path] ? html`src="${known[x.photo_path]}"` : ''}>
+        </button>`)}</div></section>`
+        : html`<section class="card">${empty(canEdit ? 'No photos yet. Add some from your camera or gallery.' : 'No photos yet.')}</section>`}`,
+
     people: () => html`
       <section class="card">
         <div class="card-head"><h2>People</h2><span class="meta">${members.length}</span></div>
@@ -318,6 +348,13 @@ async function renderProject(el, ctx, pid) {
     ${panes[tab]()}
   `);
 
+  // ---- photo thumbnails: fetch viewing links for any not cached ----
+  if (tab === 'photo' && photos.length) {
+    urlsFor(ctx, photos.map((x) => x.photo_path)).then((urls) => {
+      el.querySelectorAll('img[data-path]').forEach((img) => { const u = urls[img.dataset.path]; if (u && img.getAttribute('src') !== u) img.src = u; });
+    });
+  }
+
   // ---- live updates while this project is open ----
   if (location.hash.startsWith(`#/projects/${pid}`) && live?.id !== pid) {
     stopLive();
@@ -333,6 +370,54 @@ async function renderProject(el, ctx, pid) {
       if (!location.hash.startsWith(`#/projects/${pid}`)) { stopLive(); return; }
       if (!document.hidden && !typing() && !document.querySelector('.levelup')) ctx.rerender();
     }, 20000);
+  }
+
+  // Full-screen photo viewer: swipe or arrow keys to move, Esc to close.
+  function openViewer(start) {
+    document.querySelector('.lightbox')?.remove();
+    let i = start;
+    const box = document.createElement('div');
+    box.className = 'lightbox';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', 'Photo');
+    document.body.appendChild(box);
+    const close = () => { box.remove(); document.removeEventListener('keydown', onKey); };
+    const show = async () => {
+      const x = photos[i];
+      const urls = await urlsFor(ctx, [x.photo_path]);
+      box.innerHTML = String(html`
+        <div class="lb-top">
+          <span class="small">${i + 1} / ${photos.length}</span>
+          ${canDelete(x) ? html`<button class="icon-btn" data-lb="del" aria-label="Delete photo">${raw(icon('trash'))}</button>` : ''}
+          <button class="icon-btn" data-lb="close" aria-label="Close">${raw(icon('close'))}</button>
+        </div>
+        <div class="lb-img">
+          ${urls[x.photo_path] ? html`<img src="${urls[x.photo_path]}" alt="${x.title}">` : html`<p class="muted">Couldn’t load this photo.</p>`}
+          ${i > 0 ? html`<button class="lb-nav prev" data-lb="prev" aria-label="Previous">${raw(icon('left', 26))}</button>` : ''}
+          ${i < photos.length - 1 ? html`<button class="lb-nav next" data-lb="next" aria-label="Next">${raw(icon('right', 26))}</button>` : ''}
+        </div>
+        <div class="lb-cap">${x.title !== 'Photo' ? html`<p>${x.title}</p>` : ''}<p class="small">${x.author_id === me ? 'You' : x.author_name} · ${ago(x.created_at)}</p></div>`);
+    };
+    const go = (d) => { const j = i + d; if (j >= 0 && j < photos.length) { i = j; show(); } };
+    const onKey = (e) => { if (e.key === 'Escape') close(); if (e.key === 'ArrowLeft') go(-1); if (e.key === 'ArrowRight') go(1); };
+    document.addEventListener('keydown', onKey);
+    box.addEventListener('click', async (e) => {
+      const a = e.target.closest('[data-lb]')?.dataset.lb;
+      if (a === 'close' || e.target === box) close();
+      else if (a === 'prev') go(-1);
+      else if (a === 'next') go(1);
+      else if (a === 'del') {
+        const x = photos[i];
+        if (!confirm('Delete this photo for everyone in this project?')) return;
+        await ctx.store.removePhotos([x.photo_path]).catch((err) => console.warn('photo file', err));
+        await ctx.store.remove('project_entries', x.id);
+        close(); ctx.say('Photo deleted'); ctx.rerender();
+      }
+    });
+    let sx = null;
+    box.addEventListener('touchstart', (e) => { sx = e.touches.length === 1 ? e.touches[0].clientX : null; }, { passive: true });
+    box.addEventListener('touchend', (e) => { if (sx == null) return; const dx = e.changedTouches[0].clientX - sx; sx = null; if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1); });
+    show();
   }
 
   const entry = (id) => entries.find((x) => x.id === id);
@@ -375,6 +460,33 @@ async function renderProject(el, ctx, pid) {
       await ctx.store.remove('project_entries', x.id);
       ctx.rerender();
     },
+    pickphotos: async (input) => {
+      const files = [...input.files].slice(0, 20);
+      input.value = '';
+      if (!files.length) return;
+      const caption = (el.querySelector('#ph-caption')?.value || '').trim().slice(0, 200) || 'Photo';
+      const status = (t) => { const s = el.querySelector('#ph-status'); if (s) s.textContent = t; };
+      let done = 0; const errs = [];
+      for (const f of files) {
+        status(`Adding ${done + 1} of ${files.length}…`);
+        let row = null;
+        try {
+          const blob = await shrink(f);
+          const path = `${pid}/${crypto.randomUUID()}.jpg`;
+          row = await ctx.store.insert('project_entries', { project_id: pid, kind: 'photo', title: caption, photo_path: path });  // checks limits first
+          await ctx.store.uploadPhoto(path, blob);
+          photoUrl.set(path, { url: URL.createObjectURL(blob), at: Date.now() - 40 * 60 * 1000 });   // show it straight away
+          done += 1;
+        } catch (err) {
+          if (row) await ctx.store.remove('project_entries', row.id).catch(() => {});
+          errs.push(err?.message || String(err));
+          if (/limit|most|full|Too many/i.test(errs.at(-1))) break;
+        }
+      }
+      ctx.say(errs.length ? (done ? `Added ${done}. ${errs[0]}` : errs[0]) : `Added ${done} photo${done === 1 ? '' : 's'}`);
+      ctx.rerender();
+    },
+    openphoto: (b) => openViewer(+b.dataset.i),
     invite: async (v) => {
       const inv = await ctx.store.insert('project_invites', { project_id: pid, role: v.role || 'editor' });
       ctx.rerender();
@@ -412,6 +524,7 @@ async function renderProject(el, ctx, pid) {
       const typed = prompt(`This deletes “${proj.name}” and everything in it, for everyone. Type the project name to confirm.`);
       if (typed == null) return;
       if (typed.trim() !== proj.name) { ctx.say('The name didn’t match. Nothing was deleted'); return; }
+      await ctx.store.removePhotos(photos.map((x) => x.photo_path)).catch((err) => console.warn('photo cleanup', err));
       await ctx.store.remove('projects', pid);
       stopLive();
       location.hash = '#/projects';

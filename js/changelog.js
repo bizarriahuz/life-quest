@@ -1,6 +1,14 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.30', date: '2026-10-21', title: 'Photos in projects',
+    items: [
+      'Shared projects have a new Photos tab. Add several at once from your camera or gallery, with an optional caption.',
+      'Photos are shrunk before upload so they’re quick, and only people in the project can see them.',
+      'Tap a photo to see it full screen, then swipe for the next one.',
+    ],
+  },
+  {
     version: '1.29', date: '2026-10-21', title: 'Send feedback',
     items: [
       'Found a bug or have an idea? There’s a Feedback box in Settings that goes straight to the person who makes Life Quest.',

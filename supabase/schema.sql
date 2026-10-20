@@ -915,3 +915,48 @@ grant select, insert on public.feedback to authenticated;
 grant update (status) on public.feedback to authenticated;
 revoke all on public.feedback from anon;
 revoke all on public.app_admins from anon, authenticated;
+
+-- ---------- 1.30: project photos ----------
+alter table public.project_entries drop constraint if exists project_entries_kind_check;
+alter table public.project_entries add constraint project_entries_kind_check check (kind in ('task','note','expense','photo'));
+alter table public.project_entries add column if not exists photo_path text
+  check (photo_path is null or photo_path ~ '^[0-9a-f-]{36}/[0-9a-f-]{36}\.(jpg|webp|png)$');
+create or replace function public.photo_guard()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if new.kind = 'photo' then
+    if new.photo_path is null or split_part(new.photo_path, '/', 1) <> new.project_id::text then
+      raise exception 'Photo is missing.' using errcode = 'P0001';
+    end if;
+    if tg_op = 'INSERT' then
+      if (select count(*) from public.project_entries where project_id = new.project_id and kind = 'photo') >= 300 then
+        raise exception 'This project has 300 photos, the most it can hold. Remove some to add more.' using errcode = 'P0001';
+      end if;
+      if (select count(*) from public.project_entries where author_id = auth.uid() and kind = 'photo') >= 500 then
+        raise exception 'You''ve added 500 photos across your projects, the most allowed. Remove some to add more.' using errcode = 'P0001';
+      end if;
+    else
+      new.photo_path := old.photo_path;
+    end if;
+  else
+    new.photo_path := null;
+  end if;
+  return new;
+end $$;
+create trigger photo_guard before insert or update on public.project_entries for each row execute function public.photo_guard();
+revoke all on function public.photo_guard() from public, anon, authenticated;
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('project-photos', 'project-photos', false, 3145728, array['image/jpeg','image/webp','image/png']) on conflict (id) do nothing;
+create or replace function public.photo_role(object_name text)
+returns text language sql stable security definer set search_path = '' as $$
+  select role from public.project_members where project_id::text = split_part(object_name, '/', 1) and user_id = auth.uid()
+$$;
+revoke all on function public.photo_role(text) from public, anon;
+grant execute on function public.photo_role(text) to authenticated;
+create policy "project members see photos" on storage.objects for select to authenticated
+  using (bucket_id = 'project-photos' and public.photo_role(name) is not null);
+create policy "project editors add photos" on storage.objects for insert to authenticated
+  with check (bucket_id = 'project-photos' and public.photo_role(name) in ('owner','editor'));
+create policy "photo owner or uploader removes" on storage.objects for delete to authenticated
+  using (bucket_id = 'project-photos' and (public.photo_role(name) = 'owner'
+         or (owner_id = (select auth.uid())::text and public.photo_role(name) = 'editor')));

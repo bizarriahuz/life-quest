@@ -40,6 +40,22 @@ export function cloudStore(sb, user) {
     async remove(table, id) { ok(await sb.from(table).delete().eq('id', id)); },
     async updateWhere(table, match, patch) { return ok(await sb.from(table).update(patch).match(match).select()); },
     async rpc(fn, args) { return ok(await sb.rpc(fn, args)); },
+    // Project photos (private bucket; viewing links expire after an hour)
+    async uploadPhoto(path, blob) {
+      const { error } = await sb.storage.from('project-photos').upload(path, blob, { contentType: blob.type || 'image/jpeg', upsert: false, cacheControl: '86400' });
+      if (error) throw error;
+    },
+    async photoUrls(paths) {
+      if (!paths.length) return {};
+      const { data, error } = await sb.storage.from('project-photos').createSignedUrls(paths, 3600);
+      if (error) throw error;
+      return Object.fromEntries((data || []).filter((d) => d.signedUrl).map((d) => [d.path, d.signedUrl]));
+    },
+    async removePhotos(paths) {
+      if (!paths.length) return;
+      const { error } = await sb.storage.from('project-photos').remove(paths);
+      if (error) throw error;
+    },
     // Live changes to one project. Returns a function that stops listening.
     subscribe(projectId, onChange) {
       const ch = sb.channel(`project:${projectId}:${Math.random().toString(36).slice(2)}`);
@@ -110,7 +126,7 @@ const DEFAULTS = {
   projects: { description: null, currency: 'SGD' },
   project_members: {},
   project_invites: { role: 'editor' },
-  project_entries: { body: null, amount: null, paid_by: null, assignee_id: null, due_on: null, done: false, done_by: null, done_on: null },
+  project_entries: { photo_path: null, body: null, amount: null, paid_by: null, assignee_id: null, due_on: null, done: false, done_by: null, done_on: null },
   watchlist: { kind: 'film', status: 'queued', rating: null, note: null, done_on: null, tmdb_id: null, tmdb_type: null, imdb_id: null, year: null, poster_url: null, details: null, overview: null },
 };
 const UNIQUE = { prayer_logs: ['prayed_on', 'prayer'], hobbies: ['name'], finance_categories: ['kind', 'name'], sleep_logs: ['slept_on'], moods: ['logged_on'] };
@@ -184,6 +200,14 @@ export function localStore() {
       throw new Error('Joining shared projects needs a Life Quest account.');
     },
     subscribe() { return () => {}; },
+    // Offline mode keeps photos in this browser (small test use only).
+    async uploadPhoto(path, blob) {
+      const url = await new Promise((r) => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(blob); });
+      const all = JSON.parse(localStorage.getItem('lifequest:photos') || '{}'); all[path] = url;
+      try { localStorage.setItem('lifequest:photos', JSON.stringify(all)); } catch { throw new Error('This browser is out of space for photos.'); }
+    },
+    async photoUrls(paths) { const all = JSON.parse(localStorage.getItem('lifequest:photos') || '{}'); return Object.fromEntries(paths.filter((p) => all[p]).map((p) => [p, all[p]])); },
+    async removePhotos(paths) { const all = JSON.parse(localStorage.getItem('lifequest:photos') || '{}'); for (const p of paths) delete all[p]; localStorage.setItem('lifequest:photos', JSON.stringify(all)); },
     async award(stat, amount, source, sourceId) {
       const id = String(sourceId);
       if (tbl('xp_events').some((e) => e.source === source && e.source_id === id)) return;
