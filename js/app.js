@@ -307,7 +307,11 @@ function renderLogin(sb, notice = '') {
       msg('Signing in…');
       const { error } = await sb.auth.signInWithPassword({ email: v.email, password: v.password, options: extra });
       captcha?.reset();
-      if (error) msg(error.message);
+      if (!error) return;
+      if (/not confirmed/i.test(error.message)) { renderCheckEmail(sb, v.email.trim(), 'unconfirmed'); return; }
+      msg(/invalid login/i.test(error.message)
+        ? 'Wrong email or password. New here? Tap “Create account” instead.'
+        : error.message);
     },
     signup: async () => {
       if (!form.reportValidity()) return;
@@ -319,8 +323,63 @@ function renderLogin(sb, notice = '') {
         email: v.email.trim(), password: v.password, options: { emailRedirectTo: location.origin, ...extra },
       });
       captcha?.reset();
-      if (error) msg(error.message);
-      else if (!data.session) msg('Check your email to confirm your account, then sign in.');
+      if (error) { msg(/rate limit/i.test(error.message) ? 'Too many sign-ups right now. Please try again in an hour.' : error.message); return; }
+      // Supabase hides whether an email is taken: a known email comes back with no identities.
+      if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+        msg('That email already has an account. Sign in instead.');
+        return;
+      }
+      if (!data.session) renderCheckEmail(sb, v.email.trim(), 'new');
+    },
+  });
+}
+
+// After sign-up: a clear "check your email" screen, with a way to resend.
+function renderCheckEmail(sb, email, why) {
+  mount(root, html`
+    <div class="auth">
+      <section class="auth-card check-email" aria-live="polite">
+        <div class="auth-mark">${raw(icon('mail', 26))}</div>
+        <div>
+          <h1>${why === 'new' ? 'Check your email' : 'Confirm your email first'}</h1>
+          <p class="lead">${why === 'new' ? 'Your account is almost ready. We sent a confirmation link to' : 'Your account isn’t confirmed yet. We sent a link to'}</p>
+          <p class="email-to">${email}</p>
+        </div>
+        <ol class="steps">
+          <li>Open the email from <b>Supabase Auth</b> (subject “Confirm your signup”).</li>
+          <li>Tap <b>Confirm your mail</b>. You’ll come back here signed in.</li>
+          <li>Can’t find it? Check <b>Spam</b> or <b>Promotions</b>. It can take a few minutes.</li>
+        </ol>
+        ${captchaEnabled ? html`<div id="captcha" class="captcha"></div>` : ''}
+        <div class="form">
+          <button type="button" class="btn" data-act="resend">Send the email again</button>
+          <button type="button" class="btn primary" data-act="back">Back to sign in</button>
+        </div>
+        <p class="msg" id="login-msg" role="status"></p>
+      </section>
+      ${finePrint()}
+    </div>
+  `);
+  const msg = (t) => { document.getElementById('login-msg').textContent = t; };
+  let captcha = null;
+  if (captchaEnabled) mountCaptcha(root.querySelector('#captcha')).then((c) => { captcha = c; }).catch(() => {});
+  let last = 0;
+  wire(root, {
+    back: () => renderLogin(sb),
+    resend: async () => {
+      if (Date.now() - last < 60000) { msg('Sent. Please wait a minute before asking again.'); return; }
+      let options = {};
+      if (captchaEnabled) {
+        const tok = await captcha?.token();
+        if (!tok && captcha && !captcha.failed) { msg('Please complete the security check above, then try again.'); return; }
+        if (tok) options = { captchaToken: tok };
+      }
+      msg('Sending…');
+      const { error } = await sb.auth.resend({ type: 'signup', email, options: { emailRedirectTo: location.origin, ...options } });
+      captcha?.reset();
+      if (error) { msg(/rate limit|security purposes/i.test(error.message) ? 'Too many emails just now. Please try again in a little while.' : error.message); return; }
+      last = Date.now();
+      msg(`Sent again to ${email}.`);
     },
   });
 }

@@ -1,6 +1,13 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.27', date: '2026-10-21', title: 'Clearer sign-up',
+    items: [
+      'After creating an account you now get a clear “Check your email” screen showing where the link was sent, with a button to send it again.',
+      'Signing in before confirming takes you to that screen too, and a mistyped password gets a friendlier message.',
+    ],
+  },
+  {
     version: '1.26', date: '2026-10-20', title: 'Calendar',
     items: [
       'New Calendar section: a month view with your own events (with times, repeats and multi-day trips).',

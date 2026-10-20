@@ -823,3 +823,9 @@ a.cal-item > .i { align-self: center; color: var(--faint); }
 .feed-help p { margin-top: 8px; }
 .item .cal-bar.src-feed { min-height: 30px; }
 .cal-grid { touch-action: pan-y; }
+
+/* ---------- 1.27: check-your-email screen ---------- */
+.check-email h1 { font-size: 26px; }
+.email-to { font-weight: 650; font-size: 16px; margin-top: 6px; overflow-wrap: anywhere; }
+.check-email .steps { margin: 0; padding-left: 20px; display: grid; gap: 8px; font-size: 14.5px; color: var(--muted); text-align: left; }
+.check-email .steps b { color: var(--fg); font-weight: 600; }
