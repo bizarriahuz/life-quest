@@ -40,7 +40,8 @@ function ownDays(e, from, to) {
   const [y, m, d] = e.starts_on.split('-').map(Number);
   for (let n = 0; n < 3000; n += 1) {
     let k;
-    if (e.repeat === 'weekly') k = dateKey(new Date(y, m - 1, d + 7 * n));
+    if (e.repeat === 'daily') k = dateKey(new Date(y, m - 1, d + n));
+    else if (e.repeat === 'weekly') k = dateKey(new Date(y, m - 1, d + 7 * n));
     else if (e.repeat === 'fortnightly') k = dateKey(new Date(y, m - 1, d + 14 * n));
     else {
       const mm = e.repeat === 'monthly' ? m - 1 + n : m - 1 + 12 * n;

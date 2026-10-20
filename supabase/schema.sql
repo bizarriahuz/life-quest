@@ -849,3 +849,9 @@ revoke all on public.calendar_events from anon;
 -- Private calendar links, read through /api/ics (functions/api/ics.js)
 alter table public.profiles add column if not exists calendar_feeds jsonb not null default '[]'::jsonb
   check (jsonb_typeof(calendar_feeds) = 'array' and jsonb_array_length(calendar_feeds) <= 5 and pg_column_size(calendar_feeds) < 4000);
+
+-- ---------- 1.28: "Every day" repeat ----------
+alter table public.tasks drop constraint if exists tasks_repeat_check;
+alter table public.tasks add constraint tasks_repeat_check check (repeat is null or repeat in ('daily','weekly','fortnightly','monthly','yearly'));
+alter table public.calendar_events drop constraint if exists calendar_events_repeat_check;
+alter table public.calendar_events add constraint calendar_events_repeat_check check (repeat is null or repeat in ('daily','weekly','fortnightly','monthly','yearly'));

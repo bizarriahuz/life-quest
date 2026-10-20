@@ -3,11 +3,12 @@
 import { today, dateKey, fmtDate } from './ui.js';
 import { XP } from './game.js';
 
-export const REPEATS = { weekly: 'Every week', fortnightly: 'Every 2 weeks', monthly: 'Every month', yearly: 'Every year' };
-export const REPEAT_SHORT = { weekly: 'weekly', fortnightly: 'every 2 weeks', monthly: 'monthly', yearly: 'yearly' };
+export const REPEATS = { daily: 'Every day', weekly: 'Every week', fortnightly: 'Every 2 weeks', monthly: 'Every month', yearly: 'Every year' };
+export const REPEAT_SHORT = { daily: 'daily', weekly: 'weekly', fortnightly: 'every 2 weeks', monthly: 'monthly', yearly: 'yearly' };
 
 function step(key, repeat, n) {
   const [y, m, d] = key.split('-').map(Number);
+  if (repeat === 'daily') return dateKey(new Date(y, m - 1, d + n));
   if (repeat === 'weekly') return dateKey(new Date(y, m - 1, d + 7 * n));
   if (repeat === 'fortnightly') return dateKey(new Date(y, m - 1, d + 14 * n));
   const months = repeat === 'yearly' ? 12 * n : n;
