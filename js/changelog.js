@@ -1,6 +1,15 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.34', date: '2026-10-21', title: 'Chess',
+    items: [
+      'New Chess section: play Stockfish at five levels, from Beginner to Master, with hints, undo and a replay of every game.',
+      'A new Lichess puzzle every day, with a streak to keep up.',
+      'Earn Craft XP for finished games, wins and puzzles. Switch Chess on in Settings → Sections.',
+      'New sections now introduce themselves with a short pop-up the first time you open the app after they arrive.',
+    ],
+  },
+  {
     version: '1.33', date: '2026-10-21', title: 'Episodes, task notes and a steadier menu',
     items: [
       'Watchlist: series, anime and documentaries now track the season and episode you’re up to. Tap + after each episode.',

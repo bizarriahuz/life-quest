@@ -32,9 +32,10 @@ import review from './views/review.js';
 import projects from './views/projects.js';
 import join from './views/join.js';
 import calendar from './views/calendar.js';
+import chess from './views/chess.js';
 import welcome from './views/welcome.js';
 
-const VIEWS = [home, tasks, calendar, goals, projects, clients, prayer, fitness, sleep, books, comics, learning, notes, mood, quotes, hobbies, mtg, watchlist, music, people, finance, settings];
+const VIEWS = [home, tasks, calendar, goals, projects, clients, prayer, fitness, sleep, books, comics, learning, notes, mood, quotes, hobbies, chess, mtg, watchlist, music, people, finance, settings];
 const HIDDEN = [search, review, join, welcome];   // pages reached from buttons, not the menu
 const root = document.getElementById('app');
 const S = { store: null, profile: null, rawTotals: {}, routeToken: 0, swipe: null };
@@ -172,7 +173,7 @@ async function route() {
 function setupSwipe() {
   if (setupSwipe.done) return;
   setupSwipe.done = true;
-  const NO_SWIPE = 'input, textarea, select, button, [contenteditable], .nav, .seg, .decks, .chart, .tmdb-results, .theme-menu, .more-menu, .album-grid, .scanner, .levelup, .mood-cal, .cardlist, .pgrid, details.more, .cal-grid, .ph-grid';
+  const NO_SWIPE = 'input, textarea, select, button, [contenteditable], .nav, .seg, .decks, .chart, .tmdb-results, .theme-menu, .more-menu, .album-grid, .scanner, .levelup, .mood-cal, .cardlist, .pgrid, details.more, .cal-grid, .ph-grid, .board-wrap, .promo, .movelist, .replay-ctrls, .level-seg';
   let t = null;  // { x, y, at, dir, el }
   const main = () => document.getElementById('view');
   const neighbour = (step) => {

@@ -60,6 +60,13 @@ export default {
     const calToday = on.has('calendar') ? (await calCollect(ctx, t, t).catch(() => [])).filter((x) => x.src === 'event' || x.src === 'feed') : [];
     const nowHM = new Date().toTimeString().slice(0, 5);
     const calNext = calToday.find((x) => x.time && (x.end || x.time) >= nowHM) || calToday.find((x) => !x.time);
+    const [chessLive, chessPuz] = on.has('chess') ? await Promise.all([
+      ctx.store.list('chess_games', { order: 'created_at', limit: 5 }).then((g) => g.find((x) => !x.result)).catch(() => null),
+      ctx.store.list('chess_puzzles', { gte: ['day', addDays(t, -60)] }).catch(() => []),
+    ]) : [null, []];
+    const solvedDays = new Set(chessPuz.filter((p) => p.solved).map((p) => p.day));
+    let chessStreak = 0;
+    for (let d = solvedDays.has(t) ? t : addDays(t, -1); solvedDays.has(d); d = addDays(d, -1)) chessStreak += 1;
     const projMine = projOpen.filter((x) => x.assignee_id === ctx.store.user.id).length;
     const spentMonth = monthTxns.reduce((n, x) => n + Number(x.amount), 0);
     const budgetMonth = cats.reduce((n, c) => n + (c.kind === 'expense' ? Number(c.budget) || 0 : 0), 0);
@@ -105,6 +112,8 @@ export default {
     const overdue = contacts.filter((c) => !lastSeen[c.id] || addDays(lastSeen[c.id], c.every_days) <= t);
     const lm = lastMatch[0];
     const todayRows = {
+      chess: () => html`<a href="#/chess">${raw(icon('chess'))}<span class="t-label">Chess</span>
+              <span class="t-val"><span class="t-txt">${chessLive ? `Game in progress · move ${Math.max(1, chessLive.moves)}` : chessPuz.some((p) => p.day === t) ? `Puzzle done${chessStreak ? ` · ${chessStreak}-day streak` : ''}` : 'Daily puzzle waiting'}</span></span></a>`,
       calendar: () => html`<a href="#/calendar">${raw(icon('calendar'))}<span class="t-label">Calendar</span>
               <span class="t-val"><span class="t-txt">${calToday.length ? `${calNext ? `${calNext.time ? `${clock(calNext.time)} ` : ''}${calNext.title}` : `${calToday.length} today, all done`}${calToday.length > 1 ? ` · +${calToday.length - 1}` : ''}` : 'Nothing today'}</span></span></a>`,
       projects: () => html`<a href="#/projects">${raw(icon('projects'))}<span class="t-label">Projects</span>
