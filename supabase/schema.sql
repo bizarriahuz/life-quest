@@ -1059,3 +1059,33 @@ create trigger row_limits before insert on public.chess_puzzles for each row exe
 grant all on public.chess_games, public.chess_puzzles to authenticated;
 revoke truncate, references, trigger on public.chess_games, public.chess_puzzles from authenticated;
 revoke all on public.chess_games, public.chess_puzzles from anon;
+-- ---------- 1.36: Games section (Chess moves inside) + Daily Word ----------
+alter table public.profiles drop constraint if exists profiles_sections_check;
+alter table public.profiles add constraint profiles_sections_check check (sections is null or sections <@ array[
+  'tasks','goals','projects','calendar','clients','prayer','fitness','sleep','books','comics','learning','notes','mood','quotes',
+  'hobbies','games','chess','mtg','watchlist','music','people','finance']::text[]);
+alter table public.profiles drop constraint if exists profiles_seen_intros_check;
+alter table public.profiles add constraint profiles_seen_intros_check check (seen_intros is null or (cardinality(seen_intros) <= 100 and seen_intros <@ array[
+  'tasks','goals','projects','calendar','clients','prayer','fitness','sleep','books','comics','learning','notes','mood','quotes',
+  'hobbies','games','chess','mtg','watchlist','music','people','finance']::text[]));
+-- People who switched Chess on now have Games instead (and have seen it).
+update public.profiles set sections = array_replace(sections, 'chess', 'games') where 'chess' = any(sections);
+update public.profiles set seen_intros = array_append(seen_intros, 'games') where 'games' = any(sections) and not ('games' = any(coalesce(seen_intros, '{}')));
+
+create table public.word_games (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  day        date not null,
+  guesses    text[] not null default '{}' check (cardinality(guesses) <= 6 and array_to_string(guesses, '') ~ '^[a-z]*$'),
+  solved     boolean not null default false,
+  finished   boolean not null default false,
+  created_at timestamptz not null default now(),
+  unique (user_id, day)
+);
+alter table public.word_games enable row level security;
+create policy "own rows" on public.word_games for all to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
+create index word_games_user_idx on public.word_games (user_id, day);
+create trigger row_limits before insert on public.word_games for each row execute function public.enforce_row_limits('5000', 'daily words');
+grant all on public.word_games to authenticated;
+revoke truncate, references, trigger on public.word_games from authenticated;
+revoke all on public.word_games from anon;
