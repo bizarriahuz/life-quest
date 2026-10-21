@@ -16,6 +16,8 @@ export default {
     let info;
     try { [info] = await ctx.store.rpc('invite_info', { p_token: tok }); } catch (err) { return card('Couldn’t open the invite', err?.message || String(err)); }
     if (!info) return card('This invite has expired', 'Invite links last 7 days. Ask the person who sent it for a new one.', html`<a class="btn" href="#/projects">Go to Projects</a>`);
+    const extra = await ctx.store.rpc('invite_kind', { p_token: tok }).then((r) => r?.[0] || {}).catch(() => ({}));
+    info.kind = extra.kind; info.inviter = extra.inviter;
     const isCouple = info.kind === 'couple';
     if (info.already) { location.replace(isCouple ? '#/couple' : `#/projects/${info.project_id}`); return; }
     const needName = isDefaultName(ctx.profile?.hero_name);

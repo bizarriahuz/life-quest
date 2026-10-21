@@ -1204,21 +1204,19 @@ begin
   return inv.project_id;
 end $$;
 
-drop function if exists public.invite_info(text);
-create function public.invite_info(p_token text)
-returns table (project_id uuid, name text, members int, role text, already boolean, kind text, inviter text)
+-- Extra invite details (kept separate so invite_info keeps its shape).
+create or replace function public.invite_kind(p_token text)
+returns table (kind text, inviter text)
 language plpgsql stable security definer set search_path = '' as $$
 begin
   if auth.uid() is null then raise exception 'Sign in first.' using errcode = 'P0001'; end if;
   return query
-    select p.id, p.name, (select count(*)::int from public.project_members m where m.project_id = p.id), i.role,
-           exists (select 1 from public.project_members m where m.project_id = p.id and m.user_id = auth.uid()),
-           p.kind, (select m.display_name from public.project_members m where m.project_id = p.id and m.user_id = i.created_by)
+    select p.kind, (select m.display_name from public.project_members m where m.project_id = p.id and m.user_id = i.created_by)
       from public.project_invites i join public.projects p on p.id = i.project_id
      where i.token = p_token and i.expires_at > now();
 end $$;
-revoke all on function public.invite_info(text) from public, anon;
-grant execute on function public.invite_info(text) to authenticated;
+revoke all on function public.invite_kind(text) from public, anon;
+grant execute on function public.invite_kind(text) to authenticated;
 
 -- Entries: rules for the couple kinds.
 create or replace function public.entries_guard()
