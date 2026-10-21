@@ -11,6 +11,8 @@ const tabs = {};              // project id → open tab
 let live = null;              // { id, stop } live updates for the open project
 let poll = null;
 let lastPid = null;
+const openThreads = new Set();   // notes whose comments are showing
+const EMOJI = ['👍', '❤️', '😂', '🎉', '🙏', '👀'];
 
 const isDefaultName = (n) => !n || n === 'HERO' || n === 'You';
 const initials = (n) => (n || '?').trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
@@ -164,9 +166,11 @@ async function renderProject(el, ctx, pid) {
       <section class="card"><h2>Project not available</h2><p class="muted" style="margin-top:6px">It may have been deleted, or you’re no longer a member.</p></section>`);
     return;
   }
-  const [members, entries] = await Promise.all([
+  const [members, entries, comments, reactions] = await Promise.all([
     ctx.store.list('project_members', { match: { project_id: pid } }),
     ctx.store.list('project_entries', { match: { project_id: pid }, order: 'created_at', asc: true }),
+    ctx.store.list('project_comments', { match: { project_id: pid }, order: 'created_at', asc: true }).catch(() => []),
+    ctx.store.list('project_reactions', { match: { project_id: pid, active: true } }).catch(() => []),
   ]);
   members.sort((a, b) => (a.role === 'owner' ? -1 : b.role === 'owner' ? 1 : a.joined_at.localeCompare(b.joined_at)));
   const mine = members.find((m) => m.user_id === me);
@@ -211,6 +215,35 @@ async function renderProject(el, ctx, pid) {
       ${canDelete(x) ? html`<button class="icon-btn" data-act="del" data-id="${x.id}" aria-label="Delete ${x.title}">${raw(icon('trash'))}</button>` : ''}
     </li>`;
 
+  // Reactions and comments under a note.
+  const talk = (x) => {
+    const rx = reactions.filter((r) => r.entry_id === x.id);
+    const cm = comments.filter((c) => c.entry_id === x.id);
+    const live = cm.filter((c) => !c.removed).length;
+    const open = openThreads.has(x.id);
+    const chips = EMOJI.map((e) => ({ e, who: rx.filter((r) => r.emoji === e) })).filter((g) => g.who.length);
+    return html`
+      <div class="react-bar">
+        ${chips.map((g) => html`<button type="button" class="rx ${g.who.some((r) => r.user_id === me) ? 'on' : ''}" data-act="react" data-id="${x.id}" data-e="${g.e}"
+          title="${g.who.map((r) => who(r.user_id)).join(', ')}" aria-label="${g.e} ${g.who.length}, ${g.who.some((r) => r.user_id === me) ? 'remove yours' : 'add yours'}"><span>${g.e}</span><b>${g.who.length}</b></button>`)}
+        <details class="rx-add"><summary class="rx" aria-label="Add a reaction">${raw(icon('plus', 14))}<span aria-hidden="true">☺</span></summary>
+          <div class="rx-menu">${EMOJI.map((e) => html`<button type="button" data-act="react" data-id="${x.id}" data-e="${e}" aria-label="React ${e}">${e}</button>`)}</div></details>
+        <button type="button" class="text-btn cm-toggle" data-act="thread" data-id="${x.id}" aria-expanded="${open}">${raw(icon('comment', 15))}${live ? `${live} comment${live === 1 ? '' : 's'}` : canEdit ? 'Reply' : 'Comments'}</button>
+      </div>
+      ${open ? html`<div class="thread">
+        ${cm.length ? html`<ul class="comments">${cm.map((c) => html`<li class="${c.removed ? 'gone' : ''}">
+          <span class="face sm">${(c.author_id === me ? (ctx.profile?.hero_name || 'You') : c.author_name).slice(0, 1).toUpperCase()}</span>
+          <div class="body"><p class="cm-meta"><b>${c.author_id === me ? 'You' : c.author_name}</b><span class="faint small">${ago(c.created_at)}</span></p>
+            <p class="cm-body">${c.removed ? 'Comment removed' : c.body}</p></div>
+          ${!c.removed && (c.author_id === me || isOwner) ? html`<button class="icon-btn" data-act="uncomment" data-id="${c.id}" aria-label="Remove comment">${raw(icon('close', 15))}</button>` : ''}
+        </li>`)}</ul>` : ''}
+        ${canEdit ? html`<form data-form="comment" data-id="${x.id}" class="cm-form">
+          <textarea name="body" rows="1" maxlength="1000" required placeholder="Write a reply…" aria-label="Reply to ${x.title}"></textarea>
+          <button class="btn primary sm" aria-label="Send">${raw(icon('send', 16))}</button>
+        </form>` : html`<p class="small faint">Only editors can reply.</p>`}
+      </div>` : ''}`;
+  };
+
   const panes = {
     task: () => html`
       ${canEdit ? html`<section class="card">
@@ -246,6 +279,7 @@ async function renderProject(el, ctx, pid) {
           </div>
           ${x.body ? html`<p class="pnote-body">${x.body}</p>` : ''}
           <p class="small faint">${x.author_id === me ? 'You' : x.author_name} · ${ago(x.created_at)}</p>
+          ${talk(x)}
         </section>`) : html`<section class="card">${empty('No notes yet.')}</section>`}`,
 
     expense: () => html`
@@ -420,6 +454,12 @@ async function renderProject(el, ctx, pid) {
     show();
   }
 
+  el.querySelectorAll('.cm-form textarea').forEach((ta) => {
+    const grow = () => { ta.style.height = 'auto'; ta.style.height = `${Math.min(140, ta.scrollHeight)}px`; };
+    ta.addEventListener('input', grow);
+    ta.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); ta.form.requestSubmit(); } });
+  });
+
   const entry = (id) => entries.find((x) => x.id === id);
   const copy = async (text) => {
     try { await navigator.clipboard.writeText(text); ctx.say('Invite link copied'); }
@@ -458,6 +498,33 @@ async function renderProject(el, ctx, pid) {
       const x = entry(b.dataset.id);
       if (!x || !confirm(`Delete “${x.title}” for everyone in this project?`)) return;
       await ctx.store.remove('project_entries', x.id);
+      ctx.rerender();
+    },
+    react: async (b) => {
+      const id = b.dataset.id; const e = b.dataset.e;
+      b.closest('details')?.removeAttribute('open');
+      const mine = await ctx.store.list('project_reactions', { match: { entry_id: id, user_id: me, emoji: e } });
+      if (mine[0]) await ctx.store.update('project_reactions', mine[0].id, { active: !mine[0].active });
+      else await ctx.store.insert('project_reactions', { project_id: pid, entry_id: id, emoji: e });
+      ctx.rerender();
+    },
+    thread: async (b) => {
+      const id = b.dataset.id;
+      if (openThreads.has(id)) openThreads.delete(id); else openThreads.add(id);
+      await ctx.rerender();
+      if (openThreads.has(id)) document.querySelector(`form[data-form=comment][data-id="${id}"] textarea`)?.focus();
+    },
+    comment: async (v, f) => {
+      const body = (v.body || '').trim();
+      if (!body) return;
+      await ctx.store.insert('project_comments', { project_id: pid, entry_id: f.dataset.id, body: body.slice(0, 1000) });
+      f.reset();
+      await ctx.rerender();
+      document.querySelector(`form[data-form=comment][data-id="${f.dataset.id}"] textarea`)?.focus();
+    },
+    uncomment: async (b) => {
+      if (!confirm('Remove this comment for everyone?')) return;
+      await ctx.store.update('project_comments', b.dataset.id, { removed: true });
       ctx.rerender();
     },
     pickphotos: async (input) => {

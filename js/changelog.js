@@ -1,6 +1,14 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.34', date: '2026-10-21', title: 'Reply and react to shared notes',
+    items: [
+      'In shared projects, every note now has reactions (👍 ❤️ 😂 🎉 🙏 👀) and a reply thread, so you can talk it through right there.',
+      'Replies and reactions show up for everyone straight away. Viewers can react; editors and the owner can reply.',
+      'Thanks to Beast for the idea!',
+    ],
+  },
+  {
     version: '1.33', date: '2026-10-21', title: 'Episodes, task notes and a steadier menu',
     items: [
       'Watchlist: series, anime and documentaries now track the season and episode you’re up to. Tap + after each episode.',

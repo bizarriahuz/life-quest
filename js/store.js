@@ -59,7 +59,7 @@ export function cloudStore(sb, user) {
     // Live changes to one project. Returns a function that stops listening.
     subscribe(projectId, onChange) {
       const ch = sb.channel(`project:${projectId}:${Math.random().toString(36).slice(2)}`);
-      for (const table of ['project_entries', 'project_members'])
+      for (const table of ['project_entries', 'project_members', 'project_comments', 'project_reactions'])
         ch.on('postgres_changes', { event: '*', schema: 'public', table, filter: `project_id=eq.${projectId}` }, () => onChange(table));
       ch.on('postgres_changes', { event: '*', schema: 'public', table: 'projects', filter: `id=eq.${projectId}` }, () => onChange('projects'));
       ch.subscribe();
@@ -126,6 +126,8 @@ const DEFAULTS = {
   projects: { description: null, currency: 'SGD' },
   project_members: {},
   project_invites: { role: 'editor' },
+  project_comments: { removed: false },
+  project_reactions: { active: true },
   project_entries: { photo_path: null, body: null, amount: null, paid_by: null, assignee_id: null, due_on: null, done: false, done_by: null, done_on: null },
   watchlist: { season: null, episode: null, kind: 'film', status: 'queued', rating: null, note: null, done_on: null, tmdb_id: null, tmdb_type: null, imdb_id: null, year: null, poster_url: null, details: null, overview: null },
 };
@@ -165,6 +167,7 @@ export function localStore() {
         if (rec.done) Object.assign(rec, { done_by: 'local', done_on: new Date().toLocaleDateString('en-CA') });
       }
       if (table === 'feedback') Object.assign(rec, { user_id: 'local', sender_name: db.profile?.hero_name || null, reply_to: rec.reply_to ? 'offline' : null, status: 'new' });
+      if (table === 'project_comments') Object.assign(rec, { author_id: 'local', author_name: db.profile?.hero_name || 'You', removed: false });
       if (table === 'project_invites') Object.assign(rec, { token: crypto.randomUUID().replace(/-/g, ''), expires_at: new Date(Date.now() + 7 * 864e5).toISOString() });
       if (table === 'projects') {
         rec.owner_id = 'local';
@@ -188,7 +191,8 @@ export function localStore() {
       if (table === 'savings_goals') db.savings_contributions = tbl('savings_contributions').filter((c) => c.goal_id !== id);
       const KIDS = { goals: ['goal_milestones', 'goal_id'], learning_items: ['learning_sessions', 'item_id'], mtg_decks: ['mtg_matches', 'deck_id'], contacts: ['contact_logs', 'contact_id'] };
       if (KIDS[table]) { const [kt, fk] = KIDS[table]; db[kt] = tbl(kt).filter((r) => r[fk] !== id); }
-      if (table === 'projects') for (const t of ['project_members', 'project_invites', 'project_entries']) db[t] = tbl(t).filter((r) => r.project_id !== id);
+      if (table === 'project_entries') for (const t of ['project_comments', 'project_reactions']) db[t] = tbl(t).filter((r) => r.entry_id !== id);
+      if (table === 'projects') for (const t of ['project_members', 'project_invites', 'project_entries', 'project_comments', 'project_reactions']) db[t] = tbl(t).filter((r) => r.project_id !== id);
       if (table === 'goals') for (const x of tbl('tasks')) if (x.goal_id === id) x.goal_id = null;
       if (table === 'finance_categories') for (const x of tbl('transactions')) if (x.category_id === id) x.category_id = null;
       save();

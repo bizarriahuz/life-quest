@@ -943,3 +943,33 @@ a.item.set-row { color: inherit; text-decoration: none; display: flex; align-ite
 .intro-go { display: grid; gap: 8px; margin-top: 8px; }
 .intro-card > .small { text-align: center; }
 @keyframes intro-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* ---------- 1.34: note reactions and comments ---------- */
+.react-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding-top: 4px; border-top: 1px solid var(--line); margin-top: 4px; }
+.react-bar > :first-child { margin-top: 8px; }
+.react-bar > * { margin-top: 8px; }
+.rx { display: inline-flex; align-items: center; gap: 5px; height: 30px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line-2); background: none; color: var(--fg); font: inherit; font-size: 14px; cursor: pointer; list-style: none; }
+.rx::-webkit-details-marker { display: none; }
+.rx b { font-size: 12.5px; font-weight: 650; color: var(--muted); font-variant-numeric: tabular-nums; }
+.rx.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.rx.on b { color: var(--accent-text); }
+.rx .i { width: 12px; height: 12px; color: var(--muted); }
+.rx-add { position: relative; }
+.rx-menu { position: absolute; bottom: calc(100% + 6px); left: 0; z-index: 30; display: flex; gap: 2px; padding: 6px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line-2); box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+.rx-menu button { width: 38px; height: 38px; border: 0; background: none; border-radius: 50%; font-size: 21px; cursor: pointer; }
+.rx-menu button:hover { background: var(--surface-2); transform: scale(1.12); }
+.cm-toggle { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; }
+.cm-toggle .i { width: 15px; height: 15px; }
+.thread { display: grid; gap: 10px; margin-top: 4px; padding: 12px; border-radius: 14px; background: var(--surface-2); }
+.comments { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+.comments li { display: flex; gap: 10px; align-items: flex-start; }
+.comments .body { flex: 1; min-width: 0; }
+.face.sm { width: 28px; height: 28px; font-size: 11.5px; background: var(--surface); }
+.cm-meta { display: flex; gap: 8px; align-items: baseline; font-size: 13.5px; }
+.cm-body { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14.5px; margin-top: 1px; }
+.comments li.gone .cm-body { color: var(--faint); font-style: italic; }
+.comments .icon-btn { width: 28px; height: 28px; color: var(--faint); }
+.cm-form { display: flex; gap: 8px; align-items: flex-end; }
+.cm-form textarea { flex: 1; min-height: 40px; resize: none; padding: 9px 12px; border-radius: 20px; line-height: 1.4; }
+.cm-form .btn { height: 40px; width: 40px; padding: 0; border-radius: 50%; flex: none; }
+.rx-add > summary::after, .rx-add > summary::before { display: none !important; content: none !important; }

@@ -974,3 +974,45 @@ alter table public.profiles add column if not exists seen_intros text[]
     'tasks','goals','projects','calendar','clients','prayer','fitness','sleep','books','comics','learning','notes','mood','quotes',
     'hobbies','mtg','watchlist','music','people','finance']::text[]));
 -- (when adding a section, add its id here and to profiles_sections_check)
+
+-- ---------- 1.34: comments and reactions on shared notes ----------
+create table public.project_comments (
+  id          uuid primary key default gen_random_uuid(),
+  project_id  uuid not null references public.projects(id) on delete cascade,
+  entry_id    uuid not null references public.project_entries(id) on delete cascade,
+  author_id   uuid default auth.uid() references auth.users(id) on delete set null,
+  author_name text not null default 'Member' check (char_length(author_name) <= 24),
+  body        text not null check (char_length(body) <= 1000),
+  removed     boolean not null default false,
+  created_at  timestamptz not null default now()
+);
+create index project_comments_entry_idx on public.project_comments (project_id, entry_id, created_at);
+create index project_comments_author_idx on public.project_comments (author_id, created_at);
+create table public.project_reactions (
+  id         uuid primary key default gen_random_uuid(),
+  project_id uuid not null references public.projects(id) on delete cascade,
+  entry_id   uuid not null references public.project_entries(id) on delete cascade,
+  user_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  emoji      text not null check (emoji in ('👍','❤️','😂','🎉','🙏','👀')),
+  active     boolean not null default true,
+  created_at timestamptz not null default now(),
+  unique (entry_id, user_id, emoji)
+);
+create index project_reactions_project_idx on public.project_reactions (project_id, entry_id);
+-- comments_guard(): sets author, checks the note is in the project, 500 per note, 30/min; updates may only "remove" (text wiped).
+-- reactions_guard(): sets user, checks the note is in the project; updates may only toggle `active`.
+-- (full function bodies as applied in migration project_comments_reactions)
+alter table public.project_comments enable row level security;
+alter table public.project_reactions enable row level security;
+create policy "members read" on public.project_comments for select to authenticated using (public.project_role(project_id) is not null);
+create policy "editors comment" on public.project_comments for insert to authenticated with check (public.project_role(project_id) in ('owner','editor'));
+create policy "author or owner removes" on public.project_comments for update to authenticated
+  using (author_id = (select auth.uid()) or public.project_role(project_id) = 'owner') with check (public.project_role(project_id) is not null);
+create policy "members read" on public.project_reactions for select to authenticated using (public.project_role(project_id) is not null);
+create policy "members react" on public.project_reactions for insert to authenticated with check (public.project_role(project_id) is not null);
+create policy "own reactions" on public.project_reactions for update to authenticated
+  using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()) and public.project_role(project_id) is not null);
+grant select, insert on public.project_comments, public.project_reactions to authenticated;
+grant update (removed) on public.project_comments to authenticated;
+grant update (active) on public.project_reactions to authenticated;
+alter publication supabase_realtime add table public.project_comments, public.project_reactions;
