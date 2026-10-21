@@ -24,6 +24,14 @@ export const SECTIONS = [
   { id: 'people',  label: 'People',  hint: 'Keep in touch with friends and family' },
   { id: 'finance', label: 'Finance', hint: 'Spending, budgets, savings goals and sadaqah' },
 ];
+// Sections that existed before "new section" pop-ups were added. Nobody is shown a
+// pop-up for these. Any section added later should get an `intro` like this:
+//   intro: { blurb: 'One sentence on what it is.', features: ['What you can do', 'Another thing', 'XP it earns'] }
+// and it will be introduced once to everyone who doesn't have it switched on.
+export const BASELINE_SECTIONS = new Set(['tasks', 'calendar', 'goals', 'projects', 'clients', 'prayer', 'fitness', 'sleep', 'books', 'comics',
+  'learning', 'notes', 'mood', 'quotes', 'hobbies', 'mtg', 'watchlist', 'music', 'people', 'finance']);
+export const newSections = () => SECTIONS.filter((s) => s.intro && !BASELINE_SECTIONS.has(s.id));
+
 export const DEFAULT_SECTIONS = ['tasks', 'notes', 'calendar', 'fitness', 'sleep', 'mood', 'finance'];
 
 export function enabledSections(profile) {

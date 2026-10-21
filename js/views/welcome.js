@@ -2,7 +2,7 @@
 // profile.sections has never been set.
 import { html, raw, wire, mount } from '../ui.js';
 import { icon } from '../icons.js';
-import { SECTIONS, DEFAULT_SECTIONS } from '../game.js';
+import { SECTIONS, DEFAULT_SECTIONS, newSections } from '../game.js';
 
 const GROUPS = [
   ['Plan', ['tasks', 'calendar', 'goals', 'projects']],
@@ -74,7 +74,7 @@ export default {
         // Keep the on-screen order: Plan first, then the rest.
         const chosen = [...form.querySelectorAll('input[name=sec]:checked')].map((i) => i.value);
         if (!chosen.length) return;
-        const patch = { sections: chosen };
+        const patch = { sections: chosen, seen_intros: newSections().map((s) => s.id) };   // they've just seen every section
         if (v.hero_name) patch.hero_name = v.hero_name.slice(0, 24);
         await ctx.setProfile(patch);
         document.body.classList.remove('onboarding');

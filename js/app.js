@@ -2,6 +2,7 @@ import { cloudEnabled, getClient, cloudStore, localStore } from './store.js';
 import { withCache } from './cache.js';
 import { hasUnseen } from './changelog.js';
 import { applyTheme } from './theme.js';
+import { showIntros } from './intro.js';
 import { captchaEnabled, mountCaptcha } from './captcha.js';
 import { html, raw, mount, wire, toast, levelUpModal } from './ui.js';
 import { icon } from './icons.js';
@@ -279,6 +280,7 @@ async function start(rawStore) {
   prefetch(document.getElementById('view')?.dataset.view);
   checkInbox();
   setInterval(checkInbox, 5 * 60 * 1000);
+  setTimeout(() => showIntros(ctx), 900);      // introduce any section added since last time
 }
 
 // ---------- sign in ----------

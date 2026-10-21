@@ -967,3 +967,10 @@ alter table public.watchlist
   add column if not exists episode smallint check (episode is null or episode between 0 and 5000);
 alter table public.tasks
   add column if not exists note text check (note is null or char_length(note) <= 1000);
+
+-- ---------- 1.34: which new-section pop-ups someone has seen ----------
+alter table public.profiles add column if not exists seen_intros text[]
+  check (seen_intros is null or (cardinality(seen_intros) <= 100 and seen_intros <@ array[
+    'tasks','goals','projects','calendar','clients','prayer','fitness','sleep','books','comics','learning','notes','mood','quotes',
+    'hobbies','mtg','watchlist','music','people','finance']::text[]));
+-- (when adding a section, add its id here and to profiles_sections_check)

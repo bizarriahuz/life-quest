@@ -220,7 +220,7 @@ export function localStore() {
       for (const e of tbl('xp_events')) t[e.stat] = (t[e.stat] || 0) + e.amount;
       return t;
     },
-    async profile() { db.profile ??= { hero_name: 'You', sections: null, currency: 'SGD', sleep_goal_min: 480, theme: 'midnight', lastfm_user: null }; save(); return { ...db.profile }; },
+    async profile() { db.profile ??= { hero_name: 'You', sections: null, currency: 'SGD', sleep_goal_min: 480, theme: 'midnight', lastfm_user: null, seen_intros: null }; save(); return { ...db.profile }; },
     async saveProfile(patch) { db.profile = { ...(db.profile || {}), ...patch }; save(); return { ...db.profile }; },
     async signOut() {},
   };

@@ -929,3 +929,17 @@ a.item.set-row { color: inherit; text-decoration: none; display: flex; align-ite
 }
 .brand-lv span { white-space: nowrap; }
 .brand-lv .bar { min-width: 24px; }
+
+/* ---------- 1.34: new-section pop-up ---------- */
+.intro-ov { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; padding: 20px; background: color-mix(in srgb, #000 70%, transparent); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); animation: intro-in .2s ease-out; }
+.intro-card { width: min(420px, 100%); max-height: calc(100dvh - 40px); overflow-y: auto; background: var(--surface); border: 1px solid var(--line-2); border-radius: 24px; padding: 26px 22px 18px; display: grid; gap: 10px; box-shadow: 0 20px 60px rgba(0,0,0,.35); }
+.intro-icon { width: 58px; height: 58px; border-radius: 16px; display: grid; place-items: center; background: var(--accent); color: var(--on-accent); }
+.intro-kicker { font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--accent-text); margin-top: 6px; }
+.intro-card h2 { font-size: 26px; letter-spacing: -.02em; }
+.intro-blurb { color: var(--muted); font-size: 15px; }
+.intro-list { list-style: none; padding: 0; margin: 4px 0; display: grid; gap: 8px; }
+.intro-list li { display: flex; gap: 10px; align-items: flex-start; font-size: 14.5px; }
+.intro-list .i { flex: none; margin-top: 2px; color: var(--accent-text); }
+.intro-go { display: grid; gap: 8px; margin-top: 8px; }
+.intro-card > .small { text-align: center; }
+@keyframes intro-in { from { opacity: 0; } to { opacity: 1; } }
