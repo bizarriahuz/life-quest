@@ -18,6 +18,9 @@ export const SECTIONS = [
   { id: 'mood',    label: 'Mood',    hint: 'A daily check-in and one thing you’re grateful for' },
   { id: 'quotes',  label: 'Quotes',  hint: 'Words to live by' },
   { id: 'hobbies', label: 'Hobbies', hint: 'Time spent on things you love' },
+  { id: 'chess',   label: 'Chess',   hint: 'Play the computer at five levels and a daily puzzle',
+    intro: { blurb: 'Play chess against Stockfish, the world’s strongest open-source engine, right inside Life Quest.',
+      features: ['Five levels, from Beginner to Master', 'A new Lichess puzzle every day, with a streak', 'Hints, undo and a replay of every game', 'Craft XP for games, wins and puzzles'] } },
   { id: 'mtg',     label: 'MTG',     hint: 'Magic: The Gathering decks, decklists and win rates' },
   { id: 'watchlist', label: 'Watchlist', hint: 'Films and series to watch, with ratings' },
   { id: 'music',   label: 'Music',   hint: 'Albums to hear and what you’ve been playing (Last.fm)' },
@@ -44,7 +47,7 @@ export const STATS = {
   DEX: { name: 'Discipline', from: 'Tasks, goals & projects', view: 'tasks', sections: ['tasks', 'goals', 'projects'] },
   INT: { name: 'Knowledge',  from: 'Reading & learning', view: 'books', sections: ['books', 'comics', 'learning'] },
   WIS: { name: 'Reflection', from: 'Notes, mood & quotes', view: 'notes', sections: ['notes', 'mood', 'quotes'] },
-  CHA: { name: 'Craft',      from: 'Hobbies, MTG & media', view: 'hobbies', sections: ['hobbies', 'mtg', 'watchlist', 'music'] },
+  CHA: { name: 'Craft',      from: 'Hobbies, games & media', view: 'hobbies', sections: ['hobbies', 'chess', 'mtg', 'watchlist', 'music'] },
   FTH: { name: 'Faith',      from: 'Prayer & sadaqah', view: 'prayer', sections: ['prayer'] },
   RST: { name: 'Rest',       from: 'Sleep',          view: 'sleep',   sections: ['sleep'] },
   CON: { name: 'Connection', from: 'People',         view: 'people',  sections: ['people'] },
@@ -89,7 +92,10 @@ export const XP = {
   contact: 10,
   watched: 5,
   listened: 5,
-  projectTask: 15,   // a shared task you tick off (only the person who ticks it gets XP)
+  projectTask: 15,
+  chessGame: 5,      // a finished game of 10+ moves
+  chessWin: 5,       // × the level, on top, for a win
+  puzzle: 10,        // the daily puzzle, solved   // a shared task you tick off (only the person who ticks it gets XP)
 };
 
 // Overall level: 100 XP for level 2, then +50 more per level.

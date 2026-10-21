@@ -65,6 +65,10 @@ export default {
       get('finance', 'transactions', range('occurred_on')),
       get('clients', 'client_projects', range('paid_on')),
     ]);
+    const [chessG, chessP] = on.has('chess') ? await Promise.all([
+      ctx.store.list('chess_games', { gte: ['ended_on', a], lte: ['ended_on', b] }).catch(() => []),
+      ctx.store.list('chess_puzzles', range('day')).catch(() => []),
+    ]) : [[], []];
 
     // ---- XP ----
     const inWeek = (e) => { const d = localDay(e.created_at); return d >= a && d <= b; };
@@ -122,6 +126,10 @@ export default {
     if (on.has('mood')) tile('mood', 'Mood', moodAvg == null ? '–' : `${FACE[Math.round(moodAvg) - 1]} ${MOODS[Math.round(moodAvg) - 1]}`, `${moods.length}/${elapsed} check-ins`);
     if (on.has('notes')) tile('notes', 'Notes', notes.length, on.has('quotes') && quotes.length ? `+ ${plural(quotes.length, 'quote')}` : 'written');
     if (on.has('hobbies')) tile('hobbies', 'Hobbies', hobbyMin ? hours(hobbyMin) : '0', hobbyName ? `mostly ${hobbyName}` : 'no time logged');
+    if (on.has('chess') && (chessG.length || chessP.length)) {
+      const cw = chessG.filter((g) => g.result === 'win').length;
+      tile('chess', 'Chess', `${cw}–${chessG.filter((g) => g.result === 'loss').length}`, [chessG.length && `${chessG.length} game${chessG.length === 1 ? '' : 's'}`, chessP.filter((p) => p.solved).length && `${chessP.filter((p) => p.solved).length} puzzle${chessP.filter((p) => p.solved).length === 1 ? '' : 's'}`].filter(Boolean).join(' · '));
+    }
     if (on.has('mtg') && matches.length) tile('mtg', 'MTG', `${wins}–${matches.length - wins}`, `${plural(matches.length, 'game')}`);
     if (on.has('watchlist')) tile('watchlist', 'Watched', watched.length, watched.length ? watched.map((w) => w.title).slice(0, 2).join(', ') : 'nothing finished');
     if (on.has('music')) tile('music', 'Albums', albums.length, albums.length ? albums.map((x) => x.title).slice(0, 2).join(', ') : 'none logged');
