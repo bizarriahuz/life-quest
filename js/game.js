@@ -18,9 +18,9 @@ export const SECTIONS = [
   { id: 'mood',    label: 'Mood',    hint: 'A daily check-in and one thing you’re grateful for' },
   { id: 'quotes',  label: 'Quotes',  hint: 'Words to live by' },
   { id: 'hobbies', label: 'Hobbies', hint: 'Time spent on things you love' },
-  { id: 'games',   label: 'Games',   hint: 'Daily Word and Chess: quick daily brain games',
+  { id: 'games',   label: 'Games',   hint: 'Daily Word, Word Hive, Sudoku and Chess: quick daily brain games',
     intro: { blurb: 'A home for quick daily brain games, with streaks and Craft XP.',
-      features: ['Daily Word: guess the five-letter word in six tries, a new one every day', 'Chess against Stockfish, from Beginner to Master', 'A daily chess puzzle from Lichess', 'Share your Daily Word result with friends'] } },
+      features: ['Daily Word: guess the five-letter word in six tries, a new one every day', 'Chess against Stockfish, from Beginner to Master', 'A daily chess puzzle from Lichess', 'Word Hive: make words from seven letters and climb to Genius', 'Sudoku at Easy, Medium and Hard, three new puzzles a day', 'Share your results with friends'] } },
   { id: 'mtg',     label: 'MTG',     hint: 'Magic: The Gathering decks, decklists and win rates' },
   { id: 'watchlist', label: 'Watchlist', hint: 'Films and series to watch, with ratings' },
   { id: 'music',   label: 'Music',   hint: 'Albums to hear and what you’ve been playing (Last.fm)' },
@@ -93,11 +93,13 @@ export const XP = {
   contact: 10,
   watched: 5,
   listened: 5,
-  projectTask: 15,
+  projectTask: 15,  // a shared task you tick off (only the person who ticks it gets XP)
   chessGame: 5,      // a finished game of 10+ moves
   chessWin: 5,       // × the level, on top, for a win
   puzzle: 10,        // the daily chess puzzle, solved
-  word: 10,          // Daily Word, solved   // a shared task you tick off (only the person who ticks it gets XP)
+  word: 10,          // Daily Word, solved
+  sudoku: { easy: 5, medium: 10, hard: 15 },   // the daily Sudoku, solved, per level
+  hive: { great: 5, genius: 10 },              // Word Hive, reaching Great, then Genius
 };
 
 // Overall level: 100 XP for level 2, then +50 more per level.

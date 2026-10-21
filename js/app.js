@@ -174,7 +174,7 @@ async function route() {
 function setupSwipe() {
   if (setupSwipe.done) return;
   setupSwipe.done = true;
-  const NO_SWIPE = 'input, textarea, select, button, [contenteditable], .nav, .seg, .decks, .chart, .tmdb-results, .theme-menu, .more-menu, .album-grid, .scanner, .levelup, .mood-cal, .cardlist, .pgrid, details.more, .cal-grid, .ph-grid, .board-wrap, .promo, .movelist, .replay-ctrls, .level-seg, .wd-keys, .wd-grid';
+  const NO_SWIPE = 'input, textarea, select, button, [contenteditable], .nav, .seg, .decks, .chart, .tmdb-results, .theme-menu, .more-menu, .album-grid, .scanner, .levelup, .mood-cal, .cardlist, .pgrid, details.more, .cal-grid, .ph-grid, .board-wrap, .promo, .movelist, .replay-ctrls, .level-seg, .wd-keys, .wd-grid, .su-grid, .su-pad, .hv-hive, .hv-ctrls';
   let t = null;  // { x, y, at, dir, el }
   const main = () => document.getElementById('view');
   const neighbour = (step) => {

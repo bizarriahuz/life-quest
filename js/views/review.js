@@ -1,4 +1,5 @@
 // Weekly review: what the week added up to, Monday to Sunday.
+import { clock as clockOf } from './sudoku.js';
 import { html, raw, wire, mount, today, addDays, fmtDate } from '../ui.js';
 import { icon } from '../icons.js';
 import { STATS, statVisible, money } from '../game.js';
@@ -65,11 +66,13 @@ export default {
       get('finance', 'transactions', range('occurred_on')),
       get('clients', 'client_projects', range('paid_on')),
     ]);
-    const [chessG, chessP, wordG] = on.has('games') ? await Promise.all([
+    const [chessG, chessP, wordG, suG, hvG] = on.has('games') ? await Promise.all([
       ctx.store.list('chess_games', { gte: ['ended_on', a], lte: ['ended_on', b] }).catch(() => []),
       ctx.store.list('chess_puzzles', range('day')).catch(() => []),
       ctx.store.list('word_games', range('day')).catch(() => []),
-    ]) : [[], [], []];
+      ctx.store.list('sudoku_games', range('day')).catch(() => []),
+      ctx.store.list('hive_games', range('day')).catch(() => []),
+    ]) : [[], [], [], [], []];
 
     // ---- XP ----
     const inWeek = (e) => { const d = localDay(e.created_at); return d >= a && d <= b; };
@@ -130,6 +133,14 @@ export default {
     if (on.has('games') && wordG.length) {
       const ws = wordG.filter((w) => w.solved);
       tile('games', 'Daily Word', `${ws.length}/${elapsed}`, ws.length ? `avg ${(ws.reduce((n, w) => n + w.guesses.length, 0) / ws.length).toFixed(1)} guesses` : 'none solved');
+    }
+    if (on.has('games') && hvG.some((h) => h.words?.length)) {
+      const hp = hvG.filter((h) => h.words?.length);
+      tile('games', 'Word Hive', `${hp.reduce((n, h) => n + h.words.length, 0)}`, `words over ${hp.length} day${hp.length === 1 ? '' : 's'}`);
+    }
+    if (on.has('games') && suG.some((s) => s.solved)) {
+      const sv = suG.filter((s) => s.solved);
+      tile('games', 'Sudoku', `${sv.length}`, `solved · fastest ${clockOf(Math.min(...sv.map((s) => s.seconds)))}`);
     }
     if (on.has('games') && (chessG.length || chessP.length)) {
       const cw = chessG.filter((g) => g.result === 'win').length;

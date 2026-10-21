@@ -1089,3 +1089,40 @@ create trigger row_limits before insert on public.word_games for each row execut
 grant all on public.word_games to authenticated;
 revoke truncate, references, trigger on public.word_games from authenticated;
 revoke all on public.word_games from anon;
+
+-- 1.37: Sudoku and Word Hive
+create table public.sudoku_games (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  day        date not null,
+  level      text not null check (level in ('easy', 'medium', 'hard')),
+  cells      text not null check (cells ~ '^[0-9]{81}$'),
+  notes      int[] not null default '{}' check (cardinality(notes) in (0, 81)),
+  mistakes   int not null default 0 check (mistakes between 0 and 10000),
+  seconds    int not null default 0 check (seconds between 0 and 864000),
+  solved     boolean not null default false,
+  created_at timestamptz not null default now(),
+  unique (user_id, day, level)
+);
+alter table public.sudoku_games enable row level security;
+create policy "own rows" on public.sudoku_games for all to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
+create trigger row_limits before insert on public.sudoku_games for each row execute function public.enforce_row_limits('10000', 'sudoku puzzles');
+grant all on public.sudoku_games to authenticated;
+revoke truncate, references, trigger on public.sudoku_games from authenticated;
+revoke all on public.sudoku_games from anon;
+
+create table public.hive_games (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  day        date not null,
+  words      text[] not null default '{}' check (cardinality(words) <= 400 and array_to_string(words, '') ~ '^[a-z]*$'),
+  score      int not null default 0 check (score between 0 and 10000),
+  created_at timestamptz not null default now(),
+  unique (user_id, day)
+);
+alter table public.hive_games enable row level security;
+create policy "own rows" on public.hive_games for all to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
+create trigger row_limits before insert on public.hive_games for each row execute function public.enforce_row_limits('5000', 'word hives');
+grant all on public.hive_games to authenticated;
+revoke truncate, references, trigger on public.hive_games from authenticated;
+revoke all on public.hive_games from anon;

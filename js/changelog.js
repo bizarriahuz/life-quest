@@ -1,6 +1,14 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.37', date: '2026-10-21', title: 'Sudoku and Word Hive',
+    items: [
+      'Sudoku: three new puzzles every day, Easy, Medium and Hard, each with exactly one answer. Pencil in notes, undo, and beat your best time.',
+      'Word Hive: make as many words as you can from seven letters, always using the centre one. Climb from Beginner to Genius, and find the pangram that uses all seven.',
+      'Both are in Games, the same for everyone each day, with streaks and Craft XP.',
+    ],
+  },
+  {
     version: '1.36', date: '2026-10-21', title: 'Games and Daily Word',
     items: [
       'New Games section, with a list of games. Chess has moved in here, with all your games and streaks kept.',

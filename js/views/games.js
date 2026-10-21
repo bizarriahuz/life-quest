@@ -3,8 +3,10 @@ import { html, raw, mount, today, addDays } from '../ui.js';
 import { icon } from '../icons.js';
 import chess from './chess.js';
 import word, { loadLists, wordStats } from './word.js';
+import sudoku, { LEVELS, sudokuStats } from './sudoku.js';
+import hive, { loadHive, hiveFor, rankOf, hiveStats } from './hive.js';
 
-const GAMES = { chess, word };
+const GAMES = { chess, word, sudoku, hive };
 
 export default {
   id: 'games',
@@ -13,11 +15,20 @@ export default {
     const sub = (location.hash.match(/^#\/games\/(\w+)/) || [])[1];
     if (GAMES[sub]) return GAMES[sub].render(el, ctx);
     const t = today();
-    const [words, games, puzzles] = await Promise.all([
+    const [words, games, puzzles, sudokus, hives, L] = await Promise.all([
       ctx.store.list('word_games', { order: 'day', limit: 2000 }).catch(() => []),
       ctx.store.list('chess_games', { order: 'created_at', limit: 200 }).catch(() => []),
       ctx.store.list('chess_puzzles', { gte: ['day', addDays(t, -400)] }).catch(() => []),
+      ctx.store.list('sudoku_games', { gte: ['day', addDays(t, -400)] }).catch(() => []),
+      ctx.store.list('hive_games', { gte: ['day', addDays(t, -400)] }).catch(() => []),
+      loadHive().catch(() => null),
     ]);
+    const ss = sudokuStats(sudokus, t);
+    const suToday = LEVELS.filter((l) => sudokus.some((s) => s.day === t && s.level === l.id && s.solved)).map((l) => l.label);
+    const suLine = suToday.length ? `Solved today: ${suToday.join(', ')}` : sudokus.some((s) => s.day === t) ? 'Puzzle in progress' : 'Three new puzzles today';
+    const hvToday = hives.find((h) => h.day === t);
+    const hvLine = L && hvToday?.words?.length ? `${rankOf(hvToday.score, hiveFor(t, L).max).name} · ${hvToday.words.length} word${hvToday.words.length === 1 ? '' : 's'} today` : 'Today’s hive is waiting';
+    const hs = L ? hiveStats(hives, t, L) : { streak: 0 };
     const ws = wordStats(words, t);
     const todayWord = words.find((w) => w.day === t);
     const live = games.find((g) => !g.result);
@@ -37,6 +48,18 @@ export default {
           <span class="game-art wd-art" aria-hidden="true"><i class="hit">D</i><i class="near">A</i><i class="miss">I</i><i class="hit">L</i><i class="hit">Y</i></span>
           <span class="game-text"><b>Daily Word</b><span class="game-sub">Guess the five-letter word in six tries</span>
             <span class="game-status ${todayWord?.finished ? 'done' : ''}">${wordLine}${ws.streak ? ` · ${ws.streak}-day streak` : ''}</span></span>
+          ${raw(icon('right', 18))}
+        </a>
+        <a class="card game-card" href="#/games/hive">
+          <span class="game-art hv-art" aria-hidden="true"><i>H</i><i class="mid">I</i><i>V</i></span>
+          <span class="game-text"><b>Word Hive</b><span class="game-sub">Make words from seven letters</span>
+            <span class="game-status ${hvToday?.words?.length ? 'done' : ''}">${hvLine}${hs.streak > 1 ? ` · ${hs.streak}-day streak` : ''}</span></span>
+          ${raw(icon('right', 18))}
+        </a>
+        <a class="card game-card" href="#/games/sudoku">
+          <span class="game-art su-art" aria-hidden="true">${[5, 0, 3, 0, 7, 0, 0, 0, 9].map((n) => html`<i>${n || ''}</i>`)}</span>
+          <span class="game-text"><b>Sudoku</b><span class="game-sub">Easy, Medium and Hard, new every day</span>
+            <span class="game-status ${suToday.length ? 'done' : ''}">${suLine}${ss.streak > 1 ? ` · ${ss.streak}-day streak` : ''}</span></span>
           ${raw(icon('right', 18))}
         </a>
         <a class="card game-card" href="#/games/chess">

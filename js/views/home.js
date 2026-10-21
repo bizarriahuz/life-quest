@@ -60,11 +60,13 @@ export default {
     const calToday = on.has('calendar') ? (await calCollect(ctx, t, t).catch(() => [])).filter((x) => x.src === 'event' || x.src === 'feed') : [];
     const nowHM = new Date().toTimeString().slice(0, 5);
     const calNext = calToday.find((x) => x.time && (x.end || x.time) >= nowHM) || calToday.find((x) => !x.time);
-    const [chessLive, chessPuz, wordToday] = on.has('games') ? await Promise.all([
+    const [chessLive, chessPuz, wordToday, suToday, hvToday] = on.has('games') ? await Promise.all([
       ctx.store.list('chess_games', { order: 'created_at', limit: 5 }).then((g) => g.find((x) => !x.result)).catch(() => null),
       ctx.store.list('chess_puzzles', { gte: ['day', addDays(t, -60)] }).catch(() => []),
       ctx.store.list('word_games', { match: { day: t } }).then((r) => r[0] || null).catch(() => null),
-    ]) : [null, [], null];
+      ctx.store.list('sudoku_games', { match: { day: t } }).catch(() => []),
+      ctx.store.list('hive_games', { match: { day: t } }).then((r) => r[0] || null).catch(() => null),
+    ]) : [null, [], null, [], null];
     const solvedDays = new Set(chessPuz.filter((p) => p.solved).map((p) => p.day));
     let chessStreak = 0;
     if (!chessPuz.some((p) => p.day === t && !p.solved)) for (let d = solvedDays.has(t) ? t : addDays(t, -1); solvedDays.has(d); d = addDays(d, -1)) chessStreak += 1;
@@ -116,8 +118,10 @@ export default {
       games: () => html`<a href="#/games">${raw(icon('games'))}<span class="t-label">Games</span>
               <span class="t-val"><span class="t-txt">${[
                 wordToday?.finished ? (wordToday.solved ? `Word ✓ ${wordToday.guesses.length}/6` : 'Word ✗') : 'Daily Word waiting',
+                hvToday?.words?.length ? `Hive ${hvToday.words.length} word${hvToday.words.length === 1 ? '' : 's'}` : null,
+                suToday.some((s) => s.solved) ? `Sudoku ✓${suToday.filter((s) => s.solved).length > 1 ? ` ×${suToday.filter((s) => s.solved).length}` : ''}` : null,
                 chessLive ? 'chess game on' : chessPuz.some((p) => p.day === t) ? `puzzle ✓${chessStreak > 1 ? ` (${chessStreak} days)` : ''}` : 'puzzle waiting',
-              ].join(' · ')}</span></span></a>`,
+              ].filter(Boolean).join(' · ')}</span></span></a>`,
       calendar: () => html`<a href="#/calendar">${raw(icon('calendar'))}<span class="t-label">Calendar</span>
               <span class="t-val"><span class="t-txt">${calToday.length ? `${calNext ? `${calNext.time ? `${clock(calNext.time)} ` : ''}${calNext.title}` : `${calToday.length} today, all done`}${calToday.length > 1 ? ` · +${calToday.length - 1}` : ''}` : 'Nothing today'}</span></span></a>`,
       projects: () => html`<a href="#/projects">${raw(icon('projects'))}<span class="t-label">Projects</span>
