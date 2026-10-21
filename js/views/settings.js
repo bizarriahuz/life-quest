@@ -81,8 +81,8 @@ async function menu(el, ctx, admin) {
   mount(el, html`
     <header class="page-head"><div><h1>Settings</h1><p>Make Life Quest yours</p></div></header>
     <section class="card set-menu"><ul class="list">
-      ${row('appearance', `${theme.label} theme`)}
       ${row('sections', `${on.size} of ${SECTIONS.length} on · choose and reorder`)}
+      ${row('appearance', `${theme.label} theme`)}
       ${row('profile', `${name && name !== 'HERO' ? name : 'Your name'} · ${ctx.currency}`)}
     </ul></section>
     <section class="card set-menu"><ul class="list">
