@@ -159,7 +159,7 @@ export const SUGGESTIONS = [
   'Encourage {name} about something they’re working on',
   'Ask {name} what made them smile today',
   'Say yes to something {name} has wanted to do',
-  'Pray or wish something good for {name} today',
+  'Wish something good for {name} today, and tell them',
   'Notice something new {name} did and mention it',
   'Ask {name} how they are really feeling',
   'End the day by telling {name} the best part of it was them',

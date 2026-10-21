@@ -1,6 +1,13 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.39', date: '2026-10-22', title: 'Small tidy-ups',
+    items: [
+      'Finance now calls giving “Donation”. Everything you logged before is still there.',
+      'For the maker: an admin page with sign-ups and activity (names and counts only, never anyone’s entries).',
+    ],
+  },
+  {
     version: '1.38', date: '2026-10-21', title: 'Couple',
     items: [
       'New Couple section: a private space for you and your partner. Invite them with a link, and only the two of you can see it.',

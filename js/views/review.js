@@ -150,7 +150,7 @@ export default {
     if (on.has('watchlist')) tile('watchlist', 'Watched', watched.length, watched.length ? watched.map((w) => w.title).slice(0, 2).join(', ') : 'nothing finished');
     if (on.has('music')) tile('music', 'Albums', albums.length, albums.length ? albums.map((x) => x.title).slice(0, 2).join(', ') : 'none logged');
     if (on.has('people')) tile('people', 'Caught up with', people.length, people.length ? people.slice(0, 3).join(', ') + (people.length > 3 ? ` +${people.length - 3}` : '') : 'nobody yet');
-    if (on.has('finance')) tile('finance', 'Spent', $(spent), [income && `${$(income)} in`, given && `${$(given)} sadaqah`].filter(Boolean).join(' · ') || 'this week');
+    if (on.has('finance')) tile('finance', 'Spent', $(spent), [income && `${$(income)} in`, given && `${$(given)} donated`].filter(Boolean).join(' · ') || 'this week');
     if (on.has('clients') && paid.length) tile('clients', 'Clients paid', paid.length, $(sum(paid, (p) => p.value)));
 
     // Highlights: a few plain sentences worth smiling at.
@@ -162,7 +162,7 @@ export default {
     if (learnI.length) hi.push(`Completed ${learnI.map((x) => x.title).join(', ')}`);
     if (runKm >= 5) hi.push(`Ran ${runKm.toFixed(1).replace(/\.0$/, '')} km`);
     if (tasks.length >= 5) hi.push(`Cleared ${tasks.length} tasks`);
-    if (given) hi.push(`Gave ${$(given)} in sadaqah`);
+    if (given) hi.push(`Donated ${$(given)}`);
     if (prev && total > prev) hi.push(`${total - prev} more XP than the week before`);
     const gratitude = moods.filter((m) => m.gratitude).sort((x, y) => x.logged_on.localeCompare(y.logged_on));
 

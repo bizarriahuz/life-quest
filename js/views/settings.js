@@ -42,6 +42,7 @@ const PAGES = {
   new:        { label: 'What’s new', icon: 'review' },
   feedback:   { label: 'Feedback', icon: 'mail' },
   inbox:      { label: 'Feedback inbox', icon: 'mail' },
+  admin:      { label: 'Admin', icon: 'review' },
   account:    { label: 'Account', icon: 'settings' },
 };
 
@@ -52,11 +53,11 @@ export default {
     const page = (location.hash.match(/^#\/settings\/(\w+)/) || [])[1];
     const cloud = ctx.store.mode === 'cloud';
     const admin = cloud ? await ctx.store.rpc('is_admin', {}).catch(() => false) : false;
-    const known = PAGES[page] && (page !== 'inbox' || admin) ? page : null;
+    const known = PAGES[page] && (!['inbox', 'admin'].includes(page) || admin) ? page : null;
     if (known !== lastPage && lastPage !== undefined) requestAnimationFrame(() => window.scrollTo(0, 0));
     lastPage = known;
     if (known === 'new') markSeen();
-    const pages = { appearance, sections, profile, new: whatsNew, feedback, inbox, account };
+    const pages = { appearance, sections, profile, new: whatsNew, feedback, inbox, admin: adminPage, account };
     if (!known) return menu(el, ctx, admin);
     mount(el, html`
       <a class="text-btn back" href="#/settings">${raw(icon('left', 16))}Settings</a>
@@ -71,6 +72,7 @@ async function menu(el, ctx, admin) {
   const on = ctx.sections;
   const theme = THEMES.find((t) => t.id === (ctx.profile?.theme || DEFAULT_THEME)) || THEMES[0];
   const fresh = admin ? (await ctx.store.list('feedback', { match: { status: 'new' }, limit: 200 }).catch(() => [])).length : 0;
+  const stats = admin ? await ctx.store.rpc('admin_stats', {}).catch(() => null) : null;
   const name = ctx.profile?.hero_name;
   const row = (id, sub, extra = '') => html`
     <li><a class="item set-row" href="#/settings/${id}">
@@ -88,6 +90,7 @@ async function menu(el, ctx, admin) {
     <section class="card set-menu"><ul class="list">
       ${row('new', `Version ${LATEST}`, hasUnseen() ? html`<span class="pill solid">New</span>` : '')}
       ${row('feedback', 'Report a problem or share an idea')}
+      ${admin ? row('admin', stats ? `${stats.total} accounts · ${stats.active7} active this week` : 'Who’s using Life Quest') : ''}
       ${admin ? row('inbox', fresh ? `${fresh} new message${fresh === 1 ? '' : 's'}` : 'All caught up', fresh ? html`<span class="pill solid">${fresh}</span>` : '') : ''}
     </ul></section>
     <section class="card set-menu"><ul class="list">
@@ -302,6 +305,61 @@ async function inbox(el, ctx) {
     fbstatus: async (b) => { await ctx.store.update('feedback', b.dataset.id, { status: b.dataset.s }); ctx.rerender(); },
     inboxall: (c) => { inboxAll = c.checked; ctx.rerender(); },
   });
+}
+
+// ---------------------------------------------------------------- admin (maker only)
+// Names and activity counts only: never anyone's entries, notes or email.
+const ago = (ts) => {
+  if (!ts) return 'never';
+  const m = Math.max(0, (Date.now() - new Date(ts).getTime()) / 60000);
+  if (m < 2) return 'just now';
+  if (m < 60) return `${Math.floor(m)} min ago`;
+  if (m < 60 * 24) return `${Math.floor(m / 60)} h ago`;
+  const d = Math.floor(m / 1440);
+  return d === 1 ? 'yesterday' : d < 30 ? `${d} days ago` : new Date(ts).toLocaleDateString('en-SG', { day: 'numeric', month: 'short' });
+};
+async function adminPage(el, ctx) {
+  const s = await ctx.store.rpc('admin_stats', {});
+  const merged = {};
+  for (const [k, n] of Object.entries(s.sections || {})) { const id = k === 'chess' ? 'games' : k; merged[id] = Math.max(merged[id] || 0, n); }
+  const secRows = SECTIONS.map((x) => ({ ...x, n: merged[x.id] || 0 })).sort((a, b) => b.n - a.n || a.label.localeCompare(b.label));
+  const top = Math.max(1, ...secRows.map((x) => x.n));
+  const days = Array.from({ length: 30 }, (_, i) => { const d = new Date(Date.now() - (29 - i) * 864e5); return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Singapore' }); });
+  const sign = days.map((d) => s.signups?.[d] || 0);
+  const peak = Math.max(1, ...sign);
+  const recent = (u) => u.last_seen && Date.now() - new Date(u.last_seen).getTime() < 7 * 864e5;
+  mount(el, html`
+    <section class="card">
+      <div class="adm-kpis">
+        <span><b>${s.total}</b>Accounts</span><span><b>${s.active1}</b>Active today</span>
+        <span><b>${s.active7}</b>This week</span><span><b>${s.new7}</b>New this week</span>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-head"><h2>Sign-ups</h2><span class="meta">last 30 days</span></div>
+      <div class="adm-bars" role="img" aria-label="Sign-ups per day over the last 30 days: ${sign.reduce((a, b) => a + b, 0)} in total">
+        ${sign.map((n, i) => html`<i style="height:${n ? Math.max(8, (n / peak) * 100) : 2}%" title="${days[i]}: ${n}"></i>`)}
+      </div>
+      <div class="row spread small faint"><span>${fmtDate(days[0], { day: 'numeric', month: 'short' })}</span><span>Today</span></div>
+    </section>
+    <section class="card">
+      <div class="card-head"><h2>People</h2><span class="meta">${s.users.length}</span></div>
+      <ul class="list adm-people">${s.users.map((u) => html`<li class="item ${recent(u) ? '' : 'adm-quiet'}">
+        <span class="adm-dot ${recent(u) ? 'on' : ''}" aria-hidden="true"></span>
+        <div class="body"><p class="title">${u.name && u.name !== 'HERO' ? u.name : html`<span class="muted">${u.name === 'HERO' ? 'HERO (default name)' : 'No name yet'}</span>`}${u.me ? html` <span class="pill">You</span>` : ''}${u.confirmed ? '' : html` <span class="pill">Email not confirmed</span>`}</p>
+          <p class="sub">Seen ${ago(u.last_seen)} · joined ${ago(u.joined)} · ${u.sections == null ? 'not set up' : `${u.sections} sections`}</p></div>
+        <span class="adm-xp"><b>${u.xp7}</b>actions this week</span>
+      </li>`)}</ul>
+      <p class="small faint" style="margin-top:8px">“Seen” is the last time they opened the app or earned XP. You only see names and counts, never anyone’s entries.</p>
+    </section>
+    <section class="card">
+      <div class="card-head"><h2>Sections people use</h2>${s.not_set_up ? html`<span class="meta">${s.not_set_up} not set up</span>` : ''}</div>
+      <ul class="adm-secs">${secRows.map((x) => html`<li><span>${x.label}</span><i style="width:${(x.n / top) * 100}%"></i><b>${x.n}</b></li>`)}</ul>
+    </section>
+    <section class="card">
+      <div class="adm-kpis three"><span><b>${s.projects}</b>Shared projects</span><span><b>${s.couples}</b>Couple spaces</span>
+        <a href="#/settings/inbox"><b>${s.feedback_new}</b>New feedback</a></div>
+    </section>`);
 }
 
 // ---------------------------------------------------------------- account

@@ -28,7 +28,7 @@ export const SECTIONS = [
   { id: 'couple',  label: 'Couple',  hint: 'A private space for you and your partner',
     intro: { blurb: 'A private space for you and your partner. Only the two of you can see it.',
       features: ['Count your days together, with an anniversary countdown', 'A question of the day: see each other’s answers once you’ve both replied', 'A daily idea, like “Compliment them today”', 'A jar of date ideas that picks one for you, and memories with photos', 'Leave each other little notes, keep countdowns and a shared list', 'Earn Connection XP together'] } },
-  { id: 'finance', label: 'Finance', hint: 'Spending, budgets, savings goals and sadaqah' },
+  { id: 'finance', label: 'Finance', hint: 'Spending, budgets, savings goals and donations' },
 ];
 // Sections that existed before "new section" pop-ups were added. Nobody is shown a
 // pop-up for these. Any section added later should get an `intro` like this:
@@ -52,7 +52,7 @@ export const STATS = {
   INT: { name: 'Knowledge',  from: 'Reading & learning', view: 'books', sections: ['books', 'comics', 'learning'] },
   WIS: { name: 'Reflection', from: 'Notes, mood & quotes', view: 'notes', sections: ['notes', 'mood', 'quotes'] },
   CHA: { name: 'Craft',      from: 'Hobbies, games & media', view: 'hobbies', sections: ['hobbies', 'games', 'mtg', 'watchlist', 'music'] },
-  FTH: { name: 'Faith',      from: 'Prayer & sadaqah', view: 'prayer', sections: ['prayer'] },
+  FTH: { name: 'Faith',      from: 'Prayer & donations', view: 'prayer', sections: ['prayer'] },
   RST: { name: 'Rest',       from: 'Sleep',          view: 'sleep',   sections: ['sleep'] },
   CON: { name: 'Connection', from: 'People & couple', view: 'people',  sections: ['people', 'couple'] },
   WLT: { name: 'Wealth',     from: 'Finance & clients', view: 'finance', sections: ['finance', 'clients'] },

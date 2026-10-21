@@ -281,7 +281,7 @@ export default {
             ${on.has('watchlist') ? html`<li class="item">Watchlist: ${XP.watched} per film or series finished</li>` : ''}
             ${on.has('music') ? html`<li class="item">Music: ${XP.listened} per album listened to</li>` : ''}
             ${on.has('people') ? html`<li class="item">People: ${XP.contact} for each person you catch up with, once a day</li>` : ''}
-            ${on.has('finance') && on.has('prayer') ? html`<li class="item">Sadaqah: ${XP.sadaqahDay} Faith on each day you give</li>` : ''}
+            ${on.has('finance') && on.has('prayer') ? html`<li class="item">Donations: ${XP.sadaqahDay} Faith on each day you give</li>` : ''}
             <li class="item">Undo or delete something and its XP is removed.</li>
           </ul>
         </details>

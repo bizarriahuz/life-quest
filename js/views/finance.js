@@ -115,7 +115,7 @@ export default {
       <div class="kpis">
         <div class="kpi"><b>${$(income, { maximumFractionDigits: 0 })}</b><span>Income</span></div>
         <div class="kpi"><b>${$(spent, { maximumFractionDigits: 0 })}</b><span>Spent</span></div>
-        <div class="kpi"><b>${$(sadaqah, { maximumFractionDigits: 0 })}</b><span>Sadaqah</span></div>
+        <div class="kpi"><b>${$(sadaqah, { maximumFractionDigits: 0 })}</b><span>Donated</span></div>
         <div class="kpi ${net < 0 ? 'neg' : ''}"><b>${net < 0 ? '−' : ''}${$(Math.abs(net), { maximumFractionDigits: 0 })}</b><span>${net < 0 ? 'Overspent' : 'Left over'}</span></div>
       </div>
 
@@ -127,7 +127,7 @@ export default {
             <label class="field">Category<select name="category_id">
               <optgroup label="Spending">${expCats.map((c) => html`<option value="${c.id}">${c.name}</option>`)}</optgroup>
               <optgroup label="Income">${incCats.map((c) => html`<option value="${c.id}">${c.name}</option>`)}</optgroup>
-              <optgroup label="Giving"><option value="sadaqah">Sadaqah</option></optgroup>
+              <optgroup label="Giving"><option value="sadaqah">Donation</option></optgroup>
             </select></label>
             <label class="field">Date<input type="date" name="occurred_on" value="${defaultDate}" required></label>
           </div>
@@ -182,7 +182,7 @@ export default {
         ${txns.length ? html`<ul class="list">${txns.map((x) => html`
           <li class="item">
             <div class="body">
-              <p class="title">${x.kind === 'sadaqah' ? 'Sadaqah' : catById[x.category_id]?.name || 'Uncategorised'}${x.note ? html` <span class="muted">· ${x.note}</span>` : ''}</p>
+              <p class="title">${x.kind === 'sadaqah' ? 'Donation' : catById[x.category_id]?.name || 'Uncategorised'}${x.note ? html` <span class="muted">· ${x.note}</span>` : ''}</p>
               <p class="sub">${relDate(x.occurred_on)}</p>
             </div>
             <span class="amt ${x.kind === 'income' ? 'in' : x.kind === 'sadaqah' ? 'give' : 'out'}">${x.kind === 'income' ? '+' : '−'}${$(x.amount)}</span>
@@ -231,7 +231,7 @@ export default {
         const amount = cents(v.amount.replace(',', '.'));
         if (!amountOk(amount)) { ctx.say('Enter an amount above zero'); return; }
         const give = v.category_id === 'sadaqah';
-        const cat = give ? { id: null, kind: 'sadaqah', name: 'Sadaqah' } : catById[v.category_id];
+        const cat = give ? { id: null, kind: 'sadaqah', name: 'Donation' } : catById[v.category_id];
         if (!cat) { ctx.say('Pick a category'); return; }
         const day = v.occurred_on || t;
         const sameDay = await ctx.store.list('transactions', { match: { occurred_on: day } });
@@ -241,7 +241,7 @@ export default {
         form.elements.amount.value = ''; form.elements.note.value = '';
         if (day.slice(0, 7) !== month) month = day.slice(0, 7) > cur ? cur : day.slice(0, 7);
         if (firstToday) await ctx.award('WLT', XP.financeDay, 'finance_day', day, `${cat.name} logged`);
-        if (firstGift) await ctx.award('FTH', XP.sadaqahDay, 'sadaqah_day', day, `Sadaqah · ${$(amount)}`);
+        if (firstGift) await ctx.award('FTH', XP.sadaqahDay, 'sadaqah_day', day, `Donation · ${$(amount)}`);
         if (!firstToday && !firstGift) ctx.say(`${cat.name} · ${cat.kind === 'income' ? '+' : '−'}${$(amount)}`);
         ctx.rerender();
       },

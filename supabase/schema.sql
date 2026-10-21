@@ -1324,3 +1324,49 @@ returns setof uuid language sql stable security definer set search_path = '' as 
 $$;
 revoke all on function public.answer_authors(uuid, text) from public, anon;
 grant execute on function public.answer_authors(uuid, text) to authenticated;
+
+-- 1.39: Admin overview for the maker. Names and activity counts only, never anyone's entries or email.
+create or replace function public.admin_stats()
+returns jsonb language plpgsql stable security definer set search_path = '' as $$
+declare res jsonb;
+begin
+  if not exists (select 1 from public.app_admins where user_id = auth.uid()) then
+    raise exception 'Not allowed.' using errcode = '42501';
+  end if;
+  with u as (
+    select au.id, au.created_at, au.email_confirmed_at is not null as confirmed,
+           p.hero_name, p.sections,
+           greatest(au.last_sign_in_at,
+                    (select max(greatest(s.updated_at, s.refreshed_at::timestamptz)) from auth.sessions s where s.user_id = au.id),
+                    (select max(x.created_at) from public.xp_events x where x.user_id = au.id)) as last_seen,
+           (select count(*) from public.xp_events x where x.user_id = au.id and x.created_at > now() - interval '7 days') as xp7,
+           (select coalesce(sum(x.amount), 0) from public.xp_events x where x.user_id = au.id) as xp_total
+      from auth.users au left join public.profiles p on p.user_id = au.id
+  )
+  select jsonb_build_object(
+    'total', (select count(*) from u),
+    'confirmed', (select count(*) from u where confirmed),
+    'active7', (select count(*) from u where last_seen > now() - interval '7 days'),
+    'active1', (select count(*) from u where last_seen > now() - interval '1 day'),
+    'new7', (select count(*) from u where created_at > now() - interval '7 days'),
+    'users', coalesce((select jsonb_agg(jsonb_build_object(
+        'me', id = auth.uid(),
+        'name', coalesce(nullif(trim(hero_name), ''), null),
+        'joined', created_at, 'confirmed', confirmed, 'last_seen', last_seen,
+        'xp7', xp7, 'xp_total', xp_total,
+        'sections', case when sections is null then null else cardinality(sections) end)
+        order by last_seen desc nulls last) from u), '[]'::jsonb),
+    'sections', coalesce((select jsonb_object_agg(s, n) from (
+        select s, count(*) as n from u, unnest(u.sections) s group by s) t), '{}'::jsonb),
+    'not_set_up', (select count(*) from u where sections is null),
+    'signups', coalesce((select jsonb_object_agg(d, n) from (
+        select (created_at at time zone 'Asia/Singapore')::date::text as d, count(*) as n from u
+         where created_at > now() - interval '30 days' group by 1) t), '{}'::jsonb),
+    'feedback_new', (select count(*) from public.feedback where status = 'new'),
+    'couples', (select count(*) from public.projects where kind = 'couple'),
+    'projects', (select count(*) from public.projects where kind = 'project')
+  ) into res;
+  return res;
+end $$;
+revoke all on function public.admin_stats() from public, anon;
+grant execute on function public.admin_stats() to authenticated;
