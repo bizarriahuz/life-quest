@@ -212,7 +212,7 @@ async function playPane(el, ctx, live) {
     el.querySelector('#mat-top').textContent = m < 0 ? `+${-m}` : '';
     const h = chess.history();
     el.querySelector('#moves').innerHTML = String(html`${Array.from({ length: Math.ceil(h.length / 2) }, (_, i) => html`<li><span>${h[2 * i]}</span><span>${h[2 * i + 1] || ''}</span></li>`)}`);
-    el.querySelector('#moves').lastElementChild?.scrollIntoView?.({ block: 'nearest' });
+    const ml = el.querySelector('#moves'); ml.scrollTop = ml.scrollHeight;   // newest move in view, without moving the page
     el.querySelector('#move-count').textContent = h.length ? `${Math.ceil(h.length / 2)}` : '';
     if (!over && !thinking) status(chess.turn() === you ? (chess.inCheck() ? 'Check! Your move' : 'Your move') : 'Stockfish to move');
   };
