@@ -95,7 +95,7 @@ export function cloudStore(sb, user) {
 // ---------------------------------------------------------------------------
 const KEY = 'lifequest:v1';
 const DEFAULTS = {
-  tasks: { kind: 'side', due_on: null, done: false, done_on: null, repeat: null, goal_id: null },
+  tasks: { kind: 'side', due_on: null, done: false, done_on: null, repeat: null, goal_id: null, note: null },
   books: { isbn: null, cover_url: null, author: null, status: 'queued', pages_total: null, pages_read: 0, rating: null, started_on: null, finished_on: null },
   notes: { title: '', body: '', pinned: false },
   quotes: { source: null },
@@ -127,7 +127,7 @@ const DEFAULTS = {
   project_members: {},
   project_invites: { role: 'editor' },
   project_entries: { photo_path: null, body: null, amount: null, paid_by: null, assignee_id: null, due_on: null, done: false, done_by: null, done_on: null },
-  watchlist: { kind: 'film', status: 'queued', rating: null, note: null, done_on: null, tmdb_id: null, tmdb_type: null, imdb_id: null, year: null, poster_url: null, details: null, overview: null },
+  watchlist: { season: null, episode: null, kind: 'film', status: 'queued', rating: null, note: null, done_on: null, tmdb_id: null, tmdb_type: null, imdb_id: null, year: null, poster_url: null, details: null, overview: null },
 };
 const UNIQUE = { prayer_logs: ['prayed_on', 'prayer'], hobbies: ['name'], finance_categories: ['kind', 'name'], sleep_logs: ['slept_on'], moods: ['logged_on'] };
 

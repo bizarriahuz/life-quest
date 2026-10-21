@@ -960,3 +960,10 @@ create policy "project editors add photos" on storage.objects for insert to auth
 create policy "photo owner or uploader removes" on storage.objects for delete to authenticated
   using (bucket_id = 'project-photos' and (public.photo_role(name) = 'owner'
          or (owner_id = (select auth.uid())::text and public.photo_role(name) = 'editor')));
+
+-- ---------- 1.33: episode tracking, task notes ----------
+alter table public.watchlist
+  add column if not exists season  smallint check (season is null or season between 0 and 200),
+  add column if not exists episode smallint check (episode is null or episode between 0 and 5000);
+alter table public.tasks
+  add column if not exists note text check (note is null or char_length(note) <= 1000);

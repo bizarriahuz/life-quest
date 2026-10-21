@@ -1,6 +1,15 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.33', date: '2026-10-21', title: 'Episodes, task notes and a steadier menu',
+    items: [
+      'Watchlist: series, anime and documentaries now track the season and episode you’re up to. Tap + after each episode.',
+      'Tasks: add an optional note to any task, like details, a link or a phone number. Tap a long note to see all of it.',
+      'On a computer, the menu on the left stays in place and scrolls on its own.',
+      'Thanks to Beast for all three suggestions!',
+    ],
+  },
+  {
     version: '1.32', date: '2026-10-21', title: 'Settings, tidied',
     items: [
       'Settings is now a short menu: Appearance, Sections, Profile, What’s new, Feedback and Account, each on its own page.',

@@ -4,6 +4,8 @@ import { XP } from '../game.js';
 import { tmdbEnabled, search, findByImdb, imdbIdFrom, details, providers } from '../tmdb.js';
 
 const KIND = { film: 'Film', series: 'Series', anime: 'Anime', documentary: 'Documentary', other: 'Other' };
+const EPISODIC = new Set(['series', 'anime', 'documentary']);
+export const epLabel = (w) => (w.episode ? `S${w.season || 1} E${w.episode}` : '');
 let filter = 'all';
 let picked = null;       // TMDB details chosen in the add form
 let tab = 'want';        // 'want' | 'watched'
@@ -52,6 +54,14 @@ export default {
         ${thumb(w.poster_url)}
         <div class="body">${title(w)}
           ${w.details ? html`<p class="sub">${w.details}</p>` : ''}
+          ${EPISODIC.has(w.kind) ? html`<div class="ep-track" role="group" aria-label="Episode you’re up to">
+            <label class="ep-s">Season <input type="number" inputmode="numeric" min="1" max="200" value="${w.season || 1}" data-change="season" data-id="${w.id}" aria-label="Season"></label>
+            <span class="ep-e">
+              <button type="button" class="icon-btn" data-act="epdown" data-id="${w.id}" aria-label="Previous episode" ${w.episode ? '' : 'disabled'}>−</button>
+              <span>Episode <b>${w.episode || 0}</b></span>
+              <button type="button" class="icon-btn ep-plus" data-act="epup" data-id="${w.id}" aria-label="Watched next episode">+</button>
+            </span>
+          </div>` : ''}
           ${w.note ? html`<p class="sub">${w.note}</p>` : ''}
           ${tmdbEnabled && w.tmdb_id ? html`<p class="sub wtw" data-wtw="${w.tmdb_type}:${w.tmdb_id}"></p>` : ''}
           ${w.overview ? html`<p class="sub ov">${w.overview}</p>` : ''}
@@ -71,6 +81,7 @@ export default {
       <li class="item wl-item">
         ${thumb(w.poster_url)}
         <div class="body">${title(w)}
+          ${epLabel(w) ? html`<p class="sub">Up to ${epLabel(w)}</p>` : ''}
           <label class="wl-date"><span>Watched</span><input type="date" value="${w.done_on || ''}" max="${t}" data-change="setdate" data-id="${w.id}" aria-label="Date you watched ${w.title}"></label>
           ${w.note ? html`<p class="sub">${w.note}</p>` : ''}
         </div>
@@ -239,6 +250,28 @@ export default {
         if (!d || d > t) { ctx.say('Pick a date up to today'); inp.value = item(inp.dataset.id).done_on || t; return; }
         await ctx.store.update('watchlist', inp.dataset.id, { done_on: d });
         ctx.say(`Date set to ${fmtDate(d, { day: 'numeric', month: 'short', year: 'numeric' })}`);
+        ctx.rerender();
+      },
+      epup: async (b) => {
+        const w = item(b.dataset.id);
+        const patch = { episode: Math.min(5000, (w.episode || 0) + 1), season: w.season || 1 };
+        if (w.status === 'queued') patch.status = 'watching';            // ticking an episode means you've started
+        await ctx.store.update('watchlist', w.id, patch);
+        ctx.say(`${w.title}: up to S${patch.season} E${patch.episode}`);
+        ctx.rerender();
+      },
+      epdown: async (b) => {
+        const w = item(b.dataset.id);
+        await ctx.store.update('watchlist', w.id, { episode: Math.max(0, (w.episode || 0) - 1) || null });
+        ctx.rerender();
+      },
+      season: async (inp) => {
+        const w = item(inp.dataset.id);
+        const s = Math.max(1, Math.min(200, Math.round(Number(inp.value)) || 1));
+        if (s === (w.season || 1)) { inp.value = s; return; }
+        // A new season starts again from episode 0.
+        await ctx.store.update('watchlist', w.id, { season: s, episode: null, ...(w.status === 'queued' ? { status: 'watching' } : {}) });
+        ctx.say(`${w.title}: season ${s}`);
         ctx.rerender();
       },
       start: async (b) => { const w = item(b.dataset.id); await ctx.store.update('watchlist', w.id, { status: w.status === 'watching' ? 'queued' : 'watching' }); ctx.rerender(); },

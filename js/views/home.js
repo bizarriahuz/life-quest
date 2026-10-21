@@ -120,7 +120,7 @@ export default {
       mtg: () => html`<a href="#/mtg">${raw(icon('mtg'))}<span class="t-label">MTG</span>
               <span class="t-val"><span class="t-txt">${lm ? `Last game ${relDateInline(lm.played_on)} · ${lm.result}` : plural(decks.length, 'deck')}</span></span></a>`,
       watchlist: () => html`<a href="#/watchlist">${raw(icon('watchlist'))}<span class="t-label">Watchlist</span>
-              <span class="t-val"><span class="t-txt">${watchingNow.some((w) => w.status === 'watching') ? `Watching ${watchingNow.filter((w) => w.status === 'watching').map((w) => w.title).join(', ')}` : `${watchingNow.filter((w) => w.status === 'queued').length} to watch`}</span></span></a>`,
+              <span class="t-val"><span class="t-txt">${watchingNow.some((w) => w.status === 'watching') ? `Watching ${watchingNow.filter((w) => w.status === 'watching').map((w) => (w.episode ? `${w.title} (S${w.season || 1} E${w.episode})` : w.title)).join(', ')}` : `${watchingNow.filter((w) => w.status === 'queued').length} to watch`}</span></span></a>`,
       music: () => html`<a href="#/music">${raw(icon('music'))}<span class="t-label">Music</span>
               <span class="t-val"><span class="t-txt">${albumsAll.filter((a) => a.status === 'want').length} to listen · ${albumsAll.filter((a) => a.status === 'listened' && (a.listened_on || '').startsWith(t.slice(0, 7))).length} this month</span></span></a>`,
       people: () => html`<a href="#/people">${raw(icon('people'))}<span class="t-label">People</span>

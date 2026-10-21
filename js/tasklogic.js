@@ -55,7 +55,7 @@ export async function toggleTask(ctx, q) {
   let label = q.title;
   if (q.repeat) {
     const next = nextDue(q.due_on, q.repeat, t);
-    await ctx.store.insert('tasks', { title: q.title, kind: q.kind, due_on: next, repeat: q.repeat, goal_id: q.goal_id || null });
+    await ctx.store.insert('tasks', { title: q.title, kind: q.kind, due_on: next, repeat: q.repeat, goal_id: q.goal_id || null, note: q.note || null });
     label = `${q.title} · next ${fmtDate(next, { weekday: 'short', day: 'numeric', month: 'short' })}`;
   }
   await ctx.award('DEX', XP.task[q.kind], 'task', q.id, label);

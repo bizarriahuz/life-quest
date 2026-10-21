@@ -15,6 +15,7 @@ export function taskItem(q, isDone, { goalName = null, canDelete = true, canEdit
   if (q.due_on && !isDone) subs.push(html`<span class="${q.due_on < t ? 'due-late' : ''}">${q.due_on < t ? 'Overdue · ' : 'Due '}${relDate(q.due_on)}</span>`);
   if (q.repeat) subs.push(html`<span class="rep">${raw(icon('repeat', 13))}${REPEAT_SHORT[q.repeat]}</span>`);
   if (goalName) subs.push(html`<span class="goal-tag">${raw(icon('goals', 13))}${goalName}</span>`);
+  const note = q.note ? html`<p class="sub task-note" data-act="note" title="Tap to show all">${q.note}</p>` : '';
   return html`
     <li class="item ${isDone ? 'done' : ''}">
       <button class="check ${isDone ? 'on' : ''}" data-act="toggle" data-id="${q.id}" aria-pressed="${isDone}"
@@ -22,6 +23,7 @@ export function taskItem(q, isDone, { goalName = null, canDelete = true, canEdit
       <div class="body">
         <p class="title">${q.kind === 'main' ? html`<span class="pill solid">Main</span>` : ''}${q.title}</p>
         ${subs.length ? html`<p class="sub task-sub">${subs}</p>` : ''}
+        ${note}
       </div>
       <span class="xp">+${XP.task[q.kind]}</span>
       ${canEdit && !(isDone && q.kind !== 'daily')
@@ -53,6 +55,7 @@ export default {
       <li class="item editing">
         <form data-form="saveedit" data-id="${q.id}" class="form grow">
           <input name="title" value="${q.title}" maxlength="200" required aria-label="Task name">
+          <textarea name="note" rows="2" maxlength="1000" placeholder="Note (optional)" aria-label="Note">${q.note || ''}</textarea>
           <div class="fields">
             <label class="field">Type<select name="kind" data-change="editkind">
               ${Object.entries(KIND).map(([k, v]) => html`<option value="${k}" ${q.kind === k ? 'selected' : ''}>${v}</option>`)}
@@ -101,6 +104,9 @@ export default {
               ${goals.map((g) => html`<option value="${g.id}">${g.title}</option>`)}
             </select></label>` : ''}
           </div>
+          <details class="add-note"><summary class="small muted">Add a note</summary>
+            <textarea name="note" rows="2" maxlength="1000" placeholder="Details, a link, a phone number…" aria-label="Note"></textarea>
+          </details>
         </form>
       </section>
 
@@ -155,6 +161,7 @@ export default {
 
     wire(el, {
       kind: syncKind,
+      note: (p) => p.classList.toggle('open'),
       editkind: syncEdit,
       edit: (btn) => { editing = btn.dataset.id; ctx.rerender(); },
       canceledit: () => { editing = null; ctx.rerender(); },
@@ -167,7 +174,7 @@ export default {
         const patch = {
           title: v.title.slice(0, 200), kind,
           due_on: daily ? null : v.due_on || (repeat ? t : null),
-          repeat, goal_id: v.goal_id || null,
+          repeat, goal_id: v.goal_id || null, note: (v.note || '').slice(0, 1000) || null,
         };
         if (daily !== (q.kind === 'daily')) Object.assign(patch, { done: false, done_on: null });   // switching to/from Daily starts fresh
         await ctx.store.update('tasks', q.id, patch);
@@ -180,8 +187,8 @@ export default {
         const kind = v.kind || 'side';
         const repeat = kind === 'daily' ? null : v.repeat || null;
         const due = kind === 'daily' ? null : v.due_on || (repeat ? t : null);   // a repeat needs a start date
-        await ctx.store.insert('tasks', { title: v.title, kind, due_on: due, repeat, goal_id: v.goal_id || null });
-        f.reset(); syncKind();
+        await ctx.store.insert('tasks', { title: v.title, kind, due_on: due, repeat, goal_id: v.goal_id || null, note: v.note || null });
+        f.reset(); syncKind(); f.querySelector('.add-note').open = false;
         ctx.say(repeat ? `Task added · repeats ${REPEAT_SHORT[repeat]}` : 'Task added');
         ctx.rerender();
       },
