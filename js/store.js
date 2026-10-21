@@ -15,7 +15,7 @@ export async function getClient() {
 }
 
 // Shared project tables have no user_id: the server decides who owns or wrote a row.
-const SHARED = new Set(['projects', 'project_members', 'project_invites', 'project_entries']);
+const SHARED = new Set(['projects', 'project_members', 'project_invites', 'project_entries', 'project_comments', 'project_reactions']);
 
 export function cloudStore(sb, user) {
   const ok = ({ data, error }) => { if (error) throw error; return data; };
