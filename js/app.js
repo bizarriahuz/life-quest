@@ -30,12 +30,13 @@ import music from './views/music.js';
 import search from './views/search.js';
 import review from './views/review.js';
 import projects from './views/projects.js';
+import couple from './views/couple.js';
 import join from './views/join.js';
 import calendar from './views/calendar.js';
 import games from './views/games.js';
 import welcome from './views/welcome.js';
 
-const VIEWS = [home, tasks, calendar, goals, projects, clients, prayer, fitness, sleep, books, comics, learning, notes, mood, quotes, hobbies, games, mtg, watchlist, music, people, finance, settings];
+const VIEWS = [home, tasks, calendar, goals, projects, clients, prayer, fitness, sleep, books, comics, learning, notes, mood, quotes, hobbies, games, mtg, watchlist, music, people, couple, finance, settings];
 const HIDDEN = [search, review, join, welcome];   // pages reached from buttons, not the menu
 const root = document.getElementById('app');
 const S = { store: null, profile: null, rawTotals: {}, routeToken: 0, swipe: null };

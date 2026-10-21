@@ -96,7 +96,7 @@ const sharedHandlers = (ctx) => ({
 async function renderList(el, ctx) {
   const me = ctx.store.user.id;
   const [projects, members, open] = await Promise.all([
-    ctx.store.list('projects', { order: 'created_at', asc: true }),
+    ctx.store.list('projects', { order: 'created_at', asc: true }).then((r) => r.filter((x) => x.kind !== 'couple')),
     ctx.store.list('project_members', {}),
     ctx.store.list('project_entries', { match: { kind: 'task', done: false } }),
   ]);
@@ -160,6 +160,7 @@ async function renderProject(el, ctx, pid) {
   const me = ctx.store.user.id;
   const t = today();
   const [proj] = await ctx.store.list('projects', { match: { id: pid } });
+  if (proj?.kind === 'couple') { stopLive(); location.replace('#/couple'); return; }
   if (!proj) {
     stopLive();
     mount(el, html`<a class="text-btn back" href="#/projects">${raw(icon('left', 16))}Projects</a>

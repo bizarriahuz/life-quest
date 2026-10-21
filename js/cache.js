@@ -51,6 +51,8 @@ export function withCache(store, onStale) {
     remove: (t, id) => after(t, store.remove)(t, id),
     removeWhere: (t, match) => after(t, store.removeWhere)(t, match),
     updateWhere: (t, match, patch) => after(t, store.updateWhere)(t, match, patch),
+    award: (...args) => after('xp_events', store.award)(...args),
+    revoke: (...args) => after('xp_events', store.revoke)(...args),
     rpc: async (fn, args) => { try { return await store.rpc(fn, args); } finally { if (fn === 'join_project') { invalidate('projects'); } } },
     invalidate,
     clear: () => cache.clear(),

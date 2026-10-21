@@ -25,6 +25,9 @@ export const SECTIONS = [
   { id: 'watchlist', label: 'Watchlist', hint: 'Films and series to watch, with ratings' },
   { id: 'music',   label: 'Music',   hint: 'Albums to hear and what you’ve been playing (Last.fm)' },
   { id: 'people',  label: 'People',  hint: 'Keep in touch with friends and family' },
+  { id: 'couple',  label: 'Couple',  hint: 'A private space for you and your partner',
+    intro: { blurb: 'A private space for you and your partner. Only the two of you can see it.',
+      features: ['Count your days together, with an anniversary countdown', 'A question of the day: see each other’s answers once you’ve both replied', 'A daily idea, like “Compliment them today”', 'A jar of date ideas that picks one for you, and memories with photos', 'Leave each other little notes, keep countdowns and a shared list', 'Earn Connection XP together'] } },
   { id: 'finance', label: 'Finance', hint: 'Spending, budgets, savings goals and sadaqah' },
 ];
 // Sections that existed before "new section" pop-ups were added. Nobody is shown a
@@ -51,7 +54,7 @@ export const STATS = {
   CHA: { name: 'Craft',      from: 'Hobbies, games & media', view: 'hobbies', sections: ['hobbies', 'games', 'mtg', 'watchlist', 'music'] },
   FTH: { name: 'Faith',      from: 'Prayer & sadaqah', view: 'prayer', sections: ['prayer'] },
   RST: { name: 'Rest',       from: 'Sleep',          view: 'sleep',   sections: ['sleep'] },
-  CON: { name: 'Connection', from: 'People',         view: 'people',  sections: ['people'] },
+  CON: { name: 'Connection', from: 'People & couple', view: 'people',  sections: ['people', 'couple'] },
   WLT: { name: 'Wealth',     from: 'Finance & clients', view: 'finance', sections: ['finance', 'clients'] },
 };
 
@@ -100,6 +103,9 @@ export const XP = {
   word: 10,          // Daily Word, solved
   sudoku: { easy: 5, medium: 10, hard: 15 },   // the daily Sudoku, solved, per level
   hive: { great: 5, genius: 10 },              // Word Hive, reaching Great, then Genius
+  coupleQuestion: 5, // answering the couple question of the day
+  kindness: 5,       // doing today's couple idea
+  date: 10,          // a date from the jar, done
 };
 
 // Overall level: 100 XP for level 2, then +50 more per level.

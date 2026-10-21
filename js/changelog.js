@@ -1,6 +1,14 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.38', date: '2026-10-21', title: 'Couple',
+    items: [
+      'New Couple section: a private space for you and your partner. Invite them with a link, and only the two of you can see it.',
+      'Count your days together, answer a question each day (you see each other’s answers once you’ve both replied) and get a daily idea, like “Compliment them today”.',
+      'A date ideas jar that picks for you, memories with photos, countdowns to birthdays and trips, little notes for each other and a shared list. Earns Connection XP.',
+    ],
+  },
+  {
     version: '1.37', date: '2026-10-21', title: 'Sudoku and Word Hive',
     items: [
       'Sudoku: three new puzzles every day, Easy, Medium and Hard, each with exactly one answer. Pencil in notes, undo, and beat your best time.',

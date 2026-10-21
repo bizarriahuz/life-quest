@@ -1126,3 +1126,203 @@ create trigger row_limits before insert on public.hive_games for each row execut
 grant all on public.hive_games to authenticated;
 revoke truncate, references, trigger on public.hive_games from authenticated;
 revoke all on public.hive_games from anon;
+
+-- 1.38: Couple space. Built on shared projects: a couple is a project with kind 'couple' and at most two people.
+alter table public.projects add column if not exists kind text not null default 'project' check (kind in ('project', 'couple'));
+alter table public.projects add column if not exists together_since date check (together_since is null or together_since >= date '1900-01-01');
+alter table public.project_entries add column if not exists yearly boolean not null default false;
+alter table public.project_entries drop constraint if exists project_entries_kind_check;
+alter table public.project_entries add constraint project_entries_kind_check
+  check (kind in ('task', 'note', 'expense', 'photo', 'idea', 'memory', 'countdown', 'love', 'answer'));
+create unique index if not exists project_entries_answer_once on public.project_entries (project_id, author_id, title) where kind = 'answer';
+
+alter table public.profiles drop constraint if exists profiles_sections_check;
+alter table public.profiles add constraint profiles_sections_check check (sections is null or sections <@ array['tasks','goals','projects','calendar','clients','prayer','fitness','sleep','books','comics','learning','notes','mood','quotes','hobbies','games','chess','mtg','watchlist','music','people','finance','couple']);
+alter table public.profiles drop constraint if exists profiles_seen_intros_check;
+alter table public.profiles add constraint profiles_seen_intros_check check (seen_intros is null or (cardinality(seen_intros) <= 100 and seen_intros <@ array['tasks','goals','projects','calendar','clients','prayer','fitness','sleep','books','comics','learning','notes','mood','quotes','hobbies','games','chess','mtg','watchlist','music','people','finance','couple']));
+
+-- Is this user already in a couple space?
+create or replace function public.in_couple(u uuid)
+returns boolean language sql stable security definer set search_path = '' as $$
+  select exists (select 1 from public.project_members m join public.projects p on p.id = m.project_id where m.user_id = u and p.kind = 'couple')
+$$;
+revoke all on function public.in_couple(uuid) from public, anon, authenticated;
+
+create or replace function public.projects_before_insert()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  new.owner_id := auth.uid();
+  if (select count(*) from public.projects where owner_id = new.owner_id) >= 50 then
+    raise exception 'Limit reached: 50 projects at most.' using errcode = 'P0001';
+  end if;
+  if (select count(*) from public.projects where owner_id = new.owner_id and created_at > now() - interval '1 minute') >= 10 then
+    raise exception 'Too many changes at once. Wait a minute and try again.' using errcode = 'P0001';
+  end if;
+  if new.kind = 'couple' and public.in_couple(new.owner_id) then
+    raise exception 'You already have a couple space.' using errcode = 'P0001';
+  end if;
+  return new;
+end $$;
+
+create or replace function public.projects_before_update()
+returns trigger language plpgsql set search_path = '' as $$
+begin
+  new.owner_id := old.owner_id; new.created_at := old.created_at; new.kind := old.kind;
+  return new;
+end $$;
+
+-- Either partner can edit the couple space (name, date you got together).
+alter policy "owner edits" on public.projects
+  using (public.project_role(id) = 'owner' or (kind = 'couple' and public.project_role(id) = 'editor'))
+  with check (public.project_role(id) = 'owner' or (kind = 'couple' and public.project_role(id) = 'editor'));
+
+create or replace function public.join_project(p_token text)
+returns uuid language plpgsql security definer set search_path = '' as $$
+declare inv public.project_invites; uid uuid := auth.uid();
+begin
+  if uid is null then raise exception 'Sign in first.' using errcode = 'P0001'; end if;
+  select * into inv from public.project_invites where token = p_token and expires_at > now();
+  if not found then raise exception 'This invite link has expired or isn''t valid. Ask for a new one.' using errcode = 'P0001'; end if;
+  if exists (select 1 from public.project_members where project_id = inv.project_id and user_id = uid) then return inv.project_id; end if;
+  if (select kind from public.projects where id = inv.project_id) = 'couple' then
+    if (select count(*) from public.project_members where project_id = inv.project_id) >= 2 then
+      raise exception 'This couple space already has two people.' using errcode = 'P0001';
+    end if;
+    if public.in_couple(uid) then
+      raise exception 'You''re already in a couple space. Leave it first to join this one.' using errcode = 'P0001';
+    end if;
+    inv.role := 'editor';
+  end if;
+  if (select count(*) from public.project_members where project_id = inv.project_id) >= 50 then
+    raise exception 'This project is full (50 people).' using errcode = 'P0001';
+  end if;
+  if (select count(*) from public.project_members where user_id = uid) >= 100 then
+    raise exception 'You''re in 100 projects already. Leave one to join another.' using errcode = 'P0001';
+  end if;
+  insert into public.project_members (project_id, user_id, role, display_name)
+  values (inv.project_id, uid, inv.role, coalesce(public.member_name(), 'Member'));
+  return inv.project_id;
+end $$;
+
+drop function if exists public.invite_info(text);
+create function public.invite_info(p_token text)
+returns table (project_id uuid, name text, members int, role text, already boolean, kind text, inviter text)
+language plpgsql stable security definer set search_path = '' as $$
+begin
+  if auth.uid() is null then raise exception 'Sign in first.' using errcode = 'P0001'; end if;
+  return query
+    select p.id, p.name, (select count(*)::int from public.project_members m where m.project_id = p.id), i.role,
+           exists (select 1 from public.project_members m where m.project_id = p.id and m.user_id = auth.uid()),
+           p.kind, (select m.display_name from public.project_members m where m.project_id = p.id and m.user_id = i.created_by)
+      from public.project_invites i join public.projects p on p.id = i.project_id
+     where i.token = p_token and i.expires_at > now();
+end $$;
+revoke all on function public.invite_info(text) from public, anon;
+grant execute on function public.invite_info(text) to authenticated;
+
+-- Entries: rules for the couple kinds.
+create or replace function public.entries_guard()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare uid uuid := auth.uid(); pkind text;
+begin
+  if tg_op = 'INSERT' then
+    new.author_id := uid;
+    new.author_name := coalesce((select display_name from public.project_members where project_id = new.project_id and user_id = uid), 'Member');
+    new.created_at := now();
+    if (select count(*) from public.project_entries where project_id = new.project_id) >= 5000 then
+      raise exception 'This project is full (5,000 entries). Remove some old ones to add more.' using errcode = 'P0001';
+    end if;
+    if (select count(*) from public.project_entries where author_id = uid and created_at > now() - interval '1 minute') >= 60 then
+      raise exception 'Too many changes at once. Wait a minute and try again.' using errcode = 'P0001';
+    end if;
+  else
+    new.project_id := old.project_id; new.author_id := old.author_id; new.author_name := old.author_name;
+    new.created_at := old.created_at; new.kind := old.kind;
+    -- Only the writer can change an answer or a note's words; a partner can only mark a note as read.
+    if old.kind in ('answer', 'love') and uid is distinct from old.author_id then
+      if old.kind = 'answer' then raise exception 'You can only change your own answer.' using errcode = 'P0001'; end if;
+      new.title := old.title; new.body := old.body; new.assignee_id := old.assignee_id;
+    end if;
+    if old.kind = 'love' then new.assignee_id := old.assignee_id; end if;
+  end if;
+  if new.kind in ('idea', 'memory', 'countdown', 'love', 'answer') then
+    select kind into pkind from public.projects where id = new.project_id;
+    if pkind is distinct from 'couple' then raise exception 'That only works in a couple space.' using errcode = 'P0001'; end if;
+  end if;
+  if new.kind = 'answer' and new.title !~ '^\d{4}-\d{2}-\d{2}$' then
+    raise exception 'Answers belong to a day.' using errcode = 'P0001';
+  end if;
+  if new.kind = 'love' and (new.assignee_id is null or new.assignee_id = new.author_id) then
+    raise exception 'Notes are for your partner.' using errcode = 'P0001';
+  end if;
+  if new.kind = 'countdown' and new.due_on is null then
+    raise exception 'Pick a date for the countdown.' using errcode = 'P0001';
+  end if;
+  if new.assignee_id is not null and not exists (select 1 from public.project_members where project_id = new.project_id and user_id = new.assignee_id) then
+    raise exception 'That person isn''t in this project.' using errcode = 'P0001';
+  end if;
+  if new.paid_by is not null and not exists (select 1 from public.project_members where project_id = new.project_id and user_id = new.paid_by) then
+    raise exception 'That person isn''t in this project.' using errcode = 'P0001';
+  end if;
+  if new.kind not in ('task', 'love') then new.assignee_id := null; end if;
+  if new.kind not in ('task', 'idea', 'love') then new.done := false; end if;
+  if new.kind not in ('task', 'countdown', 'memory') then new.due_on := null; end if;
+  if new.kind <> 'countdown' then new.yearly := false; end if;
+  if new.kind <> 'expense' then new.amount := null; new.paid_by := null; end if;
+  if not new.done then
+    new.done_by := null; new.done_on := null;
+  elsif tg_op = 'INSERT' then
+    new.done_by := uid; new.done_on := current_date;
+  elsif not old.done then
+    new.done_by := uid; new.done_on := current_date;
+  else
+    new.done_by := old.done_by; new.done_on := old.done_on;
+  end if;
+  new.updated_at := now();
+  return new;
+end $$;
+
+-- Photos: memories may have one too.
+create or replace function public.photo_guard()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if new.kind = 'photo' or (new.kind = 'memory' and new.photo_path is not null) then
+    if new.photo_path is null or split_part(new.photo_path, '/', 1) <> new.project_id::text then
+      raise exception 'Photo is missing.' using errcode = 'P0001';
+    end if;
+    if tg_op = 'INSERT' then
+      if (select count(*) from public.project_entries where project_id = new.project_id and photo_path is not null) >= 300 then
+        raise exception 'This space has 300 photos, the most it can hold. Remove some to add more.' using errcode = 'P0001';
+      end if;
+      if (select count(*) from public.project_entries where author_id = auth.uid() and photo_path is not null) >= 500 then
+        raise exception 'You''ve added 500 photos across your projects, the most allowed. Remove some to add more.' using errcode = 'P0001';
+      end if;
+    else
+      new.photo_path := old.photo_path;
+    end if;
+  elsif new.kind = 'memory' and tg_op = 'UPDATE' then
+    new.photo_path := old.photo_path;
+  else
+    new.photo_path := null;
+  end if;
+  return new;
+end $$;
+
+-- Question of the day: you see your partner's answer only after giving yours.
+create or replace function public.answered(p uuid, d text)
+returns boolean language sql stable security definer set search_path = '' as $$
+  select exists (select 1 from public.project_entries where project_id = p and kind = 'answer' and title = d and author_id = auth.uid())
+$$;
+revoke all on function public.answered(uuid, text) from public, anon;
+grant execute on function public.answered(uuid, text) to authenticated;
+alter policy "members read" on public.project_entries
+  using (public.project_role(project_id) is not null and (kind <> 'answer' or author_id = (select auth.uid()) or public.answered(project_id, title)));
+
+-- Who has answered a day's question (names only, never the words), so the app can say "your partner answered".
+create or replace function public.answer_authors(p uuid, d text)
+returns setof uuid language sql stable security definer set search_path = '' as $$
+  select author_id from public.project_entries
+   where project_id = p and kind = 'answer' and title = d and public.project_role(p) is not null
+$$;
+revoke all on function public.answer_authors(uuid, text) from public, anon;
+grant execute on function public.answer_authors(uuid, text) to authenticated;

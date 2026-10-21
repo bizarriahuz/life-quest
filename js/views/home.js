@@ -1,3 +1,4 @@
+import { findCouple, daysTogether } from './couple.js';
 import { html, raw, wire, mount, bar, today, relDate, relDateInline, fmtDate, greeting } from '../ui.js';
 import { icon } from '../icons.js';
 import { cachedTimes, loadMonth, nextPrayer, untilText } from '../prayertimes.js';
@@ -54,9 +55,15 @@ export default {
     const isoOf = (k) => { const [y, mo, d] = k.split('-').map(Number); return new Date(y, mo - 1, d).toISOString(); };
     const xpWeek = await ctx.store.list('xp_events', { gte: ['created_at', isoOf(wk)] }).catch(() => []);
     const [projAll, projOpen] = on.has('projects') ? await Promise.all([
-      ctx.store.list('projects', {}).catch(() => []),
+      ctx.store.list('projects', {}).then((r) => r.filter((p) => p.kind !== 'couple')).catch(() => []),
       ctx.store.list('project_entries', { match: { kind: 'task', done: false } }).catch(() => []),
-    ]) : [[], []];
+    ]).then(([ps, open]) => [ps, open.filter((x) => ps.some((p) => p.id === x.project_id))]) : [[], []];
+    const us = on.has('couple') ? await findCouple(ctx) : null;
+    const [usNotes, usAnswer] = us ? await Promise.all([
+      ctx.store.list('project_entries', { match: { project_id: us.id, kind: 'love', assignee_id: ctx.store.user.id, done: false } }).catch(() => []),
+      ctx.store.list('project_entries', { match: { project_id: us.id, kind: 'answer', title: t, author_id: ctx.store.user.id } }).then((r) => r[0] || null).catch(() => null),
+    ]) : [[], null];
+    const usDays = us ? daysTogether(us.together_since, t) : null;
     const calToday = on.has('calendar') ? (await calCollect(ctx, t, t).catch(() => [])).filter((x) => x.src === 'event' || x.src === 'feed') : [];
     const nowHM = new Date().toTimeString().slice(0, 5);
     const calNext = calToday.find((x) => x.time && (x.end || x.time) >= nowHM) || calToday.find((x) => !x.time);
@@ -122,6 +129,9 @@ export default {
                 suToday.some((s) => s.solved) ? `Sudoku ✓${suToday.filter((s) => s.solved).length > 1 ? ` ×${suToday.filter((s) => s.solved).length}` : ''}` : null,
                 chessLive ? 'chess game on' : chessPuz.some((p) => p.day === t) ? `puzzle ✓${chessStreak > 1 ? ` (${chessStreak} days)` : ''}` : 'puzzle waiting',
               ].filter(Boolean).join(' · ')}</span></span></a>`,
+      couple: () => html`<a href="#/couple">${raw(icon('couple'))}<span class="t-label">Couple</span>
+              <span class="t-val"><span class="t-txt">${!us ? 'Start your couple space' : [usNotes.length ? `💌 ${usNotes.length === 1 ? `Note from ${usNotes[0].author_name}` : `${usNotes.length} notes`}` : null,
+                usDays != null ? `${usDays.toLocaleString()} days together` : null, usAnswer ? 'question ✓' : 'today’s question waiting'].filter(Boolean).join(' · ')}</span></span></a>`,
       calendar: () => html`<a href="#/calendar">${raw(icon('calendar'))}<span class="t-label">Calendar</span>
               <span class="t-val"><span class="t-txt">${calToday.length ? `${calNext ? `${calNext.time ? `${clock(calNext.time)} ` : ''}${calNext.title}` : `${calToday.length} today, all done`}${calToday.length > 1 ? ` · +${calToday.length - 1}` : ''}` : 'Nothing today'}</span></span></a>`,
       projects: () => html`<a href="#/projects">${raw(icon('projects'))}<span class="t-label">Projects</span>
@@ -171,6 +181,8 @@ export default {
       tiles.push({ go: 'tasks', icon: 'tasks', label: 'To do today', value: n, hot: overdueN > 0,
         sub: n ? [overdueN && `${overdueN} overdue`, dueToday && `${dueToday} due`, dailyLeft && `${dailyLeft} daily`].filter(Boolean).join(' · ') : 'All clear' });
     }
+    if (us && (usDays != null || usNotes.length)) tiles.push({ go: 'couple', icon: 'couple', label: usNotes.length ? 'A note for you' : 'Together', hot: usNotes.length > 0,
+      value: usNotes.length ? '💌' : usDays.toLocaleString(), sub: usNotes.length ? `from ${usNotes[0].author_name}` : usDays === 1 ? 'day' : 'days' });
     if (on.has('prayer')) tiles.push(prayers.length === 5
       ? { go: 'prayer', icon: 'prayer', label: 'Prayer', value: '5/5', sub: 'All done today' }
       : nextP ? { go: 'prayer', icon: 'prayer', label: `Next · ${PNAME[nextP.key]}`, value: nextP.label, sub: untilText(nextP.when) }

@@ -22,7 +22,7 @@ const SOURCES = {
   watchlist: ['watchlist', (r) => ({ title: r.title, text: r.note, sub: [r.year, r.kind, r.status === 'done' ? 'Watched' : r.status === 'watching' ? 'Watching' : 'Want to watch'] })],
   music:    ['albums', (r) => ({ title: r.title, text: `${r.artist || ''} ${r.note || ''}`, sub: [r.artist, r.year, r.status === 'listened' ? 'Listened' : 'Want to listen'] })],
   people:   ['contacts', (r) => ({ title: r.name, text: `${r.relation || ''} ${r.note || ''}`, sub: [r.relation] })],
-  projects: ['project_entries', (r) => ({ title: r.title, text: r.body, sub: [{ task: r.done ? 'Done task' : 'Task', note: 'Note', photo: 'Photo', expense: `Cost · $${Number(r.amount).toFixed(2)}` }[r.kind], r.author_name], href: `#/projects/${r.project_id}` })],
+  projects: ['project_entries', (r) => ({ title: r.title, text: r.body, sub: [{ task: r.done ? 'Done task' : 'Task', note: 'Note', photo: 'Photo', expense: `Cost · $${Number(r.amount).toFixed(2)}` }[r.kind], r.author_name], href: `#/projects/${r.project_id}` })],   // a couple space's link forwards to #/couple
   finance:  ['transactions', (r) => ({ title: r.note, sub: [fmtDate(r.occurred_on), r.kind === 'sadaqah' ? 'Sadaqah' : r.kind === 'income' ? 'Income' : 'Spent', `$${Number(r.amount).toFixed(2)}`] })],
 };
 const LABEL = { calendar: 'Calendar', tasks: 'Tasks', goals: 'Goals', projects: 'Projects', clients: 'Clients', books: 'Books', comics: 'Comics', learning: 'Learning', notes: 'Notes', mood: 'Mood', quotes: 'Quotes', hobbies: 'Hobbies', mtg: 'MTG', watchlist: 'Watchlist', music: 'Music', people: 'People', finance: 'Finance' };

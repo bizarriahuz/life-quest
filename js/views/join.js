@@ -16,8 +16,31 @@ export default {
     let info;
     try { [info] = await ctx.store.rpc('invite_info', { p_token: tok }); } catch (err) { return card('Couldn’t open the invite', err?.message || String(err)); }
     if (!info) return card('This invite has expired', 'Invite links last 7 days. Ask the person who sent it for a new one.', html`<a class="btn" href="#/projects">Go to Projects</a>`);
-    if (info.already) { location.replace(`#/projects/${info.project_id}`); return; }
+    const isCouple = info.kind === 'couple';
+    if (info.already) { location.replace(isCouple ? '#/couple' : `#/projects/${info.project_id}`); return; }
     const needName = isDefaultName(ctx.profile?.hero_name);
+    if (isCouple) {
+      const from = info.inviter && !isDefaultName(info.inviter) && info.inviter !== 'Member' ? info.inviter : 'Your partner';
+      if (info.members >= 2) return card('This space is already shared', 'A couple space is for two people, and this one already has both.', html`<a class="btn" href="#/home">Go home</a>`);
+      card(`${from} invited you to your couple space`, 'A private space for the two of you: days together, a question each day, date ideas, memories and little notes. Only you two can see it.', html`
+        <form data-form="join" class="form" style="width:100%;max-width:360px">
+          ${needName ? html`<label class="field">Your name, as ${from === 'Your partner' ? 'your partner' : from} will see it<input name="hero_name" maxlength="24" required autocomplete="given-name"></label>` : ''}
+          <button class="btn primary">${raw(icon('heart', 18))}Join our space</button>
+          <a class="text-btn" href="#/home" style="text-align:center">Not now</a>
+        </form>`);
+      el.querySelector('.join-card .i-wrap').innerHTML = icon('couple', 26);
+      wire(el, {
+        join: async (v) => {
+          if (v.hero_name) await ctx.setProfile({ hero_name: v.hero_name.slice(0, 24) });
+          await ctx.store.rpc('join_project', { p_token: tok });
+          if (!ctx.sections.has('couple')) await ctx.setProfile({ sections: [...ctx.sections, 'couple'] });
+          ctx.store.invalidate?.('projects');
+          ctx.say('You’re in. Welcome to your couple space');
+          location.hash = '#/couple';
+        },
+      });
+      return;
+    }
     card(`Join “${info.name}”?`, `${info.members} ${info.members === 1 ? 'person is' : 'people are'} in this project. You’ll ${info.role === 'viewer' ? 'be able to view it' : 'be able to add tasks, notes and costs'}.`, html`
       <form data-form="join" class="form" style="width:100%;max-width:360px">
         ${needName ? html`<label class="field">Your name, as others will see it<input name="hero_name" maxlength="24" required autocomplete="given-name"></label>` : ''}
