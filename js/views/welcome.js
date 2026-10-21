@@ -10,7 +10,7 @@ const GROUPS = [
   ['Mind', ['notes', 'books', 'comics', 'learning', 'quotes']],
   ['Faith', ['prayer']],
   ['Money & work', ['finance', 'clients']],
-  ['Fun', ['hobbies', 'watchlist', 'music', 'chess', 'mtg']],
+  ['Fun', ['games', 'hobbies', 'watchlist', 'music', 'mtg']],
   ['People', ['people']],
 ];
 const isDefaultName = (n) => !n || n === 'HERO' || n === 'You';

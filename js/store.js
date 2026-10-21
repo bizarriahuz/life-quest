@@ -121,6 +121,7 @@ const DEFAULTS = {
   albums: { artist: null, year: null, tracks: null, genre: null, art_url: null, itunes_id: null, apple_url: null, status: 'want', listened_on: null, rating: null, note: null },
   contacts: { relation: null, every_days: 30, note: null },
   contact_logs: { how: 'message', note: null },
+  word_games: { guesses: [], solved: false, finished: false },
   chess_games: { result: null, ending: null, ended_on: null, pgn: '', moves: 0 },
   chess_puzzles: { solved: false, rating: null },
   feedback: { status: 'new', reply_to: null, sender_name: null, app_version: null, device: null, page: null },
@@ -133,7 +134,7 @@ const DEFAULTS = {
   project_entries: { photo_path: null, body: null, amount: null, paid_by: null, assignee_id: null, due_on: null, done: false, done_by: null, done_on: null },
   watchlist: { season: null, episode: null, kind: 'film', status: 'queued', rating: null, note: null, done_on: null, tmdb_id: null, tmdb_type: null, imdb_id: null, year: null, poster_url: null, details: null, overview: null },
 };
-const UNIQUE = { chess_puzzles: ['day'], prayer_logs: ['prayed_on', 'prayer'], hobbies: ['name'], finance_categories: ['kind', 'name'], sleep_logs: ['slept_on'], moods: ['logged_on'] };
+const UNIQUE = { word_games: ['day'], chess_puzzles: ['day'], prayer_logs: ['prayed_on', 'prayer'], hobbies: ['name'], finance_categories: ['kind', 'name'], sleep_logs: ['slept_on'], moods: ['logged_on'] };
 
 const cmp = (a, b) => (a == null ? (b == null ? 0 : 1) : b == null ? -1 : a < b ? -1 : a > b ? 1 : 0);
 

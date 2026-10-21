@@ -1,6 +1,14 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.36', date: '2026-10-21', title: 'Games and Daily Word',
+    items: [
+      'New Games section, with a list of games. Chess has moved in here, with all your games and streaks kept.',
+      'Daily Word: guess the five-letter word in six tries. Everyone gets the same word each day, so you can compare.',
+      'Share your result as coloured squares, keep a streak, and see your stats. Solve it for +10 Craft.',
+    ],
+  },
+  {
     version: '1.35', date: '2026-10-21', title: 'Chess',
     items: [
       'New Chess section: play Stockfish at five levels, from Beginner to Master, with hints, undo and a replay of every game.',

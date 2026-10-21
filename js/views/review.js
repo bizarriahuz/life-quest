@@ -65,10 +65,11 @@ export default {
       get('finance', 'transactions', range('occurred_on')),
       get('clients', 'client_projects', range('paid_on')),
     ]);
-    const [chessG, chessP] = on.has('chess') ? await Promise.all([
+    const [chessG, chessP, wordG] = on.has('games') ? await Promise.all([
       ctx.store.list('chess_games', { gte: ['ended_on', a], lte: ['ended_on', b] }).catch(() => []),
       ctx.store.list('chess_puzzles', range('day')).catch(() => []),
-    ]) : [[], []];
+      ctx.store.list('word_games', range('day')).catch(() => []),
+    ]) : [[], [], []];
 
     // ---- XP ----
     const inWeek = (e) => { const d = localDay(e.created_at); return d >= a && d <= b; };
@@ -126,9 +127,13 @@ export default {
     if (on.has('mood')) tile('mood', 'Mood', moodAvg == null ? '–' : `${FACE[Math.round(moodAvg) - 1]} ${MOODS[Math.round(moodAvg) - 1]}`, `${moods.length}/${elapsed} check-ins`);
     if (on.has('notes')) tile('notes', 'Notes', notes.length, on.has('quotes') && quotes.length ? `+ ${plural(quotes.length, 'quote')}` : 'written');
     if (on.has('hobbies')) tile('hobbies', 'Hobbies', hobbyMin ? hours(hobbyMin) : '0', hobbyName ? `mostly ${hobbyName}` : 'no time logged');
-    if (on.has('chess') && (chessG.length || chessP.length)) {
+    if (on.has('games') && wordG.length) {
+      const ws = wordG.filter((w) => w.solved);
+      tile('games', 'Daily Word', `${ws.length}/${elapsed}`, ws.length ? `avg ${(ws.reduce((n, w) => n + w.guesses.length, 0) / ws.length).toFixed(1)} guesses` : 'none solved');
+    }
+    if (on.has('games') && (chessG.length || chessP.length)) {
       const cw = chessG.filter((g) => g.result === 'win').length;
-      tile('chess', 'Chess', `${cw}–${chessG.filter((g) => g.result === 'loss').length}`, [chessG.length && `${chessG.length} game${chessG.length === 1 ? '' : 's'}`, chessP.filter((p) => p.solved).length && `${chessP.filter((p) => p.solved).length} puzzle${chessP.filter((p) => p.solved).length === 1 ? '' : 's'}`].filter(Boolean).join(' · '));
+      tile('games', 'Chess', `${cw}–${chessG.filter((g) => g.result === 'loss').length}`, [chessG.length && `${chessG.length} game${chessG.length === 1 ? '' : 's'}`, chessP.filter((p) => p.solved).length && `${chessP.filter((p) => p.solved).length} puzzle${chessP.filter((p) => p.solved).length === 1 ? '' : 's'}`].filter(Boolean).join(' · '));
     }
     if (on.has('mtg') && matches.length) tile('mtg', 'MTG', `${wins}–${matches.length - wins}`, `${plural(matches.length, 'game')}`);
     if (on.has('watchlist')) tile('watchlist', 'Watched', watched.length, watched.length ? watched.map((w) => w.title).slice(0, 2).join(', ') : 'nothing finished');

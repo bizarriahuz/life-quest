@@ -84,6 +84,7 @@ const cleanPgn = (pgn) => pgn.replace(/^\[\w+ "(\?|\?{4}\.\?\?\.\?\?|\*)"\]\n/gm
 function streakOf(puzzles, t) {
   const solved = new Set(puzzles.filter((p) => p.solved).map((p) => p.day));
   let n = 0;
+  if (puzzles.some((p) => p.day === t && !p.solved)) return 0;                // gave up today
   for (let d = solved.has(t) ? t : addDays(t, -1); solved.has(d); d = addDays(d, -1)) n += 1;
   return n;
 }
@@ -93,7 +94,7 @@ export default {
   label: 'Chess',
   async render(el, ctx) {
     const t = today();
-    const onPage = location.hash.startsWith('#/chess');
+    const onPage = location.hash.startsWith('#/games/chess');
     const [games, puzzles] = await Promise.all([
       ctx.store.list('chess_games', { order: 'created_at', limit: 200 }),
       ctx.store.list('chess_puzzles', { order: 'day', limit: 400 }),
@@ -107,6 +108,7 @@ export default {
     if (replay && !done.some((g) => g.id === replay.id)) replay = null;
 
     mount(el, html`
+      <a class="text-btn back" href="#/games">${raw(icon('left', 16))}Games</a>
       <header class="page-head"><div><h1>Chess</h1>
         <p>${rec.win}W · ${rec.loss}L · ${rec.draw}D${streak ? ` · ${streak}-day puzzle streak` : ''}</p></div></header>
       <div class="seg ptabs chess-tabs" role="tablist" aria-label="Chess">
@@ -434,7 +436,7 @@ async function historyPane(el, ctx, done) {
     </section>` : ''}
     <section class="card">
       <div class="card-head"><h2>Games</h2><span class="meta">${list.length}</span></div>
-      ${list.length ? html`<ul class="list">${list.slice(0, 60).map((g) => html`<li><a class="item hit" href="#/chess" data-act="open" data-id="${g.id}">
+      ${list.length ? html`<ul class="list">${list.slice(0, 60).map((g) => html`<li><a class="item hit" href="#/games/chess" data-act="open" data-id="${g.id}">
         <span class="pill ${g.result === 'win' ? 'solid' : ''}">${RESULT[g.result]}</span>
         <div class="body"><p class="title">vs ${LEVELS[g.level - 1]?.name || 'Stockfish'} · as ${colorName(g.color)}</p>
           <p class="sub">${g.moves} moves · ${ENDING[g.ending] || ''} · ${relDate(g.ended_on || g.created_at.slice(0, 10))}</p></div>${raw(icon('right', 16))}</a></li>`)}</ul>`
