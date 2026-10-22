@@ -40,6 +40,16 @@ export function cloudStore(sb, user) {
     async remove(table, id) { ok(await sb.from(table).delete().eq('id', id)); },
     async updateWhere(table, match, patch) { return ok(await sb.from(table).update(patch).match(match).select()); },
     async rpc(fn, args) { return ok(await sb.rpc(fn, args)); },
+    // Every row you can see in a table, 1,000 at a time (for "Download my data").
+    async dump(table) {
+      const out = [];
+      for (let i = 0; i < 200000; i += 1000) {
+        const rows = ok(await sb.from(table).select('*').order({ project_members: 'joined_at', profiles: 'user_id' }[table] || 'id', { ascending: true }).range(i, i + 999));
+        out.push(...rows);
+        if (rows.length < 1000) break;
+      }
+      return out;
+    },
     // Project photos (private bucket; viewing links expire after an hour)
     async uploadPhoto(path, blob) {
       const { error } = await sb.storage.from('project-photos').upload(path, blob, { contentType: blob.type || 'image/jpeg', upsert: false, cacheControl: '86400' });
@@ -208,6 +218,7 @@ export function localStore() {
       if (fn === 'invite_info') return [];
       throw new Error('Joining shared projects needs a Life Quest account.');
     },
+    async dump(table) { return table === 'profiles' ? [structuredClone(db.profile || {})] : structuredClone(tbl(table)); },
     subscribe() { return () => {}; },
     // Offline mode keeps photos in this browser (small test use only).
     async uploadPhoto(path, blob) {

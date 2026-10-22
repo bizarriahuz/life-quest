@@ -373,10 +373,41 @@ async function account(el, ctx) {
         <button class="btn" data-signout>${raw(icon('logout', 16))}Sign out</button>` : html`<p class="muted">Offline mode: everything is saved in this browser only.</p>`}
     </section>
     <section class="card">
+      <div class="card-head"><h2>Download my data</h2></div>
+      <p class="small muted" style="margin-bottom:12px">A copy of everything you’ve added, in one file you can keep: tasks, notes, money, games, shared projects you’re in and the rest. Photos aren’t included.</p>
+      <button class="btn" data-act="export">${raw(icon('down', 16))}Download my data</button>
+      <p class="small faint" id="export-status" role="status" style="margin-top:8px"></p>
+    </section>
+    <section class="card">
       <p class="small muted">Life Quest is built and kept running by one person, free of ads.</p>
       <div class="row wrap" style="margin-top:12px;gap:8px">
         <a class="btn sm" href="/about">About Life Quest</a>
         <a class="btn sm" href="https://buymeacoffee.com/faustianecho" target="_blank" rel="noopener noreferrer">Buy me a coffee ☕</a>
       </div>
-    </section>`);
+    </section>`);  wire(el, { export: () => exportData(el, ctx) });
+}
+
+// Everything the person can see, as one JSON file. Invite links are left out (they work like passwords).
+const EXPORT_TABLES = ['profiles', 'tasks', 'calendar_events', 'goals', 'goal_milestones', 'notes', 'quotes', 'moods', 'sleep_logs', 'workouts',
+  'prayer_logs', 'books', 'comics', 'learning_items', 'learning_sessions', 'hobbies', 'hobby_sessions', 'watchlist', 'albums', 'mtg_decks', 'mtg_matches',
+  'contacts', 'contact_logs', 'transactions', 'finance_categories', 'savings_goals', 'savings_contributions', 'client_projects',
+  'word_games', 'hive_games', 'sudoku_games', 'chess_games', 'chess_puzzles', 'xp_events',
+  'projects', 'project_members', 'project_entries', 'project_comments', 'project_reactions'];
+export async function exportData(el, ctx) {
+  const status = (t) => { const s = el.querySelector('#export-status'); if (s) s.textContent = t; };
+  const tables = {}; const skipped = [];
+  let rows = 0;
+  for (const [i, t] of EXPORT_TABLES.entries()) {
+    status(`Gathering ${i + 1} of ${EXPORT_TABLES.length}…`);
+    try { tables[t] = await ctx.store.dump(t); rows += tables[t].length; } catch { skipped.push(t); }
+  }
+  const day = new Date().toLocaleDateString('en-CA');
+  const file = { app: 'Life Quest', version: LATEST, exported_at: new Date().toISOString(),
+    account: ctx.store.mode === 'cloud' ? ctx.store.user.email : 'offline (this browser)', rows, tables, ...(skipped.length ? { skipped } : {}) };
+  const blob = new Blob([JSON.stringify(file, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = `life-quest-${day}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+  status(`Done: ${rows.toLocaleString()} items saved to life-quest-${day}.json${skipped.length ? ` (${skipped.length} section${skipped.length === 1 ? '' : 's'} couldn’t be read)` : ''}.`);
 }
