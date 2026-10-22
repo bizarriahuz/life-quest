@@ -1,7 +1,8 @@
 import { html, raw, wire, mount, today, relDate, empty } from '../ui.js';
 import { icon } from '../icons.js';
 import { XP } from '../game.js';
-import { parseDecklist, lookupCard, analyse, cardKey } from '../mtg.js';
+import { parseDecklist, lookupCard, analyse, cardKey, bracketOf } from '../mtg.js';
+import renderLife, { hasLiveGame } from './mtglife.js';
 
 const FORMATS = { commander: 'Commander', standard: 'Standard', modern: 'Modern', pioneer: 'Pioneer', pauper: 'Pauper', limited: 'Limited', other: 'Other' };
 const RESULT = { win: 'Win', loss: 'Loss', draw: 'Draw' };
@@ -11,12 +12,21 @@ let openId = null;       // deck being viewed
 let editing = false;     // decklist editor open
 const analysis = new Map(); // deck id -> result (this session)
 const tried = new Set();      // decks we've already fetched prices for (this session)
+let hand = null;              // sample hand: { deckId, library, hand, mull }
+let upEditing = false;        // upgrades list editor open
+const upAnalysis = new Map(); // deck id -> priced upgrades
+const shuffle = (a) => { for (let i = a.length - 1; i > 0; i -= 1) { const j = crypto.getRandomValues(new Uint32Array(1))[0] % (i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const upParse = (t) => parseDecklist(String(t || '').split('\n').map((l) => (!l.trim() || /^\s*\d/.test(l) ? l : `1 ${l.trim()}`)).join('\n'), '');
+const pct = (w, n) => (n ? `${Math.round((w / n) * 100)}%` : '–');
+const oppNames = (s) => String(s || '').split(',').map((x) => x.replace(/\(.*\)/, '').trim()).filter(Boolean);
 const usd = (n) => (n == null ? '–' : `$${n < 10 ? n.toFixed(2) : Math.round(n).toLocaleString()}`);
 
 export default {
   id: 'mtg',
   label: 'MTG',
   async render(el, ctx) {
+    if (/^#\/mtg\/life/.test(location.hash)) return renderLife(el, ctx);
+    document.body.classList.remove('lc-on');
     const t = today();
     const [decks, matches] = await Promise.all([
       ctx.store.list('mtg_decks', { order: 'created_at', asc: true }),
@@ -49,6 +59,25 @@ export default {
         </button>`;
     };
 
+    const gameSub = (m) => [relDate(m.played_on), m.opponents ? `vs ${oppNames(m.opponents).join(', ')}` : '', m.went_first === true ? 'went first' : '',
+      m.turns ? `${m.turns} turns` : '', m.note || ''].filter(Boolean).join(' · ');
+    // Insights: win rate by table size, going first, and against each opponent.
+    const insights = (list) => {
+      if (list.length < 2) return '';
+      const wins = (a) => a.filter((m) => m.result === 'win').length;
+      const sizes = [...new Set(list.map((m) => m.players))].sort();
+      const first = list.filter((m) => m.went_first === true); const later = list.filter((m) => m.went_first === false);
+      const opp = {};
+      for (const m of list) for (const o of oppNames(m.opponents)) { const k = o.toLowerCase(); (opp[k] ||= { name: o, n: 0, w: 0 }); opp[k].n += 1; if (m.result === 'win') opp[k].w += 1; }
+      const opps = Object.values(opp).sort((a, b) => b.n - a.n).slice(0, 6);
+      const tl = list.filter((m) => m.turns);
+      return html`<div class="mtg-insights">
+        <div class="ins-row"><span class="small muted">By table size</span>${sizes.map((n) => { const a = list.filter((m) => m.players === n); return html`<span class="ins-chip">${n}p <b>${pct(wins(a), a.length)}</b> <i>${a.length}</i></span>`; })}</div>
+        ${first.length || later.length ? html`<div class="ins-row"><span class="small muted">Turn order</span><span class="ins-chip">Going first <b>${pct(wins(first), first.length)}</b> <i>${first.length}</i></span><span class="ins-chip">Later <b>${pct(wins(later), later.length)}</b> <i>${later.length}</i></span></div>` : ''}
+        ${opps.length ? html`<div class="ins-row"><span class="small muted">Against</span>${opps.map((o) => html`<span class="ins-chip">${o.name} <b>${o.w}–${o.n - o.w}</b></span>`)}</div>` : ''}
+        ${tl.length ? html`<p class="small muted">Games last ${Math.round(tl.reduce((n, m) => n + m.turns, 0) / tl.length)} turns on average</p>` : ''}
+      </div>`;
+    };
     const curve = (a) => {
       const max = Math.max(1, ...a.curve);
       return html`<div class="chart curve" role="img" aria-label="Mana curve">
@@ -57,7 +86,8 @@ export default {
     };
 
     mount(el, html`
-      <header class="page-head"><div><h1>MTG</h1><p>${live.length} deck${live.length === 1 ? '' : 's'}${all.n ? ` · ${all.n} games · ${all.pct}% wins` : ''}</p></div></header>
+      <header class="page-head"><div><h1>MTG</h1><p>${live.length} deck${live.length === 1 ? '' : 's'}${all.n ? ` · ${all.n} games · ${all.pct}% wins` : ''}</p></div>
+        <a class="btn ${hasLiveGame() ? 'primary' : ''} sm" href="#/mtg/life">${raw(icon('heart', 16))}${hasLiveGame() ? 'Back to the game' : 'Life counter'}</a></header>
 
       ${live.length ? html`
         <section class="card">
@@ -74,6 +104,14 @@ export default {
               </div>
               <button class="btn primary">${raw(icon('plus', 18))}Log game</button>
             </div>
+            <details class="mtg-more"><summary>More details (optional)</summary>
+              <div class="form" style="margin-top:10px">
+                <input name="opponents" maxlength="300" placeholder="Opponents, e.g. Hafiz (Edgar Markov), Daniel (Krenko)" aria-label="Opponents">
+                <div class="fields">
+                  <label class="field">You went first?<select name="went_first"><option value="">Not sure</option><option value="1">Yes</option><option value="0">No</option></select></label>
+                  <label class="field">Turns<input name="turns" type="number" min="1" max="99" inputmode="numeric" placeholder="e.g. 9"></label>
+                </div>
+              </div></details>
             <input name="note" maxlength="200" placeholder="Note (optional), e.g. who won, key play" aria-label="Note">
           </form>
         </section>` : ''}
@@ -151,12 +189,47 @@ export default {
               })}
             </details>`}
 
+          ${deck.decklist && !editing ? html`
+            ${an && deck.format === 'commander' ? (() => { const br = bracketOf(parsed, an); return html`
+              <div class="mtg-tool mtg-bracket b${br.level}">
+                <p class="small muted list-head">Bracket estimate</p>
+                <p><b>${br.label}</b></p>
+                <p class="small muted">${br.why}</p>
+                ${br.gc.length ? html`<p class="small">Game Changers: ${br.gc.join(', ')}</p>` : ''}
+                ${br.mld.length ? html`<p class="small">Mass land denial: ${br.mld.join(', ')}</p>` : ''}
+                ${br.turns.length ? html`<p class="small">Extra turns: ${br.turns.join(', ')}</p>` : ''}
+                <p class="small faint">An estimate to start the pre-game chat. It can’t spot two-card combos.</p>
+              </div>`; })() : ''}
+
+            <div class="mtg-tool">
+              <div class="row spread"><p class="small muted list-head">Sample hand</p>
+                ${hand?.deckId === deck.id ? html`<span class="small muted">${hand.hand.length} cards · ${hand.hand.filter((c) => /\bLand\b/.test(an?.info[cardKey(c)]?.type || '')).length} lands${hand.mull ? ` · mulligan ${hand.mull}: put ${hand.mull} on the bottom` : ''}</span>` : ''}</div>
+              ${hand?.deckId === deck.id ? html`<div class="mtg-hand">${hand.hand.map((c) => { const inf = an?.info[cardKey(c)]; return inf?.img
+                ? html`<img src="${inf.img}" alt="${c.name}" title="${c.name}" loading="lazy" referrerpolicy="no-referrer">` : html`<span class="mtg-handcard">${c.name}</span>`; })}</div>
+                <div class="row wrap" style="gap:8px"><button class="btn sm" data-act="draw" ${hand.library.length ? '' : 'disabled'}>Draw</button>
+                  <button class="btn sm" data-act="mull">Mulligan</button><button class="btn sm" data-act="newhand">New hand</button>
+                  <button class="text-btn" data-act="closehand">Close</button></div>`
+                : html`<button class="btn sm" data-act="newhand">Draw an opening 7</button>`}
+            </div>` : ''}
+
+          <div class="mtg-tool">
+            <div class="row spread"><p class="small muted list-head">Upgrades to buy</p>
+              ${deck.upgrades && !upEditing ? html`<button class="text-btn" data-act="upedit">Edit</button>` : ''}</div>
+            ${upEditing || !deck.upgrades ? html`<form data-form="upsave" class="form">
+                <textarea name="upgrades" rows="4" maxlength="5000" placeholder="Cards you want for this deck, one per line&#10;1 Smothering Tithe&#10;1 Cyclonic Rift" aria-label="Upgrades">${deck.upgrades || ''}</textarea>
+                <div class="row end">${upEditing ? html`<button type="button" class="btn sm" data-act="upcancel">Cancel</button>` : ''}<button class="btn sm primary">Save list</button></div></form>`
+              : (() => { const up = upParse(deck.upgrades); const ua = upAnalysis.get(deck.id); return html`
+                ${ua ? html`<p><b>US${usd(up.cards.reduce((n, c) => n + (ua.prices[cardKey(c)] || 0) * c.qty, 0))}</b> <span class="small muted">to buy all ${up.cards.length}</span></p>` : html`<p class="small faint">Getting prices…</p>`}
+                <ul class="cardlist priced">${up.cards.map((c) => html`<li><span class="num">${c.qty}</span><span class="cl-name">${c.name}${ua?.info[cardKey(c)]?.gc ? html` <span class="cl-foil">Game Changer</span>` : ''}</span>${ua ? html`<span class="cl-price">${usd(ua.prices[cardKey(c)] == null ? null : ua.prices[cardKey(c)] * c.qty)}</span>` : ''}</li>`)}</ul>`; })()}
+          </div>
+
           <div>
             <p class="small muted list-head">Recent games</p>
+            ${insights(matches.filter((m) => m.deck_id === deck.id))}
             ${matches.some((m) => m.deck_id === deck.id) ? html`<ul class="list">${matches.filter((m) => m.deck_id === deck.id).slice(0, 15).map((m) => html`
               <li class="item">
                 <div class="body"><p class="title">${RESULT[m.result]} <span class="muted">· ${m.players}-player</span></p>
-                  <p class="sub">${relDate(m.played_on)}${m.note ? ` · ${m.note}` : ''}</p></div>
+                  <p class="sub">${gameSub(m)}</p></div>
                 <span class="xp">+${XP.mtgMatch + (m.result === 'win' ? XP.mtgWin : 0)}</span>
                 <button class="icon-btn" data-act="delmatch" data-id="${m.id}" aria-label="Delete game">${raw(icon('trash'))}</button>
               </li>`)}</ul>` : empty('No games with this deck yet.')}
@@ -166,10 +239,11 @@ export default {
       ${!deck && matches.length ? html`
         <section class="card">
           <div class="card-head"><h2>Recent games</h2></div>
+          ${insights(matches)}
           <ul class="list">${matches.slice(0, 15).map((m) => html`
             <li class="item">
               <div class="body"><p class="title">${RESULT[m.result]} · ${nameOf[m.deck_id] || 'Deck'}</p>
-                <p class="sub">${relDate(m.played_on)} · ${m.players}-player${m.note ? ` · ${m.note}` : ''}</p></div>
+                <p class="sub">${gameSub(m)}</p></div>
               <span class="xp">+${XP.mtgMatch + (m.result === 'win' ? XP.mtgWin : 0)}</span>
               <button class="icon-btn" data-act="delmatch" data-id="${m.id}" aria-label="Delete game">${raw(icon('trash'))}</button>
             </li>`)}</ul>
@@ -182,6 +256,10 @@ export default {
         </section>` : ''}
     `);
     el.querySelectorAll('img').forEach((img) => img.addEventListener('error', () => img.remove(), { once: true }));
+    if (deck?.upgrades && !upEditing && !upAnalysis.has(deck.id)) {
+      const id = deck.id; upAnalysis.set(id, null);
+      analyse(upParse(deck.upgrades)).then((r) => { upAnalysis.set(id, r); if (openId === id && el.isConnected) ctx.rerender(); }).catch(() => upAnalysis.delete(id));
+    }
     // Prices (and the curve) load by themselves the first time a deck with a list is opened.
     if (deck && parsed && !an && !editing && !tried.has(deck.id)) {
       tried.add(deck.id);
@@ -224,8 +302,11 @@ export default {
       log: async (v, form) => {
         const result = RESULT[v.result] ? v.result : 'loss';
         const players = Math.min(8, Math.max(2, parseInt(v.players, 10) || 4));
-        const row = await ctx.store.insert('mtg_matches', { deck_id: v.deck_id, result, players, played_on: v.played_on || t, note: v.note || null });
-        form.elements.note.value = '';
+        const turns = parseInt(v.turns, 10);
+        const row = await ctx.store.insert('mtg_matches', { deck_id: v.deck_id, result, players, played_on: v.played_on || t, note: v.note || null,
+          opponents: v.opponents ? v.opponents.slice(0, 300) : null, went_first: v.went_first === '1' ? true : v.went_first === '0' ? false : null,
+          turns: turns >= 1 && turns <= 99 ? turns : null });
+        form.reset(); form.elements.played_on.value = t;
         await ctx.award('CHA', XP.mtgMatch + (result === 'win' ? XP.mtgWin : 0), 'mtg_match', row.id, `${RESULT[result]} with ${nameOf[v.deck_id]}`);
         ctx.rerender();
       },
@@ -236,6 +317,24 @@ export default {
         ctx.rerender();
       },
       editlist: () => { editing = true; ctx.rerender(); },
+      newhand: () => {
+        const library = shuffle(parsed.cards.filter((c) => c.section === 'main').flatMap((c) => Array.from({ length: c.qty }, () => c)));
+        hand = { deckId: deck.id, library, hand: library.splice(0, 7), mull: 0 }; ctx.rerender();
+      },
+      mull: () => {
+        const library = shuffle(parsed.cards.filter((c) => c.section === 'main').flatMap((c) => Array.from({ length: c.qty }, () => c)));
+        hand = { deckId: deck.id, library, hand: library.splice(0, 7), mull: Math.min(6, (hand?.mull || 0) + 1) }; ctx.rerender();
+      },
+      draw: () => { if (hand?.library.length) { hand.hand.push(hand.library.shift()); ctx.rerender(); } },
+      closehand: () => { hand = null; ctx.rerender(); },
+      upedit: () => { upEditing = true; ctx.rerender(); },
+      upcancel: () => { upEditing = false; ctx.rerender(); },
+      upsave: async (v) => {
+        const list = (v.upgrades || '').trim() || null;
+        if (list && !upParse(list).cards.length) { ctx.say('Couldn’t read any cards. Lines should look like “1 Sol Ring”'); return; }
+        await ctx.store.update('mtg_decks', deck.id, { upgrades: list });
+        upAnalysis.delete(deck.id); upEditing = false; ctx.rerender();
+      },
       canceledit: () => { editing = false; ctx.rerender(); },
       savelist: async (v) => {
         const list = v.decklist || null;

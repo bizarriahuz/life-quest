@@ -104,8 +104,17 @@ export async function analyse(parsed) {
     if (i + 75 < names.length) await new Promise((res) => setTimeout(res, 120));
   }
   const cardFor = (c) => (c.set && c.num && byPrint.get(`${c.set}|${c.num}`.toLowerCase())) || byName.get(front(c.name).toLowerCase()) || null;
-  const prices = {};
-  for (const c of wanted) { const p = priceOf(cardFor(c), c.foil); prices[cardKey(c)] = p; }
+  const prices = {}; const info = {};
+  for (const c of wanted) {
+    const card = cardFor(c);
+    prices[cardKey(c)] = priceOf(card, c.foil);
+    if (card) {
+      const face = card.card_faces?.[0] || {};
+      const text = [card.oracle_text, ...(card.card_faces || []).map((f) => f.oracle_text)].filter(Boolean).join('\n');
+      info[cardKey(c)] = { name: card.name, img: card.image_uris?.normal || face.image_uris?.normal || null,
+        gc: Boolean(card.game_changer), text, type: card.type_line || face.type_line || '' };
+    }
+  }
   const TYPES = ['Creature', 'Planeswalker', 'Instant', 'Sorcery', 'Artifact', 'Enchantment', 'Battle', 'Land'];
   const curve = Array(8).fill(0);
   const types = Object.fromEntries(TYPES.map((t) => [t, 0]));
@@ -128,7 +137,24 @@ export async function analyse(parsed) {
   const total = (sec) => wanted.filter((c) => c.section === sec).reduce((n, c) => n + (prices[cardKey(c)] || 0) * c.qty, 0);
   const totals = { commander: total('commander'), main: total('main'), side: total('side'), maybe: total('maybe') };
   const unpriced = wanted.filter((c) => c.section !== 'maybe' && prices[cardKey(c)] == null && cardFor(c)).length;
-  const out = { curve, types, lands, spells, avg: spells ? cmcSum / spells : 0, price, prices, totals, unpriced, colors: colorString([...identity]), missing };
+  const out = { curve, types, lands, spells, avg: spells ? cmcSum / spells : 0, price, prices, info, totals, unpriced, colors: colorString([...identity]), missing };
   memo.set(key, out);
   return out;
+}
+
+// Commander bracket estimate (brackets 1-5 from Wizards). Counts Game Changers (as marked on Scryfall),
+// mass land denial and extra-turn cards. It can't spot two-card combos, so it's a starting point for the pre-game chat.
+const MLD = /\b(destroy|exile|return) all [a-z, ]*\blands\b|\beach player sacrifices [a-z ]*\blands\b|\bsacrifice all lands\b/i;
+const EXTRA_TURN = /\bextra turn\b/i;
+export function bracketOf(parsed, an) {
+  const inDeck = parsed.cards.filter((c) => c.section === 'main' || c.section === 'commander');
+  const pick = (test) => inDeck.map((c) => an.info[cardKey(c)]).filter((x) => x && test(x)).map((x) => x.name);
+  const gc = [...new Set(pick((x) => x.gc))];
+  const mld = [...new Set(pick((x) => MLD.test(x.text)))];
+  const turns = [...new Set(pick((x) => EXTRA_TURN.test(x.text) && !/\bLand\b/.test(x.type)))];
+  let level; let label; let why;
+  if (gc.length > 3 || mld.length) { level = 4; label = 'Bracket 4 · Optimized or higher'; why = mld.length ? 'Mass land denial puts it in 4+' : 'More than 3 Game Changers puts it in 4+'; }
+  else if (gc.length || turns.length >= 3) { level = 3; label = 'Bracket 3 · Upgraded'; why = gc.length ? `${gc.length} of the 3 Game Changers allowed in Bracket 3` : 'Several extra-turn cards: more than Bracket 2 expects'; }
+  else { level = 2; label = 'Bracket 2 · Core'; why = 'No Game Changers or mass land denial. Bracket 1 if it’s built as a theme deck.'; }
+  return { level, label, why, gc, mld, turns };
 }

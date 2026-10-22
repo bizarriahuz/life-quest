@@ -1380,3 +1380,9 @@ alter table public.project_entries add constraint project_entries_kind_check
 create index if not exists project_entries_event_idx on public.project_entries (project_id, due_on) where kind = 'event';
 -- entries_guard() replaced: events need a date (due_on) and may have start/end times; only events keep times;
 -- the end time can't be before the start. (Full body as applied in migration project_events.)
+
+-- ---------- 1.45: richer MTG games, deck upgrades list ----------
+alter table public.mtg_matches add column if not exists opponents text check (opponents is null or char_length(opponents) <= 300);
+alter table public.mtg_matches add column if not exists went_first boolean;
+alter table public.mtg_matches add column if not exists turns smallint check (turns is null or turns between 1 and 99);
+alter table public.mtg_decks add column if not exists upgrades text check (upgrades is null or char_length(upgrades) <= 5000);

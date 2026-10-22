@@ -1,6 +1,14 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.45', date: '2026-10-22', title: 'MTG: life counter and more',
+    items: [
+      'Life counter for 2 to 6 players, with commander damage, poison, a roll for who goes first and a round count. When the game ends, tap the winner and it’s logged to your deck.',
+      'Log who you played, whether you went first and how many turns it took, then see your win rate by table size, turn order and opponent.',
+      'Each deck now has a sample hand (draw, mulligan), a Commander bracket estimate and a priced list of upgrades to buy.',
+    ],
+  },
+  {
     version: '1.44', date: '2026-10-22', title: 'Card prices in MTG',
     items: [
       'Open a deck to see what it’s worth, with a price next to every card, priciest first.',
