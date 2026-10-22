@@ -1215,3 +1215,4 @@ a.item.set-row { color: inherit; text-decoration: none; display: flex; align-ite
 .adm-secs li { display: grid; grid-template-columns: 92px 1fr 28px; align-items: center; gap: 8px; font-size: 13px; }
 .adm-secs i { height: 10px; border-radius: 5px; background: var(--accent); min-width: 2px; opacity: .8; }
 .adm-secs b { text-align: right; font-variant-numeric: tabular-nums; }
+.src-couple { background: #e0607e; }

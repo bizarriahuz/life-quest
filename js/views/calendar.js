@@ -4,6 +4,7 @@ import { html, raw, wire, mount, today, addDays, dateKey, fmtDate, relDate, empt
 import { icon } from '../icons.js';
 import { REPEATS, toggleTask } from '../tasklogic.js';
 import { cachedFeed, loadFeed, forgetFeed, expandICS } from '../ics.js';
+import { findCouple } from './couple.js';
 
 let month = null;          // 'YYYY-MM' on screen
 let sel = null;            // selected day
@@ -16,6 +17,7 @@ export const SRC = {
   goal:    { label: 'Goal',     view: 'goals' },
   project: { label: 'Project',  view: 'projects' },
   client:  { label: 'Client',   view: 'clients' },
+  couple:  { label: 'Couple',   view: 'couple' },
   feed:    { label: 'Calendar', view: 'calendar' },
 };
 const FEED_HOSTS = /^(calendar\.google\.com|p\d+-(caldav|calendars)\.icloud\.com|(www\.)?icloud\.com|outlook\.(live|office365|office)\.com)$/;
@@ -74,6 +76,34 @@ export async function collect(ctx, from, to, { fetchFeeds = false, onFeed } = {}
   for (const g of goals) items.push({ key: g.target_date, title: `Goal: ${g.title}`, src: 'goal', href: '#/goals' });
   for (const x of ptasks) items.push({ key: x.due_on, title: x.title, src: 'project', href: `#/projects/${x.project_id}`, sub: x.assignee_id === ctx.store.user.id ? 'For you' : null });
   for (const c of clients) if (!['paid', 'lost'].includes(c.stage)) items.push({ key: c.due_on, title: `${c.client} · ${c.title}`, src: 'client', href: '#/clients' });
+
+  // Couple: countdowns (yearly ones every year) and your anniversary.
+  if (on.has('couple')) {
+    const us = await findCouple(ctx).catch(() => null);
+    if (us) {
+      const cds = await ctx.store.list('project_entries', { match: { project_id: us.id, kind: 'countdown' } }).catch(() => []);
+      const dates = cds.map((x) => ({ date: x.due_on, yearly: x.yearly, title: x.title }));
+      if (us.together_since) dates.push({ date: us.together_since, yearly: true, title: 'Anniversary', anniv: true });
+      const y0 = Number(from.slice(0, 4)); const y1 = Number(to.slice(0, 4));
+      for (const d of dates) {
+        if (!d.date) continue;
+        const keys = [];
+        if (!d.yearly) keys.push(d.date);
+        else for (let y = y0; y <= y1; y += 1) {
+          if (y < Number(d.date.slice(0, 4))) continue;
+          const [, m, dd] = d.date.split('-').map(Number);
+          const leap = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+          keys.push(`${y}-${pad(m)}-${pad(m === 2 && dd === 29 && !leap ? 28 : dd)}`);
+        }
+        for (const k of keys) {
+          if (k < from || k > to) continue;
+          const yrs = Number(k.slice(0, 4)) - Number(d.date.slice(0, 4));
+          if (d.anniv && yrs === 0) continue;
+          items.push({ key: k, title: d.anniv ? `Anniversary · ${yrs} year${yrs === 1 ? '' : 's'}` : d.title, src: 'couple', href: '#/couple' });
+        }
+      }
+    }
+  }
 
   // Phone calendars
   const feeds = Array.isArray(ctx.profile?.calendar_feeds) ? ctx.profile.calendar_feeds : [];

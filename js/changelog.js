@@ -1,6 +1,14 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.40', date: '2026-10-22', title: 'Couple dates in Calendar',
+    items: [
+      'Couple countdowns, birthdays and your anniversary now show in Calendar, every year for yearly ones.',
+      'Countdowns can be edited, and past dates show how long ago they were, with edit and delete. Thanks, Beast!',
+      'Clients: edit a project, including its due date. Due dates show in Calendar.',
+    ],
+  },
+  {
     version: '1.39', date: '2026-10-22', title: 'Small tidy-ups',
     items: [
       'Finance now calls giving “Donation”. Everything you logged before is still there.',

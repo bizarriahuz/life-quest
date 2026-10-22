@@ -11,7 +11,8 @@ import { QUESTIONS, SUGGESTIONS } from '../couple-data.js';
 const TABS = { today: 'Today', dates: 'Dates', memories: 'Memories', list: 'Our list', us: 'Us' };
 let tab = 'today';
 let picked = null;            // date idea picked from the jar
-let memoryDraft = null;       // title carried over from a finished date
+let memoryDraft = null;
+let cdEdit = null;           // countdown being edited       // title carried over from a finished date
 let live = null;
 let poll = null;
 
@@ -162,6 +163,18 @@ async function renderSpace(el, ctx, couple) {
   const who = (x) => (x.author_id === me ? 'You' : x.author_name);
   const canDelete = (x) => isOwner || x.author_id === me;
   const answerCard = (x, name) => html`<div class="cp-ans"><p class="small muted">${name}</p><p>${x.body}</p></div>`;
+  const cdRow = (c) => {
+    const n = daysBetween(t, c.next);
+    if (c.id && c.id === cdEdit) return html`<li class="item"><form data-form="cdsave" data-id="${c.id}" class="form grow">
+      <input name="title" maxlength="200" required value="${c.title}" aria-label="What">
+      <div class="fields"><label class="field">Date<input type="date" name="due_on" required value="${c.due_on}"></label>
+        <label class="tick"><input type="checkbox" name="yearly" value="1" ${c.yearly ? 'checked' : ''}> Every year</label></div>
+      <div class="row spread">${canDelete(c) ? html`<button type="button" class="text-btn danger" data-act="del" data-id="${c.id}">Delete</button>` : html`<span></span>`}
+        <span class="row"><button type="button" class="btn sm" data-act="cdcancel">Cancel</button><button class="btn primary sm">Save</button></span></div></form></li>`;
+    return html`<li class="item ${n < 0 ? 'done' : ''}"><span class="cp-cd-n"><b>${n === 0 ? 'Today' : Math.abs(n).toLocaleString()}</b>${n === 0 ? '' : `${Math.abs(n) === 1 ? 'day' : 'days'}${n < 0 ? ' ago' : ''}`}</span>
+      <div class="body"><p class="title">${c.title}</p><p class="sub">${fmtDate(c.next, { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })}${c.yearly ? ' · every year' : ''}${c.auto ? ' · from Together since' : ''}</p></div>
+      ${c.id ? html`<button class="icon-btn" data-act="cdedit" data-id="${c.id}" aria-label="Edit ${c.title}">${raw(icon('edit'))}</button>` : ''}</li>`;
+  };
   const pastQs = [...new Set(answers.map((x) => x.title).filter((d) => d < t))].sort().reverse().slice(0, 30);
 
   const panes = {
@@ -206,20 +219,17 @@ async function renderSpace(el, ctx, couple) {
 
       <section class="card">
         <div class="card-head"><h2>Countdowns</h2></div>
-        ${upcoming.length ? html`<ul class="list cp-cd">${upcoming.map((c) => {
-          const n = daysBetween(t, c.next);
-          return html`<li class="item"><span class="cp-cd-n"><b>${n === 0 ? 'Today' : n.toLocaleString()}</b>${n === 0 ? '' : n === 1 ? 'day' : 'days'}</span>
-            <div class="body"><p class="title">${c.title}</p><p class="sub">${fmtDate(c.next, { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })}${c.yearly ? ' · every year' : ''}</p></div>
-            ${c.id && canDelete(c) ? html`<button class="icon-btn" data-act="del" data-id="${c.id}" aria-label="Delete ${c.title}">${raw(icon('trash'))}</button>` : ''}</li>`;
-        })}</ul>` : empty('Add birthdays, trips and special days to count down to.')}
+        ${upcoming.length ? html`<ul class="list cp-cd">${upcoming.map(cdRow)}</ul>` : empty('Add birthdays, trips and special days to count down to.')}
         <details class="cp-add"><summary>Add a countdown</summary>
           <form data-form="countdown" class="form">
             <input name="title" maxlength="200" required placeholder="e.g. ${pName === 'your partner' ? 'Their' : `${pName}’s`} birthday, Bali trip" aria-label="What">
             <div class="fields"><label class="field">Date<input type="date" name="due_on" required></label>
               <label class="tick"><input type="checkbox" name="yearly" value="1"> Every year</label></div>
+            <p class="small faint">For birthdays and anniversaries, pick the original date and tick Every year.</p>
             <div class="row end"><button class="btn primary sm">Add</button></div>
           </form></details>
-        ${past.length ? html`<p class="small faint" style="margin-top:8px">Past: ${past.map((c) => c.title).join(', ')}</p>` : ''}
+        ${past.length ? html`<details class="cp-past" ${past.some((c) => c.id === cdEdit) ? 'open' : ''}><summary>Past dates <span class="faint">${past.length}</span></summary>
+          <ul class="list cp-cd">${past.map(cdRow)}</ul></details>` : ''}
       </section>
 
       ${partner ? html`<section class="card">
@@ -395,6 +405,12 @@ async function renderSpace(el, ctx, couple) {
       f.reset(); ctx.say(`Note sent to ${pName}`); ctx.rerender();
     },
     readnote: async (b) => { await ctx.store.update('project_entries', b.dataset.id, { done: true }); ctx.rerender(); },
+    cdedit: (b) => { cdEdit = b.dataset.id; ctx.rerender(); },
+    cdcancel: () => { cdEdit = null; ctx.rerender(); },
+    cdsave: async (v, f) => {
+      await ctx.store.update('project_entries', f.dataset.id, { title: v.title, due_on: v.due_on, yearly: Boolean(v.yearly) });
+      cdEdit = null; ctx.say('Saved'); ctx.rerender();
+    },
     countdown: async (v, f) => {
       await add({ kind: 'countdown', title: v.title, due_on: v.due_on, yearly: Boolean(v.yearly) });
       f.reset(); ctx.rerender();
@@ -461,7 +477,7 @@ async function renderSpace(el, ctx, couple) {
     del: async (b) => {
       const x = entry(b.dataset.id);
       if (!x || !confirm(`Delete “${x.title.slice(0, 60)}”?`)) return;
-      await ctx.store.remove('project_entries', x.id); ctx.rerender();
+      await ctx.store.remove('project_entries', x.id); cdEdit = null; ctx.rerender();
     },
     invite: async () => {
       const inv = await ctx.store.insert('project_invites', { project_id: pid, role: 'editor' });

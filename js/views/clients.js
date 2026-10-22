@@ -8,6 +8,7 @@ const STAGES = [
 const LABEL = { ...Object.fromEntries(STAGES), lost: 'Lost' };
 const ORDER = STAGES.map(([k]) => k);
 const rank = (s) => ORDER.indexOf(s);
+let editing = null;   // project being edited
 
 export default {
   id: 'clients',
@@ -27,6 +28,18 @@ export default {
     const clients = [...new Set(all.map((p) => p.client))].sort();
 
     const row = (p) => {
+      if (p.id === editing) return html`<li class="item"><form data-form="save" data-id="${p.id}" class="form grow">
+        <div class="fields">
+          <label class="field">Client<input name="client" maxlength="120" required value="${p.client}" list="client-names" autocomplete="off"></label>
+          <label class="field">Project<input name="title" maxlength="160" required value="${p.title}"></label>
+        </div>
+        <div class="fields">
+          <label class="field">Value (${ctx.currency})<input name="value" inputmode="decimal" value="${p.value ?? ''}" placeholder="Optional" autocomplete="off"></label>
+          <label class="field">Due<input type="date" name="due_on" value="${p.due_on || ''}"></label>
+        </div>
+        <input name="note" maxlength="500" value="${p.note || ''}" placeholder="Note (optional)" aria-label="Note">
+        <div class="row end"><button type="button" class="btn sm" data-act="cancel">Cancel</button><button class="btn primary sm">Save</button></div>
+      </form></li>`;
       const next = p.stage === 'lost' ? null : ORDER[rank(p.stage) + 1];
       const late = p.due_on && p.due_on < t && rank(p.stage) < rank('done');
       return html`
@@ -40,6 +53,7 @@ export default {
             <div class="more-menu">
               ${STAGES.filter(([k]) => k !== p.stage).map(([k, l]) => html`<button class="text-btn" data-act="stage" data-id="${p.id}" data-stage="${k}">Move to ${l}</button>`)}
               ${p.stage !== 'lost' ? html`<button class="text-btn" data-act="stage" data-id="${p.id}" data-stage="lost">Mark lost</button>` : ''}
+              <button class="text-btn" data-act="edit" data-id="${p.id}">Edit</button>
               <button class="text-btn" data-act="delete" data-id="${p.id}">Delete</button>
             </div></details>
         </li>`;
@@ -129,6 +143,14 @@ export default {
         if (stage === 'active') await ctx.award('WLT', XP.clientActive, 'client_active', row.id, `${row.title} started`);
         else ctx.say('Project added');
         ctx.rerender();
+      },
+      edit: (b) => { editing = b.dataset.id; ctx.rerender(); },
+      cancel: () => { editing = null; ctx.rerender(); },
+      save: async (v, f) => {
+        const value = v.value ? cents(String(v.value).replace(',', '.')) : null;
+        await ctx.store.update('client_projects', f.dataset.id, { client: v.client.replace(/\s+/g, ' '), title: v.title, value: value > 0 ? value : null,
+          due_on: v.due_on || null, note: v.note || null, updated_at: new Date().toISOString() });
+        editing = null; ctx.say('Saved'); ctx.rerender();
       },
       advance: (b) => { const p = proj(b.dataset.id); return setStage(p, ORDER[rank(p.stage) + 1]); },
       stage: (b) => setStage(proj(b.dataset.id), b.dataset.stage),
