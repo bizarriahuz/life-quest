@@ -1,6 +1,13 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.44', date: '2026-10-22', title: 'Card prices in MTG',
+    items: [
+      'Open a deck to see what it’s worth, with a price next to every card, priciest first.',
+      'Foils and exact printings (like “Sol Ring (CMM) 410 *F*”) are priced as that card. Prices are TCGplayer’s, in US dollars, updated daily.',
+    ],
+  },
+  {
     version: '1.43', date: '2026-10-22', title: 'Restore from a backup',
     items: [
       'Settings → Account → Restore from a file brings back anything missing from a file you downloaded. It only adds things back, never changes or deletes what you have.',

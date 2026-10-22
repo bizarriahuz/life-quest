@@ -1,7 +1,7 @@
 import { html, raw, wire, mount, today, relDate, empty } from '../ui.js';
 import { icon } from '../icons.js';
 import { XP } from '../game.js';
-import { parseDecklist, lookupCard, analyse } from '../mtg.js';
+import { parseDecklist, lookupCard, analyse, cardKey } from '../mtg.js';
 
 const FORMATS = { commander: 'Commander', standard: 'Standard', modern: 'Modern', pioneer: 'Pioneer', pauper: 'Pauper', limited: 'Limited', other: 'Other' };
 const RESULT = { win: 'Win', loss: 'Loss', draw: 'Draw' };
@@ -10,6 +10,8 @@ const pips = (colors) => html`<span class="pips" aria-label="Colours: ${colors |
 let openId = null;       // deck being viewed
 let editing = false;     // decklist editor open
 const analysis = new Map(); // deck id -> result (this session)
+const tried = new Set();      // decks we've already fetched prices for (this session)
+const usd = (n) => (n == null ? '–' : `$${n < 10 ? n.toFixed(2) : Math.round(n).toLocaleString()}`);
 
 export default {
   id: 'mtg',
@@ -132,13 +134,21 @@ export default {
               <div class="deck-stats">
                 <div><p class="small muted">Mana curve · avg ${an.avg.toFixed(2)} · ${an.lands} lands</p>${curve(an)}</div>
                 <p class="small muted">${Object.entries(an.types).filter(([, n]) => n).map(([k, n]) => `${n} ${n === 1 ? k : k === 'Sorcery' ? 'Sorceries' : `${k}s`}`).join(' · ')}</p>
-                <p class="small muted">${pips(an.colors)} Colour identity · about US$${Math.round(an.price)} on Scryfall</p>
+                <p class="small muted">${pips(an.colors)} Colour identity</p>
                 ${an.missing.length ? html`<p class="small due-late">Not found: ${an.missing.slice(0, 8).join(', ')}${an.missing.length > 8 ? '…' : ''}</p>` : ''}
               </div>` : ''}
-            <details><summary>Card list</summary>
-              ${['commander', 'main', 'side', 'maybe'].filter((s) => parsed.cards.some((c) => c.section === s)).map((s) => html`
-                <p class="small muted list-head">${{ commander: 'Commander', main: 'Main deck', side: 'Sideboard', maybe: 'Maybeboard' }[s]}</p>
-                <ul class="cardlist">${parsed.cards.filter((c) => c.section === s).map((c) => html`<li><span class="num">${c.qty}</span> ${c.name}</li>`)}</ul>`)}
+            ${an ? html`<div class="deck-value"><span><b>US${usd(an.totals.commander + an.totals.main)}</b> deck value</span>
+              <span class="small faint">${an.totals.side ? `+ US${usd(an.totals.side)} sideboard · ` : ''}TCGplayer prices via Scryfall, updated daily${an.unpriced ? ` · ${an.unpriced} without a price` : ''}</span></div>`
+              : tried.has(deck.id) ? '' : html`<p class="small faint deck-value">Getting prices…</p>`}
+            <details class="cardlist-box"><summary>Card list${an ? ', priciest first' : ''}</summary>
+              ${['commander', 'main', 'side', 'maybe'].filter((s) => parsed.cards.some((c) => c.section === s)).map((s) => {
+                const list = parsed.cards.filter((c) => c.section === s);
+                const line = (c) => (an?.prices[cardKey(c)] ?? null) == null ? null : an.prices[cardKey(c)] * c.qty;
+                if (an) list.sort((a, b) => (line(b) ?? -1) - (line(a) ?? -1) || a.name.localeCompare(b.name));
+                return html`
+                <p class="small muted list-head cl-head"><span>${{ commander: 'Commander', main: 'Main deck', side: 'Sideboard', maybe: 'Maybeboard' }[s]}</span>${an ? html`<span>US${usd(an.totals[s])}</span>` : ''}</p>
+                <ul class="cardlist priced">${list.map((c) => html`<li><span class="num">${c.qty}</span><span class="cl-name">${c.name}${c.foil ? html` <span class="cl-foil">foil</span>` : ''}</span>${an ? html`<span class="cl-price" title="${c.qty > 1 && an.prices[cardKey(c)] != null ? `${c.qty} × ${usd(an.prices[cardKey(c)])}` : ''}">${usd(line(c))}</span>` : ''}</li>`)}</ul>`;
+              })}
             </details>`}
 
           <div>
@@ -172,6 +182,13 @@ export default {
         </section>` : ''}
     `);
     el.querySelectorAll('img').forEach((img) => img.addEventListener('error', () => img.remove(), { once: true }));
+    // Prices (and the curve) load by themselves the first time a deck with a list is opened.
+    if (deck && parsed && !an && !editing && !tried.has(deck.id)) {
+      tried.add(deck.id);
+      const id = deck.id;
+      analyse(parsed).then((r) => { analysis.set(id, r); if (openId === id && el.isConnected) ctx.rerender(); })
+        .catch(() => { if (openId === id && el.isConnected) ctx.rerender(); });
+    }
 
     // Commander lookup → art + colour identity. Falls back to what the decklist says.
     const enrich = async (name, list, format) => {
@@ -227,7 +244,7 @@ export default {
         const patch = { decklist: list };
         if (list && !deck.commander) Object.assign(patch, await enrich('', list, deck.format));
         await ctx.store.update('mtg_decks', deck.id, patch);
-        analysis.delete(deck.id);
+        analysis.delete(deck.id); tried.delete(deck.id);
         editing = false;
         ctx.say(p ? `${p.main + p.commander} cards saved` : 'Decklist removed');
         ctx.rerender();
