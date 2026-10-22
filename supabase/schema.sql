@@ -1370,3 +1370,13 @@ begin
 end $$;
 revoke all on function public.admin_stats() from public, anon;
 grant execute on function public.admin_stats() to authenticated;
+
+-- ---------- 1.41: events in shared projects (show in every member's Calendar) ----------
+alter table public.project_entries add column if not exists start_time time;
+alter table public.project_entries add column if not exists end_time time;
+alter table public.project_entries drop constraint if exists project_entries_kind_check;
+alter table public.project_entries add constraint project_entries_kind_check
+  check (kind in ('task', 'note', 'expense', 'photo', 'idea', 'memory', 'countdown', 'love', 'answer', 'event'));
+create index if not exists project_entries_event_idx on public.project_entries (project_id, due_on) where kind = 'event';
+-- entries_guard() replaced: events need a date (due_on) and may have start/end times; only events keep times;
+-- the end time can't be before the start. (Full body as applied in migration project_events.)

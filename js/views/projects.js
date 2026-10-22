@@ -1,11 +1,12 @@
 // Shared projects: tasks, notes and split costs with people you invite.
 // Everything here is visible to the project's members (and only to them).
 import { html, raw, wire, mount, today, relDate, fmtDate, empty } from '../ui.js';
+import { clock } from './calendar.js';
 import { icon } from '../icons.js';
 import { XP, money } from '../game.js';
 import { shrink } from '../photo.js';
 
-const TABS = { task: 'Tasks', note: 'Notes', expense: 'Money', photo: 'Photos', people: 'People' };
+const TABS = { task: 'Tasks', event: 'Events', note: 'Notes', expense: 'Money', photo: 'Photos', people: 'People' };
 const ROLE = { owner: 'Owner', editor: 'Editor', viewer: 'Viewer' };
 const tabs = {};              // project id → open tab
 let live = null;              // { id, stop } live updates for the open project
@@ -193,10 +194,14 @@ async function renderProject(el, ctx, pid) {
   const notes = entries.filter((x) => x.kind === 'note').reverse();
   const costs = entries.filter((x) => x.kind === 'expense').reverse();
   const photos = entries.filter((x) => x.kind === 'photo').reverse();
+  const evOrder = (a, b) => a.due_on.localeCompare(b.due_on) || (a.start_time || '').localeCompare(b.start_time || '');
+  const events = entries.filter((x) => x.kind === 'event');
+  const evNext = events.filter((x) => x.due_on >= t).sort(evOrder);
+  const evPast = events.filter((x) => x.due_on < t).sort(evOrder).reverse();
   const money_ = settle(members, costs);
   const others = members.filter((m) => m.user_id !== me);
   const memberOpts = (sel) => html`<option value="${me}" ${sel === me ? 'selected' : ''}>Me</option>${others.map((m) => html`<option value="${m.user_id}" ${sel === m.user_id ? 'selected' : ''}>${m.display_name}</option>`)}`;
-  const counts = { task: openT.length, note: notes.length, expense: costs.length, photo: photos.length, people: members.length };
+  const counts = { task: openT.length, event: evNext.length, note: notes.length, expense: costs.length, photo: photos.length, people: members.length };
   const known = tab === 'photo' ? Object.fromEntries(photos.map((x) => [x.photo_path, photoUrl.get(x.photo_path)?.url]).filter(([, u]) => u)) : {};
 
   const taskRow = (x) => html`
@@ -245,7 +250,30 @@ async function renderProject(el, ctx, pid) {
       </div>` : ''}`;
   };
 
+  const evRow = (x) => html`<li class="item">
+      <span class="ev-when"><b>${fmtDate(x.due_on, { day: 'numeric', month: 'short' })}</b>${x.start_time ? `${clock(x.start_time.slice(0, 5))}${x.end_time ? `–${clock(x.end_time.slice(0, 5))}` : ''}` : 'All day'}</span>
+      <div class="body"><p class="title">${x.title}</p><p class="sub">${relDate(x.due_on)}${x.body ? ` · ${x.body}` : ''} · <span class="faint">added by ${x.author_id === me ? 'you' : x.author_name}</span></p></div>
+      ${canDelete(x) ? html`<button class="icon-btn" data-act="del" data-id="${x.id}" aria-label="Delete ${x.title}">${raw(icon('trash'))}</button>` : ''}</li>`;
   const panes = {
+    event: () => html`
+      ${canEdit ? html`<section class="card">
+        <form data-form="addevent" class="form">
+          <input name="title" maxlength="200" required placeholder="Event, e.g. Flight to Tokyo" aria-label="Event">
+          <div class="fields">
+            <label class="field">Date<input type="date" name="due_on" required></label>
+            <label class="field">Starts<input type="time" name="start_time"></label>
+            <label class="field">Ends<input type="time" name="end_time"></label>
+          </div>
+          <input name="body" maxlength="300" placeholder="Where, or a note (optional)" aria-label="Where or note">
+          <div class="row spread"><span class="small faint">Shows in everyone’s Calendar</span><button class="btn primary sm">${raw(icon('plus', 16))}Add event</button></div>
+        </form>
+      </section>` : ''}
+      <section class="card">
+        <div class="card-head"><h2>Coming up</h2><span class="meta">${evNext.length}</span></div>
+        ${evNext.length ? html`<ul class="list">${evNext.map(evRow)}</ul>` : empty(canEdit ? 'No events yet. Add one and it shows in everyone’s Calendar.' : 'No events coming up.')}
+      </section>
+      ${evPast.length ? html`<section class="card"><details><summary>Past <span class="muted small" style="margin-left:auto;margin-right:10px">${evPast.length}</span></summary>
+        <ul class="list">${evPast.slice(0, 50).map(evRow)}</ul></details></section>` : ''}`,
     task: () => html`
       ${canEdit ? html`<section class="card">
         <form data-form="addtask" class="form">
@@ -472,6 +500,12 @@ async function renderProject(el, ctx, pid) {
     addtask: async (v, f) => {
       await ctx.store.insert('project_entries', { project_id: pid, kind: 'task', title: v.title, assignee_id: v.assignee_id || null, due_on: v.due_on || null });
       f.reset(); ctx.rerender();
+    },
+    addevent: async (v, f) => {
+      if (v.end_time && !v.start_time) { ctx.say('Add a start time too'); return; }
+      if (v.end_time && v.end_time < v.start_time) { ctx.say('The end time is before the start time'); return; }
+      await ctx.store.insert('project_entries', { project_id: pid, kind: 'event', title: v.title, due_on: v.due_on, start_time: v.start_time || null, end_time: v.end_time || null, body: v.body || null });
+      f.reset(); ctx.say('Event added. It’s in everyone’s Calendar'); ctx.rerender();
     },
     addnote: async (v, f) => {
       await ctx.store.insert('project_entries', { project_id: pid, kind: 'note', title: v.title, body: v.body || null });

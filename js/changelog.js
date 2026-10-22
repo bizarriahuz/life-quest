@@ -1,6 +1,13 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.41', date: '2026-10-22', title: 'Events in shared projects',
+    items: [
+      'Projects have a new Events tab: add a date, with a time and place if you like, and it shows in everyone’s Calendar in that project.',
+      'Today’s shared events also show on your Home screen. Thanks for the idea, Beast!',
+    ],
+  },
+  {
     version: '1.40', date: '2026-10-22', title: 'Couple dates in Calendar',
     items: [
       'Couple countdowns, birthdays and your anniversary now show in Calendar, every year for yearly ones.',

@@ -68,6 +68,10 @@ export async function collect(ctx, from, to, { fetchFeeds = false, onFeed } = {}
     get('projects', 'project_entries', { match: { kind: 'task', done: false }, gte: ['due_on', from], lte: ['due_on', to] }),
     get('clients', 'client_projects', { gte: ['due_on', from], lte: ['due_on', to] }),
   ]);
+  const [pevents, pnames] = on.has('projects') ? await Promise.all([
+    ctx.store.list('project_entries', { match: { kind: 'event' }, gte: ['due_on', from], lte: ['due_on', to] }).catch(() => []),
+    ctx.store.list('projects', {}).catch(() => []),
+  ]) : [[], []];
   const items = [];
   for (const e of events) for (const o of ownDays(e, from, to)) {
     items.push({ key: o.key, time: o.first ? e.start_time?.slice(0, 5) : null, end: o.first ? e.end_time?.slice(0, 5) : null, title: e.title, note: e.note, src: 'event', id: e.id, ev: e, more: !o.first });
@@ -75,6 +79,11 @@ export async function collect(ctx, from, to, { fetchFeeds = false, onFeed } = {}
   for (const q of tasks) if (q.kind !== 'daily') items.push({ key: q.due_on, title: q.title, src: 'task', id: q.id, task: q });
   for (const g of goals) items.push({ key: g.target_date, title: `Goal: ${g.title}`, src: 'goal', href: '#/goals' });
   for (const x of ptasks) items.push({ key: x.due_on, title: x.title, src: 'project', href: `#/projects/${x.project_id}`, sub: x.assignee_id === ctx.store.user.id ? 'For you' : null });
+  for (const x of pevents) {
+    const pn = pnames.find((q) => q.id === x.project_id);
+    if (!pn || pn.kind === 'couple') continue;
+    items.push({ key: x.due_on, time: x.start_time?.slice(0, 5) || null, end: x.end_time?.slice(0, 5) || null, title: x.title, note: x.body, src: 'project', shared: true, href: `#/projects/${x.project_id}`, sub: pn.name });
+  }
   for (const c of clients) if (!['paid', 'lost'].includes(c.stage)) items.push({ key: c.due_on, title: `${c.client} · ${c.title}`, src: 'client', href: '#/clients' });
 
   // Couple: countdowns (yearly ones every year) and your anniversary.

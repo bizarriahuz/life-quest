@@ -64,7 +64,7 @@ export default {
       ctx.store.list('project_entries', { match: { project_id: us.id, kind: 'answer', title: t, author_id: ctx.store.user.id } }).then((r) => r[0] || null).catch(() => null),
     ]) : [[], null];
     const usDays = us ? daysTogether(us.together_since, t) : null;
-    const calToday = on.has('calendar') ? (await calCollect(ctx, t, t).catch(() => [])).filter((x) => x.src === 'event' || x.src === 'feed') : [];
+    const calToday = on.has('calendar') ? (await calCollect(ctx, t, t).catch(() => [])).filter((x) => x.src === 'event' || x.src === 'feed' || x.shared) : [];
     const nowHM = new Date().toTimeString().slice(0, 5);
     const calNext = calToday.find((x) => x.time && (x.end || x.time) >= nowHM) || calToday.find((x) => !x.time);
     const [chessLive, chessPuz, wordToday, suToday, hvToday] = on.has('games') ? await Promise.all([
