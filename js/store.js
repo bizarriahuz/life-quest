@@ -40,6 +40,17 @@ export function cloudStore(sb, user) {
     async remove(table, id) { ok(await sb.from(table).delete().eq('id', id)); },
     async updateWhere(table, match, patch) { return ok(await sb.from(table).update(patch).match(match).select()); },
     async rpc(fn, args) { return ok(await sb.rpc(fn, args)); },
+    // Put rows back from a backup file. Rows that clash (already there, same day…) are skipped.
+    async restore(table, rows) {
+      let added = 0;
+      for (let i = 0; i < rows.length; i += 200) {
+        const chunk = rows.slice(i, i + 200).map((r) => ({ ...r, user_id: user.id }));
+        const { error } = await sb.from(table).insert(chunk);
+        if (!error) { added += chunk.length; continue; }
+        for (const r of chunk) { const res = await sb.from(table).insert(r); if (!res.error) added += 1; }
+      }
+      return { added, skipped: rows.length - added };
+    },
     // Every row you can see in a table, 1,000 at a time (for "Download my data").
     async dump(table) {
       const out = [];
@@ -217,6 +228,16 @@ export function localStore() {
     async rpc(fn) {
       if (fn === 'invite_info') return [];
       throw new Error('Joining shared projects needs a Life Quest account.');
+    },
+    async restore(table, rows) {
+      let added = 0;
+      const uniq = UNIQUE[table];
+      for (const r of rows) {
+        if (tbl(table).some((x) => x.id === r.id) || (uniq && tbl(table).some((x) => uniq.every((k) => x[k] === r[k])))) continue;
+        tbl(table).push({ ...DEFAULTS[table], ...structuredClone(r), user_id: 'local' }); added += 1;
+      }
+      save();
+      return { added, skipped: rows.length - added };
     },
     async dump(table) { return table === 'profiles' ? [structuredClone(db.profile || {})] : structuredClone(tbl(table)); },
     subscribe() { return () => {}; },

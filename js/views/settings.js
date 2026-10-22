@@ -379,12 +379,43 @@ async function account(el, ctx) {
       <p class="small faint" id="export-status" role="status" style="margin-top:8px"></p>
     </section>
     <section class="card">
+      <div class="card-head"><h2>Restore from a file</h2></div>
+      <p class="small muted" style="margin-bottom:12px">Bring back anything that’s missing, from a file you downloaded here. It only adds things back: nothing you have now is changed or deleted.</p>
+      <label class="btn">${raw(icon('up', 16))}Choose a backup file<input type="file" accept=".json,application/json" data-change="restorefile" hidden></label>
+      <div id="restore-box" role="status"></div>
+    </section>
+    <section class="card">
       <p class="small muted">Life Quest is built and kept running by one person, free of ads.</p>
       <div class="row wrap" style="margin-top:12px;gap:8px">
         <a class="btn sm" href="/about">About Life Quest</a>
         <a class="btn sm" href="https://buymeacoffee.com/faustianecho" target="_blank" rel="noopener noreferrer">Buy me a coffee ☕</a>
       </div>
-    </section>`);  wire(el, { export: () => exportData(el, ctx) });
+    </section>`);  let pending = null;
+  const box = () => el.querySelector('#restore-box');
+  wire(el, {
+    export: () => exportData(el, ctx),
+    restorefile: async (input) => {
+      const f = input.files?.[0]; input.value = '';
+      if (!f) return;
+      try { pending = await planRestore(ctx, f); } catch (err) { pending = null; box().innerHTML = String(html`<p class="small restore-msg">${err.message}</p>`); return; }
+      const when = pending.file.exported_at ? new Date(pending.file.exported_at).toLocaleString('en-SG', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'an unknown date';
+      box().innerHTML = String(html`<div class="restore-plan">
+        <p><b>Backup from ${when}</b>${pending.otherAccount ? html` <span class="pill">another account</span>` : ''}</p>
+        <p class="small muted">${pending.missing ? `${pending.missing.toLocaleString()} item${pending.missing === 1 ? '' : 's'} in it ${pending.missing === 1 ? 'isn’t' : 'aren’t'} here and will be added back` : 'Everything in this file is already here. Nothing to restore.'}${pending.present ? ` · ${pending.present.toLocaleString()} already here` : ''}.</p>
+        ${pending.missing ? html`<div class="row wrap" style="gap:8px;margin-top:10px"><button class="btn primary sm" data-act="restorego">Restore ${pending.missing.toLocaleString()} item${pending.missing === 1 ? '' : 's'}</button><button class="btn sm" data-act="restorecancel">Cancel</button></div>` : ''}
+      </div>`);
+    },
+    restorecancel: () => { pending = null; box().innerHTML = ''; },
+    restorego: async () => {
+      if (!pending) return;
+      const res = await runRestore(ctx, pending, (t) => { box().innerHTML = String(html`<p class="small restore-msg">${t}</p>`); });
+      pending = null;
+      ctx.store.clear?.();
+      await ctx.revoke('restore', '-');   // refresh XP totals
+      box().innerHTML = String(html`<p class="small restore-msg">Restored ${res.added.toLocaleString()} item${res.added === 1 ? '' : 's'}.${res.skipped ? ` ${res.skipped.toLocaleString()} couldn’t be added because something like them is already here (for example, a mood for the same day).` : ''}</p>`);
+      ctx.say('Restore finished');
+    },
+  });
 }
 
 // Everything the person can see, as one JSON file. Invite links are left out (they work like passwords).
@@ -393,6 +424,53 @@ const EXPORT_TABLES = ['profiles', 'tasks', 'calendar_events', 'goals', 'goal_mi
   'contacts', 'contact_logs', 'transactions', 'finance_categories', 'savings_goals', 'savings_contributions', 'client_projects',
   'word_games', 'hive_games', 'sudoku_games', 'chess_games', 'chess_puzzles', 'xp_events',
   'projects', 'project_members', 'project_entries', 'project_comments', 'project_reactions'];
+// Restore: parents before the things that point at them.
+const RESTORE_TABLES = ['goals', 'goal_milestones', 'tasks', 'calendar_events', 'notes', 'quotes', 'moods', 'sleep_logs', 'workouts', 'prayer_logs',
+  'books', 'comics', 'learning_items', 'learning_sessions', 'hobbies', 'hobby_sessions', 'watchlist', 'albums', 'mtg_decks', 'mtg_matches',
+  'contacts', 'contact_logs', 'finance_categories', 'transactions', 'savings_goals', 'savings_contributions', 'client_projects',
+  'word_games', 'hive_games', 'sudoku_games', 'chess_games', 'chess_puzzles', 'xp_events'];
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export async function planRestore(ctx, f) {
+  if (f.size > 40 * 1024 * 1024) throw new Error('That file is too big to be a Life Quest backup.');
+  let file;
+  try { file = JSON.parse(await f.text()); } catch { throw new Error('That file couldn’t be read. Choose a file downloaded from Life Quest.'); }
+  if (file?.app !== 'Life Quest' || typeof file.tables !== 'object') throw new Error('That isn’t a Life Quest backup. Choose a file from Download my data.');
+  const missingBy = {}; let missing = 0; let present = 0;
+  for (const t of RESTORE_TABLES) {
+    const rows = Array.isArray(file.tables[t]) ? file.tables[t].filter((r) => r && typeof r === 'object' && typeof r.id === 'string') : [];
+    if (!rows.length) continue;
+    const have = new Set((await ctx.store.dump(t).catch(() => [])).map((r) => r.id));
+    missingBy[t] = rows.filter((r) => !have.has(r.id));
+    missing += missingBy[t].length; present += rows.length - missingBy[t].length;
+  }
+  const otherAccount = ctx.store.mode === 'cloud' && file.account && file.account !== ctx.store.user.email;
+  return { file, missingBy, missing, present, otherAccount };
+}
+// From another account, missing rows get fresh ids (so they can't clash with that account's), and anything that pointed
+// at an old id (a task's goal, a deck's matches, XP for a task…) is pointed at the new one.
+export async function runRestore(ctx, plan, progress) {
+  const remap = new Map();
+  // Same account: keep the original ids, so restoring the same file twice adds nothing the second time.
+  if (plan.otherAccount) for (const rows of Object.values(plan.missingBy)) for (const r of rows) remap.set(r.id, crypto.randomUUID());
+  const fix = (r) => {
+    const o = {};
+    for (const [k, v] of Object.entries(r)) {
+      if (k === 'user_id') continue;
+      o[k] = typeof v === 'string' && UUID.test(v) && remap.has(v) ? remap.get(v) : v;
+    }
+    return o;
+  };
+  let added = 0; let skipped = 0; let done = 0;
+  for (const t of RESTORE_TABLES) {
+    const rows = plan.missingBy[t];
+    if (!rows?.length) continue;
+    progress(`Restoring… ${done.toLocaleString()} of ${plan.missing.toLocaleString()}`);
+    const res = await ctx.store.restore(t, rows.map(fix));
+    added += res.added; skipped += res.skipped; done += rows.length;
+  }
+  return { added, skipped };
+}
+
 export async function exportData(el, ctx) {
   const status = (t) => { const s = el.querySelector('#export-status'); if (s) s.textContent = t; };
   const tables = {}; const skipped = [];

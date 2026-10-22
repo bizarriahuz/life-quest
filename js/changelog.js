@@ -1,6 +1,12 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.43', date: '2026-10-22', title: 'Restore from a backup',
+    items: [
+      'Settings → Account → Restore from a file brings back anything missing from a file you downloaded. It only adds things back, never changes or deletes what you have.',
+    ],
+  },
+  {
     version: '1.42', date: '2026-10-22', title: 'Download your data',
     items: [
       'Settings → Account → Download my data saves a copy of everything you’ve added in one file you can keep.',

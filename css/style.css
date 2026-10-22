@@ -1218,3 +1218,5 @@ a.item.set-row { color: inherit; text-decoration: none; display: flex; align-ite
 .src-couple { background: #e0607e; }
 .ev-when { flex: none; width: 74px; display: grid; font-size: 11.5px; color: var(--muted); line-height: 1.3; }
 .ev-when b { font-size: 14px; color: var(--fg); }
+.restore-plan { margin-top: 12px; padding: 12px; border-radius: 12px; background: var(--surface-2); display: grid; gap: 4px; }
+.restore-msg { margin-top: 10px; }
