@@ -1,119 +1,103 @@
 // Data layer. Two interchangeable stores with the same methods:
-//   cloudStore  — Supabase (synced, signed in)
+//   cloudStore  — the Life Quest server (Cloudflare D1 via /api, synced, signed in)
 //   localStore  — this browser only (offline mode)
-import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
+import { OFFLINE_ONLY } from './config.js';
 
-export const cloudEnabled = Boolean(SUPABASE_URL && SUPABASE_KEY);
+export const cloudEnabled = !OFFLINE_ONLY;
 
-let client = null;
-export async function getClient() {
-  if (!client) {
-    const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
-    client = createClient(SUPABASE_URL, SUPABASE_KEY);
+// ---------- talking to the server ----------
+export async function api(path, body) {
+  let r;
+  try {
+    r = await fetch(`/api/${path}`, {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'content-type': 'application/json' }, body: JSON.stringify(body || {}),
+    });
+  } catch {
+    throw Object.assign(new Error('Couldn’t reach the server. Check your connection.'), { offline: true });
   }
-  return client;
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    const err = Object.assign(new Error(data.error || `Something went wrong (${r.status}).`), { status: r.status, code: data.code });
+    if (r.status === 401) window.dispatchEvent(new CustomEvent('lq:signedout'));
+    throw err;
+  }
+  return data;
 }
+export const auth = (action, body = {}) => api('auth', { action, ...body });
+const db = (action, body = {}) => api('db', { action, ...body });
 
-// Shared project tables have no user_id: the server decides who owns or wrote a row.
-const SHARED = new Set(['projects', 'project_members', 'project_invites', 'project_entries', 'project_comments', 'project_reactions']);
-
-export function cloudStore(sb, user) {
-  const ok = ({ data, error }) => { if (error) throw error; return data; };
+export function cloudStore(user) {
   const store = {
     mode: 'cloud',
     user,
-    async list(table, o = {}) {
-      let q = sb.from(table).select('*');
-      if (o.match) q = q.match(o.match);
-      if (o.gte) q = q.gte(o.gte[0], o.gte[1]);
-      if (o.lte) q = q.lte(o.lte[0], o.lte[1]);
-      if (o.order) q = q.order(o.order, { ascending: Boolean(o.asc) });
-      if (o.limit) q = q.limit(o.limit);
-      return ok(await q);
-    },
-    async insert(table, row) {
-      return ok(await sb.from(table).insert(SHARED.has(table) ? row : { ...row, user_id: user.id }).select().single());
-    },
-    async update(table, id, patch) {
-      return ok(await sb.from(table).update(patch).eq('id', id).select().single());
-    },
-    async remove(table, id) { ok(await sb.from(table).delete().eq('id', id)); },
-    async updateWhere(table, match, patch) { return ok(await sb.from(table).update(patch).match(match).select()); },
-    async rpc(fn, args) { return ok(await sb.rpc(fn, args)); },
+    list: (table, o = {}) => db('list', { table, o }),
+    insert: (table, row) => db('insert', { table, row }),
+    update: (table, id, patch) => db('update', { table, id, patch }),
+    async remove(table, id) { await db('remove', { table, id }); },
+    updateWhere: (table, match, patch) => db('updateWhere', { table, match, patch }),
+    async removeWhere(table, match) { await db('removeWhere', { table, match }); },
+    async rpc(fn, args) { return (await db('rpc', { fn, args })).data; },
     // Put rows back from a backup file. Rows that clash (already there, same day…) are skipped.
     async restore(table, rows) {
-      let added = 0;
+      let added = 0, skipped = 0;
       for (let i = 0; i < rows.length; i += 200) {
-        const chunk = rows.slice(i, i + 200).map((r) => ({ ...r, user_id: user.id }));
-        const { error } = await sb.from(table).insert(chunk);
-        if (!error) { added += chunk.length; continue; }
-        for (const r of chunk) { const res = await sb.from(table).insert(r); if (!res.error) added += 1; }
+        const r = await db('restore', { table, rows: rows.slice(i, i + 200) });
+        added += r.added; skipped += r.skipped;
       }
-      return { added, skipped: rows.length - added };
+      return { added, skipped };
     },
-    // Every row you can see in a table, 1,000 at a time (for "Download my data").
-    async dump(table) {
-      const out = [];
-      for (let i = 0; i < 200000; i += 1000) {
-        const rows = ok(await sb.from(table).select('*').order({ project_members: 'joined_at', profiles: 'user_id' }[table] || 'id', { ascending: true }).range(i, i + 999));
-        out.push(...rows);
-        if (rows.length < 1000) break;
-      }
-      return out;
-    },
-    // Project photos (private bucket; viewing links expire after an hour)
+    dump: (table) => db('dump', { table }),
     async uploadPhoto(path, blob) {
-      const { error } = await sb.storage.from('project-photos').upload(path, blob, { contentType: blob.type || 'image/jpeg', upsert: false, cacheControl: '86400' });
-      if (error) throw error;
+      const r = await fetch(`/api/photo?path=${encodeURIComponent(path)}`, {
+        method: 'PUT', credentials: 'same-origin', headers: { 'content-type': blob.type || 'image/jpeg' }, body: blob,
+      });
+      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'Couldn’t upload the photo.');
     },
+    // Photos are served by the app itself (signed-in cookie), so a plain URL works in <img>.
     async photoUrls(paths) {
-      if (!paths.length) return {};
-      const { data, error } = await sb.storage.from('project-photos').createSignedUrls(paths, 3600);
-      if (error) throw error;
-      return Object.fromEntries((data || []).filter((d) => d.signedUrl).map((d) => [d.path, d.signedUrl]));
+      return Object.fromEntries(paths.map((p) => [p, `/api/photo?path=${encodeURIComponent(p)}`]));
     },
     async removePhotos(paths) {
       if (!paths.length) return;
-      const { error } = await sb.storage.from('project-photos').remove(paths);
-      if (error) throw error;
+      await api('photo', { action: 'remove', paths });
     },
-    // Live changes to one project. Returns a function that stops listening.
+    // Live updates for people looking at the same project: check every few seconds while the page is visible.
     subscribe(projectId, onChange) {
-      const ch = sb.channel(`project:${projectId}:${Math.random().toString(36).slice(2)}`);
-      for (const table of ['project_entries', 'project_members', 'project_comments', 'project_reactions'])
-        ch.on('postgres_changes', { event: '*', schema: 'public', table, filter: `project_id=eq.${projectId}` }, () => onChange(table));
-      ch.on('postgres_changes', { event: '*', schema: 'public', table: 'projects', filter: `id=eq.${projectId}` }, () => onChange('projects'));
-      ch.subscribe();
-      return () => { try { sb.removeChannel(ch); } catch { /* ignore */ } };
+      let last = null, stopped = false, timer = null;
+      const tick = async () => {
+        if (stopped) return;
+        if (document.visibilityState === 'visible') {
+          try {
+            const { v } = await db('version', { project_id: projectId });
+            if (last !== null && v !== last) for (const t of ['projects', 'project_members', 'project_entries', 'project_comments', 'project_reactions']) onChange(t);
+            last = v;
+          } catch { /* offline for a moment: try again next time */ }
+        }
+        if (!stopped) timer = setTimeout(tick, 4000);
+      };
+      tick();
+      const wake = () => { if (document.visibilityState === 'visible') { clearTimeout(timer); tick(); } };
+      document.addEventListener('visibilitychange', wake);
+      return () => { stopped = true; clearTimeout(timer); document.removeEventListener('visibilitychange', wake); };
     },
-    async removeWhere(table, match) { ok(await sb.from(table).delete().match(match)); },
     async award(stat, amount, source, sourceId) {
-      ok(await sb.from('xp_events').upsert(
-        { user_id: user.id, stat, amount, source, source_id: String(sourceId) },
-        { onConflict: 'user_id,source,source_id', ignoreDuplicates: true },
-      ));
+      await db('award', { stat, amount, source, source_id: String(sourceId) });
     },
     async revoke(source, sourceId) {
       await store.removeWhere('xp_events', { source, source_id: String(sourceId) });
     },
-    async totals() {
-      const rows = ok(await sb.from('stat_totals').select('stat,xp'));
-      return Object.fromEntries(rows.map((r) => [r.stat, r.xp]));
+    totals: () => db('totals'),
+    profile: () => db('profile'),
+    saveProfile: (patch) => db('saveProfile', { patch }),
+    async signOut() {
+      await auth('signout').catch(() => {});
+      window.dispatchEvent(new CustomEvent('lq:signedout', { detail: { manual: true } }));
     },
-    async profile() {
-      const rows = ok(await sb.from('profiles').select('*').limit(1));
-      if (rows.length) return rows[0];
-      return ok(await sb.from('profiles').insert({ user_id: user.id }).select().single());
-    },
-    async saveProfile(patch) {
-      return ok(await sb.from('profiles').update(patch).eq('user_id', user.id).select().single());
-    },
-    async signOut() { await sb.auth.signOut(); },
   };
   return store;
 }
 
-// ---------------------------------------------------------------------------
 const KEY = 'lifequest:v1';
 const DEFAULTS = {
   tasks: { kind: 'side', due_on: null, done: false, done_on: null, repeat: null, goal_id: null, note: null },

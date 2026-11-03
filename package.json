@@ -1,0 +1,13 @@
+{
+  "name": "life-quest",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "schema": "node scripts/gen-schema.mjs",
+    "test": "node test/api.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4.40.0",
+    "bcryptjs": "^2.4.3"
+  }
+}

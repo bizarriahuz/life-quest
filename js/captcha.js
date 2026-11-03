@@ -1,6 +1,6 @@
 // Cloudflare Turnstile: a privacy-friendly "are you human" check on sign-in and sign-up.
-// Switched on by TURNSTILE_SITE_KEY in config.js. Supabase checks the token server-side
-// once CAPTCHA protection is enabled (Authentication → Attack Protection).
+// Switched on by TURNSTILE_SITE_KEY in config.js. The server (functions/api/auth.js) checks the token
+// with TURNSTILE_SECRET (a Pages secret).
 import * as CFG from './config.js';
 
 const SITE_KEY = (CFG.TURNSTILE_SITE_KEY || '').trim();
