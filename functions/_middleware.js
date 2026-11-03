@@ -22,7 +22,10 @@ export async function onRequest({ request, next, env }) {
     url.hostname = NEW;
     return Response.redirect(url.toString(), 301);
   }
-  if (url.pathname.startsWith('/api/') && url.pathname !== '/api/ics' && env.DB) {
+  if (url.pathname.startsWith('/api/') && url.pathname !== '/api/ics' && !env.DB) {
+    return new Response(JSON.stringify({ error: 'The database isn’t connected yet (Pages → Settings → Bindings → D1 “DB”).' }), { status: 503, headers: { 'content-type': 'application/json' } });
+  }
+  if (url.pathname.startsWith('/api/') && url.pathname !== '/api/ics') {
     ready ??= ensureSchema(env.DB).catch((e) => { ready = null; throw e; });
     try { await ready; } catch (e) {
       console.error('schema', e);
