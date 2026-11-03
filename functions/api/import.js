@@ -5,12 +5,7 @@ import { TABLES, COLS } from '../_lib/schema.js';
 
 const KEY_SHA256 = '9467b45d50b67024b546b817dff69dc555acc593ed766911c0fbd260e6a8a26c';
 
-// parents before children
-export const ORDER = ['users', 'app_admins', 'profiles', 'goals', 'tasks', 'books', 'notes', 'quotes', 'workouts', 'prayer_logs', 'hobbies',
-  'hobby_sessions', 'xp_events', 'finance_categories', 'transactions', 'savings_goals', 'savings_contributions', 'comics', 'sleep_logs',
-  'goal_milestones', 'learning_items', 'learning_sessions', 'client_projects', 'mtg_decks', 'mtg_matches', 'moods', 'contacts',
-  'contact_logs', 'watchlist', 'albums', 'calendar_events', 'chess_games', 'chess_puzzles', 'word_games', 'sudoku_games', 'hive_games',
-  'projects', 'project_members', 'project_invites', 'project_entries', 'project_comments', 'project_reactions', 'feedback'];
+import { ORDER } from '../_lib/order.js';
 
 const iso = (v) => (v == null ? null : new Date(v).toISOString());
 function convert(table, r) {
@@ -47,21 +42,33 @@ export async function importRows(db, table, input) {
   return list.length;
 }
 
+// start clean: children first
+async function wipe(db) {
+  await db.batch([...[...ORDER].reverse().map((t) => db.prepare(`delete from ${t}`)),
+    db.prepare('delete from sessions'), db.prepare('delete from email_tokens'), db.prepare('delete from project_versions')]);
+}
+
 export async function onRequestPost({ request, env }) {
   const key = request.headers.get('x-import-key') || '';
   if (!key || (await sha256(key)) !== KEY_SHA256) return json({ error: 'Not found' }, 404);
   const b = await request.json().catch(() => ({}));
   const db = env.DB;
-  if (b.action === 'wipe') {
-    // start clean: children first
-    for (const t of [...ORDER].reverse()) await db.prepare(`delete from ${t}`).run();
-    await db.batch([db.prepare('delete from sessions'), db.prepare('delete from email_tokens'), db.prepare('delete from project_versions')]);
-    return json({ ok: true });
-  }
+  if (b.action === 'wipe') { await wipe(db); return json({ ok: true }); }
   if (b.action === 'count') {
     const out = {};
     for (const t of ORDER) out[t] = (await db.prepare(`select count(*) n from ${t}`).first()).n;
     return json(out);
+  }
+  if (b.action === 'all') {
+    // everything in one go (the whole database is about 250 KB): wipe, then each table parents-first
+    await wipe(db);
+    const done = {};
+    try {
+      for (const t of ORDER) if (Array.isArray(b.tables?.[t]) && b.tables[t].length) done[t] = await importRows(db, t, b.tables[t]);
+    } catch (e) {
+      return json({ error: String(e.message || e), done }, 500);
+    }
+    return json({ ok: true, done });
   }
   if (!Array.isArray(b.rows)) return json({ error: 'rows missing' }, 400);
   try {

@@ -3,7 +3,8 @@
 A personal companion app — tasks, goals, prayer, fitness, sleep, books, comics, learning, notes, mood, quotes, hobbies, MTG decks, a watchlist, people to keep in touch with, client work and finance in one place — with a light XP-and-levels layer on top. Each person picks the sections they use in Settings. Pure black, white accents.
 
 - **Static site**: plain HTML/CSS/JS modules, no build step.
-- **Data**: Supabase (Postgres + Auth). Every table is locked to its owner with row-level security.
+- **Data**: Cloudflare D1 (SQLite) behind a small API in `functions/` (Cloudflare Pages Functions), photos in Cloudflare R2.
+  Every row is checked against its owner by the API; shared projects follow the member / editor / owner rules in `functions/_lib/projects.js`.
 - **Hosting**: Cloudflare Pages.
 
 ## Deploy on Cloudflare Pages
@@ -13,19 +14,46 @@ A personal companion app — tasks, goals, prayer, fitness, sleep, books, comics
 3. Build settings: **Framework preset: None**, **Build command: _(empty)_**, **Build output directory: `/`**.
 4. Deploy. You'll get a `*.pages.dev` URL (now lifequestapp.pages.dev).
 
-## After the first deploy (Supabase)
+## Cloudflare set-up (once)
 
-1. **Authentication → URL Configuration**: set **Site URL** to your `*.pages.dev` URL (now lifequestapp.pages.dev) (so confirmation emails link back to the app).
-2. Open the app, **Create account**, confirm the email, sign in.
-3. **Authentication → Sign In / Providers**: turn **off** "Allow new users to sign up" — it's a one-person app, so nobody else should be able to register.
+In the Pages project (**lifequestapp**) → **Settings**:
+
+- **Bindings** (Production and Preview): D1 database `DB` → `life-quest`; R2 bucket `PHOTOS` → `life-quest-photos`.
+- **Variables and Secrets** (Production): `RESEND_API_KEY` (emails), `MAIL_FROM` (e.g. `Life Quest <hello@mail.yourdomain.com>`),
+  `TURNSTILE_SECRET` (bot check on sign-in / sign-up).
+
+The API creates and updates the database tables itself on its first request after a change (`functions/_middleware.js`),
+so there is nothing to run by hand.
+
+## Accounts
+
+Email + password. New accounts get a confirmation email (Resend); "Forgot password?" emails a reset link.
+Sessions are an HttpOnly cookie that lasts 90 days. Passwords are stored as PBKDF2 hashes (accounts carried over from
+Supabase keep working: their bcrypt hash is upgraded on the next sign-in).
 
 ## Configuration
 
-`js/config.js` holds the Supabase URL and publishable key, plus an optional TMDB key (Watchlist search, posters and where to watch). Both are designed to be public; row-level security protects the data. Blank them out to run in offline mode (data stays in that browser).
+`js/config.js` holds an optional TMDB key (Watchlist search, posters and where to watch), the Last.fm key and the
+Turnstile site key. All are designed to be public. Set `OFFLINE_ONLY = true` to run in offline mode (data stays in that browser).
 
 ## Database
 
-`supabase/schema.sql` is the full schema (already applied to the live project).
+`functions/_lib/schema.js` describes every table once: columns, defaults and validation rules.
+`npm run schema` writes `schema.sql` and `functions/_lib/schema-sql.js` from it.
+
+## Testing locally
+
+```sh
+npm install
+npx wrangler pages dev . --d1 DB --r2 PHOTOS --binding DEV_MAIL=1
+npm test            # in another terminal: end-to-end API tests (accounts, private data, projects, couple space, photos)
+```
+
+`DEV_MAIL=1` hands email links back in the response instead of sending them; never set it in production.
+
+## Backups
+
+Nightly, encrypted, in the private repo bizarriahuz/life-quest-backups (it reads `/api/backup` with its own key).
 
 ## XP rules
 
@@ -71,7 +99,8 @@ index.html            app shell
 about.html            public showcase page (/about), with img/showcase/ and og.png for link previews
 css/style.css         all styling
 js/app.js             routing, sign-in, level-ups
-js/store.js           Supabase + offline data stores (same interface)
+js/store.js           server (/api) + offline data stores (same interface)
+functions/            the API: accounts, data, photos, backup (Cloudflare Pages Functions)
 js/game.js            XP rules and level maths
 js/changelog.js       What's new entries
 js/prayertimes.js     MUIS prayer times (api.prayertimes.sg)
