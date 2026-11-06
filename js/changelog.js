@@ -1,6 +1,15 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.48', date: '2026-11-07', title: 'Feels more like an app',
+    items: [
+      'Buttons give a small press when you tap them.',
+      'On phones: no more grey flash when tapping, no buttons stuck looking highlighted after a tap, and no accidental zoom from double-tapping.',
+      'Screens fit properly when the browser bar shows or hides, and the keyboard no longer covers what you are typing.',
+      'Animations are quicker and smoother. If your device is set to reduce motion, things now fade instead of move.',
+    ],
+  },
+  {
     version: '1.47', date: '2026-11-07', title: 'Football',
     items: [
       'New Football section: results, fixtures and league tables for the Premier League, LaLiga, Bundesliga, Serie A, Ligue 1 and the Singapore Premier League.',
