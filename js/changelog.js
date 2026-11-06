@@ -1,6 +1,13 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.49', date: '2026-11-07', title: 'Dice in MTG',
+    items: [
+      'New dice roller on the MTG page: tap D2, D4, D6, D8, D10, D12, D20 or D100.',
+      'Or type any roll, like 3d6 or 2d8+1. Your last five rolls stay on screen. Thanks Beast for the idea.',
+    ],
+  },
+  {
     version: '1.48', date: '2026-11-07', title: 'Feels more like an app',
     items: [
       'Buttons give a small press when you tap them.',

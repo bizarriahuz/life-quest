@@ -19,6 +19,20 @@ const shuffle = (a) => { for (let i = a.length - 1; i > 0; i -= 1) { const j = c
 const upParse = (t) => parseDecklist(String(t || '').split('\n').map((l) => (!l.trim() || /^\s*\d/.test(l) ? l : `1 ${l.trim()}`)).join('\n'), '');
 const pct = (w, n) => (n ? `${Math.round((w / n) * 100)}%` : '–');
 const oppNames = (s) => String(s || '').split(',').map((x) => x.replace(/\(.*\)/, '').trim()).filter(Boolean);
+const rnd = (n) => 1 + (crypto.getRandomValues(new Uint32Array(1))[0] % n);
+const DICE = [2, 4, 6, 8, 10, 12, 20, 100];
+let rolls = []; // dice rolls this session, newest first
+// "d20", "3d6", "2d8+1": 1–20 dice of 2–100 sides, with an optional + or − modifier.
+function rollDice(text) {
+  const m = String(text).replace(/\s+/g, '').match(/^(\d*)d(\d+)([+-]\d+)?$/i);
+  if (!m) return null;
+  const count = Number(m[1] || 1); const sides = Number(m[2]); const mod = Number(m[3] || 0);
+  if (count < 1 || count > 20 || sides < 2 || sides > 100) return null;
+  const each = Array.from({ length: count }, () => rnd(sides));
+  const total = each.reduce((a, b) => a + b, 0) + mod;
+  const label = `${count > 1 ? count : ''}d${sides}${mod ? (mod > 0 ? `+${mod}` : `−${-mod}`) : ''}`;
+  return `${label}: ${total}${count > 1 || mod ? ` (${each.join(' + ')}${mod ? ` ${mod > 0 ? '+' : '−'} ${Math.abs(mod)}` : ''})` : ''}`;
+}
 const usd = (n) => (n == null ? '–' : `$${n < 10 ? n.toFixed(2) : Math.round(n).toLocaleString()}`);
 
 export default {
@@ -88,6 +102,16 @@ export default {
     mount(el, html`
       <header class="page-head"><div><h1>MTG</h1><p>${live.length} deck${live.length === 1 ? '' : 's'}${all.n ? ` · ${all.n} games · ${all.pct}% wins` : ''}</p></div>
         <a class="btn ${hasLiveGame() ? 'primary' : ''} sm" href="#/mtg/life">${raw(icon('heart', 16))}${hasLiveGame() ? 'Back to the game' : 'Life counter'}</a></header>
+
+      <section class="card">
+        <div class="card-head"><h2>Dice</h2></div>
+        <div class="dice-row">${DICE.map((n) => html`<button class="btn sm" data-act="die" data-n="${n}">D${n}</button>`)}</div>
+        <form data-form="dice" class="row" style="gap:8px;margin-top:10px">
+          <input name="dice" placeholder="Or type one, like 3d6 or 2d8+1" aria-label="Dice to roll" autocomplete="off" style="flex:1;min-width:0">
+          <button class="btn primary">Roll</button>
+        </form>
+        <div class="dice-out" aria-live="polite">${rolls.length ? html`<p class="dice-last">${rolls[0]}</p>${rolls.slice(1).map((r) => html`<p class="small muted">${r}</p>`)}` : html`<p class="small muted">Pick a die to roll it.</p>`}</div>
+      </section>
 
       ${live.length ? html`
         <section class="card">
@@ -283,7 +307,15 @@ export default {
       } catch { return { commander: pick }; }
     };
 
+    const showRoll = (r) => {
+      rolls = [r, ...rolls].slice(0, 5);
+      const out = el.querySelector('.dice-out');
+      out.innerHTML = '';
+      rolls.forEach((t, i) => { const p = document.createElement('p'); p.className = i ? 'small muted' : 'dice-last pop'; p.textContent = t; out.append(p); });
+    };
     wire(el, {
+      die: (b) => showRoll(rollDice(`d${b.dataset.n}`)),
+      dice: (v) => { const r = rollDice(v.dice || ''); if (!r) { ctx.say('Try something like d20, 3d6 or 2d8+1 (up to 20 dice, D2 to D100)'); return; } showRoll(r); },
       open: (b) => {
         openId = openId === b.dataset.id ? null : b.dataset.id;
         editing = false;
