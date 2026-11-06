@@ -1,6 +1,14 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.46', date: '2026-11-07', title: 'Watching',
+    items: [
+      'Watchlist has a Watching tab for what you’re in the middle of, next to Want to watch and Watched.',
+      'Adding a title that’s already on your list now moves it or updates the episode you’re up to, instead of saying it’s already there. Thanks, Beast!',
+      'Finished something and starting it again? Tap ⋯ → Watching again.',
+    ],
+  },
+  {
     version: '1.45', date: '2026-10-22', title: 'MTG: life counter and more',
     items: [
       'Life counter for 2 to 6 players, with commander damage, poison, a roll for who goes first and a round count. When the game ends, tap the winner and it’s logged to your deck.',

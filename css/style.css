@@ -1276,3 +1276,10 @@ body.lc-on .lc-wrap { position: fixed; inset: 0; z-index: 70; background: #000; 
 .lc-names { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
 .lc-names li { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; align-items: center; }
 .lc-firstpill { grid-column: 1 / -1; justify-self: start; }
+.wl-upto { gap: 6px; align-items: center; }
+.ep-mini { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: var(--muted); }
+.ep-mini input { width: 64px; }
+.wl-flash { animation: wl-flash 1.8s ease; border-radius: 12px; }
+@keyframes wl-flash { 0%, 40% { background: color-mix(in srgb, var(--accent) 22%, transparent); } 100% { background: transparent; } }
+.seg.wl-tabs { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; }
+.seg.wl-tabs span { padding-left: 6px; padding-right: 6px; text-align: center; white-space: nowrap; font-size: 13.5px; }

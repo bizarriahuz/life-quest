@@ -8,7 +8,8 @@ const EPISODIC = new Set(['series', 'anime', 'documentary']);
 export const epLabel = (w) => (w.episode ? `S${w.season || 1} E${w.episode}` : '');
 let filter = 'all';
 let picked = null;       // TMDB details chosen in the add form
-let tab = 'want';        // 'want' | 'watched'
+let tab = null;          // 'watching' | 'want' | 'watched' (null: pick on first visit)
+let flash = null;        // id of a title to highlight after the page draws
 
 const stars = (w) => html`<span class="stars" role="group" aria-label="Rating">${[1, 2, 3, 4, 5].map((n) => html`
   <button class="star ${w.rating >= n ? 'on' : ''}" data-act="rate" data-id="${w.id}" data-n="${n}" aria-label="${n} star${n > 1 ? 's' : ''}">★</button>`)}</span>`;
@@ -30,12 +31,14 @@ export default {
     const kinds = [...new Set(all.map((w) => w.kind))];
     if (filter !== 'all' && !kinds.includes(filter)) filter = 'all';
     const shown = all.filter((w) => filter === 'all' || w.kind === filter);
-    const want = shown.filter((w) => w.status !== 'done')
-      .sort((a, b) => (a.status === 'watching' ? 0 : 1) - (b.status === 'watching' ? 0 : 1) || a.created_at.localeCompare(b.created_at));
+    const watching = shown.filter((w) => w.status === 'watching').sort((a, b) => (b.updated_at || b.created_at).localeCompare(a.updated_at || a.created_at));
+    const want = shown.filter((w) => w.status === 'queued').sort((a, b) => a.created_at.localeCompare(b.created_at));
     const watched = shown.filter((w) => w.status === 'done')
       .sort((a, b) => (b.done_on || '').localeCompare(a.done_on || '') || b.created_at.localeCompare(a.created_at));
-    const wantAll = all.filter((w) => w.status !== 'done').length;
-    const watchedAll = all.length - wantAll;
+    const watchingAll = all.filter((w) => w.status === 'watching').length;
+    const wantAll = all.filter((w) => w.status === 'queued').length;
+    const watchedAll = all.filter((w) => w.status === 'done').length;
+    if (!tab) tab = watchingAll ? 'watching' : 'want';
     const yearDone = all.filter((w) => w.status === 'done' && (w.done_on || '').startsWith(t.slice(0, 4))).length;
     const months = [];
     for (const w of watched) {
@@ -47,10 +50,10 @@ export default {
       ${w.imdb_id ? html`<a class="text-btn" href="https://www.imdb.com/title/${w.imdb_id}/" target="_blank" rel="noopener noreferrer">Open on IMDb</a>` : ''}
       ${w.tmdb_id ? html`<a class="text-btn" href="https://www.themoviedb.org/${w.tmdb_type}/${w.tmdb_id}" target="_blank" rel="noopener noreferrer">Open on TMDB</a>` : ''}
       ${tmdbEnabled && !w.tmdb_id ? html`<button class="text-btn" data-act="match" data-id="${w.id}">Find poster &amp; details</button>` : ''}`;
-    const title = (w) => html`<p class="title"><span class="pill">${KIND[w.kind]}</span>${w.status === 'watching' ? html`<span class="pill solid">Watching</span>` : ''}${w.title}${w.year ? html` <span class="muted">${w.year}</span>` : ''}</p>`;
+    const title = (w) => html`<p class="title"><span class="pill">${KIND[w.kind]}</span>${w.status === 'watching' && tab !== 'watching' ? html`<span class="pill solid">Watching</span>` : ''}${w.title}${w.year ? html` <span class="muted">${w.year}</span>` : ''}</p>`;
 
     const wantRow = (w) => html`
-      <li class="item wl-item">
+      <li class="item wl-item ${flash === w.id ? 'wl-flash' : ''}" data-wid="${w.id}">
         ${thumb(w.poster_url)}
         <div class="body">${title(w)}
           ${w.details ? html`<p class="sub">${w.details}</p>` : ''}
@@ -78,7 +81,7 @@ export default {
       </li>`;
 
     const watchedRow = (w) => html`
-      <li class="item wl-item">
+      <li class="item wl-item ${flash === w.id ? 'wl-flash' : ''}" data-wid="${w.id}">
         ${thumb(w.poster_url)}
         <div class="body">${title(w)}
           ${epLabel(w) ? html`<p class="sub">Up to ${epLabel(w)}</p>` : ''}
@@ -89,6 +92,7 @@ export default {
           ${stars(w)}
           <details class="more"><summary class="icon-btn" aria-label="More for ${w.title}">⋯</summary>
             <div class="more-menu">
+              <button class="text-btn" data-act="rewatch" data-id="${w.id}">Watching again</button>
               <button class="text-btn" data-act="requeue" data-id="${w.id}">Move to Want to watch</button>
               ${links(w)}
               <button class="text-btn" data-act="delete" data-id="${w.id}">Delete</button>
@@ -97,9 +101,10 @@ export default {
       </li>`;
 
     mount(el, html`
-      <header class="page-head"><div><h1>Watchlist</h1><p>${wantAll} to watch · ${yearDone} watched this year</p></div></header>
+      <header class="page-head"><div><h1>Watchlist</h1><p>${watchingAll ? `${watchingAll} watching · ` : ''}${wantAll} to watch · ${yearDone} watched this year</p></div></header>
 
       <div class="seg wl-tabs" role="radiogroup" aria-label="List">
+        <label><input type="radio" name="wtab" value="watching" data-change="tab" ${tab === 'watching' ? 'checked' : ''}><span>Watching <b>${watchingAll}</b></span></label>
         <label><input type="radio" name="wtab" value="want" data-change="tab" ${tab === 'want' ? 'checked' : ''}><span>Want to watch <b>${wantAll}</b></span></label>
         <label><input type="radio" name="wtab" value="watched" data-change="tab" ${tab === 'watched' ? 'checked' : ''}><span>Watched <b>${watchedAll}</b></span></label>
       </div>
@@ -118,9 +123,13 @@ export default {
           </div>
           <div class="row wrap">
             <div class="seg" role="radiogroup" aria-label="Add to">
+              <label><input type="radio" name="list" value="watching" data-change="listmode" ${tab === 'watching' ? 'checked' : ''}><span>Watching</span></label>
               <label><input type="radio" name="list" value="want" data-change="listmode" ${tab === 'want' ? 'checked' : ''}><span>Want to watch</span></label>
               <label><input type="radio" name="list" value="watched" data-change="listmode" ${tab === 'watched' ? 'checked' : ''}><span>Already watched</span></label>
             </div>
+            <span class="row wl-upto" ${tab === 'watching' ? '' : 'hidden'}><span class="small muted">up to</span>
+              <label class="ep-mini">S<input type="number" name="season" min="1" max="200" inputmode="numeric" placeholder="1" aria-label="Season"></label>
+              <label class="ep-mini">E<input type="number" name="episode" min="0" max="5000" inputmode="numeric" placeholder="0" aria-label="Episode"></label></span>
             <label class="row wl-when" ${tab === 'watched' ? '' : 'hidden'}><span class="small muted">on</span><input type="date" name="done_on" value="${t}" max="${t}" aria-label="Date watched" style="width:auto"></label>
           </div>
           <input name="note" maxlength="200" placeholder="Note (optional), e.g. who recommended it" aria-label="Note">
@@ -134,7 +143,10 @@ export default {
         </div>` : ''}
 
 
-      ${tab === 'want' ? html`
+      ${tab === 'watching' ? html`
+        <section class="card">
+          ${watching.length ? html`<ul class="list">${watching.map(wantRow)}</ul>` : empty('Nothing on the go. Add what you’re watching above, or tap + on an episode in Want to watch.')}
+        </section>` : tab === 'want' ? html`
         <section class="card">
           ${want.length ? html`<ul class="list">${want.map(wantRow)}</ul>` : empty(filter === 'all' ? 'Nothing on your list. Search above to add something.' : 'Nothing of this type on your list.')}
         </section>` : html`
@@ -147,6 +159,10 @@ export default {
       ${tmdbEnabled ? html`<p class="small faint tmdb-credit">Film and TV data from <a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer"><u>TMDB</u></a>, where to watch from JustWatch. This product uses the TMDB API but is not endorsed or certified by TMDB.</p>` : ''}
     `);
     el.querySelectorAll('img.cover').forEach((img) => img.addEventListener('error', () => img.remove(), { once: true }));
+    if (flash) {
+      const id = flash; flash = null;
+      requestAnimationFrame(() => el.querySelector(`[data-wid="${id}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' }));
+    }
 
     // ---- where to watch (Singapore), filled in after the page shows ----
     if (tmdbEnabled) {
@@ -217,18 +233,32 @@ export default {
       add: async (v, f) => {
         const kind = KIND[v.kind] ? v.kind : 'film';
         const meta = picked && v.title === picked.title ? picked : null;
-        if (meta?.tmdb_id && all.some((w) => w.tmdb_id === meta.tmdb_id && w.tmdb_type === meta.tmdb_type)) {
-          ctx.say(`${meta.title} is already on your list`); return;
+        const list = ['watching', 'watched'].includes(v.list) ? v.list : 'want';
+        const status = { watching: 'watching', want: 'queued', watched: 'done' }[list];
+        const season = Math.max(1, Math.min(200, parseInt(v.season, 10) || 1));
+        const episode = Math.max(0, Math.min(5000, parseInt(v.episode, 10) || 0)) || null;
+        const ep = list === 'watching' && EPISODIC.has(kind) && (v.season || v.episode) ? { season, episode } : {};
+        const day = list === 'watched' ? (v.done_on && v.done_on <= t ? v.done_on : t) : null;
+        const done = () => { picked = null; f.reset(); pickedBox.innerHTML = ''; tab = list; };
+        // Already on the list? Move it (and update the episode) instead of adding a second copy.
+        const norm = (x) => String(x || '').trim().toLowerCase();
+        const dup = all.find((w) => (meta?.tmdb_id && w.tmdb_id === meta.tmdb_id && w.tmdb_type === meta.tmdb_type) || norm(w.title) === norm(v.title));
+        if (dup) {
+          const where = { watching: 'Watching', queued: 'Want to watch', done: 'Watched' };
+          if (dup.status === status && !ep.season) {
+            ctx.say(`${dup.title} is already in ${where[status]}`);
+          } else {
+            await ctx.store.update('watchlist', dup.id, { status, ...ep, ...(status === 'done' ? { done_on: day } : { done_on: null }) });
+            if (status === 'done') await ctx.award('CHA', XP.watched, 'watched', dup.id, `Watched ${dup.title}`);
+            ctx.say(dup.status === status ? `${dup.title}: up to S${ep.season} E${ep.episode || 0}` : `${dup.title} moved to ${where[status]}${ep.episode ? `, up to S${ep.season} E${ep.episode}` : ''}`);
+          }
+          done(); flash = dup.id; ctx.rerender();
+          return;
         }
-        const seen = v.list === 'watched';
-        const day = seen ? (v.done_on && v.done_on <= t ? v.done_on : t) : null;
-        const row = await ctx.store.insert('watchlist', { ...(meta || {}), title: v.title, kind, note: v.note || null,
-          status: seen ? 'done' : 'queued', done_on: day });
-        picked = null;
-        f.reset(); pickedBox.innerHTML = '';
-        tab = seen ? 'watched' : 'want';
-        if (seen) await ctx.award('CHA', XP.watched, 'watched', row.id, `Watched ${v.title}`);
-        else ctx.say(`${v.title} added to Want to watch`);
+        const row = await ctx.store.insert('watchlist', { ...(meta || {}), title: v.title, kind, note: v.note || null, status, done_on: day, ...ep });
+        done(); flash = row.id;
+        if (list === 'watched') await ctx.award('CHA', XP.watched, 'watched', row.id, `Watched ${v.title}`);
+        else ctx.say(`${v.title} added to ${list === 'watching' ? 'Watching' : 'Want to watch'}`);
         ctx.rerender();
       },
       match: async (b) => {
@@ -243,8 +273,8 @@ export default {
         ctx.rerender();
       },
       filter: (r) => { filter = r.value; ctx.rerender(); },
-      tab: (r) => { tab = r.value === 'watched' ? 'watched' : 'want'; ctx.rerender(); },
-      listmode: (r) => { el.querySelector('.wl-when').hidden = r.value !== 'watched'; },
+      tab: (r) => { tab = ['watching', 'watched'].includes(r.value) ? r.value : 'want'; ctx.rerender(); },
+      listmode: (r) => { el.querySelector('.wl-when').hidden = r.value !== 'watched'; el.querySelector('.wl-upto').hidden = r.value !== 'watching'; },
       setdate: async (inp) => {
         const d = inp.value;
         if (!d || d > t) { ctx.say('Pick a date up to today'); inp.value = item(inp.dataset.id).done_on || t; return; }
@@ -255,9 +285,9 @@ export default {
       epup: async (b) => {
         const w = item(b.dataset.id);
         const patch = { episode: Math.min(5000, (w.episode || 0) + 1), season: w.season || 1 };
-        if (w.status === 'queued') patch.status = 'watching';            // ticking an episode means you've started
+        if (w.status === 'queued') { patch.status = 'watching'; tab = 'watching'; flash = w.id; }   // ticking an episode means you've started
         await ctx.store.update('watchlist', w.id, patch);
-        ctx.say(`${w.title}: up to S${patch.season} E${patch.episode}`);
+        ctx.say(`${w.title}: up to S${patch.season} E${patch.episode}${patch.status ? ' · moved to Watching' : ''}`);
         ctx.rerender();
       },
       epdown: async (b) => {
@@ -270,6 +300,7 @@ export default {
         const s = Math.max(1, Math.min(200, Math.round(Number(inp.value)) || 1));
         if (s === (w.season || 1)) { inp.value = s; return; }
         // A new season starts again from episode 0.
+        if (w.status === 'queued') { tab = 'watching'; flash = w.id; }
         await ctx.store.update('watchlist', w.id, { season: s, episode: null, ...(w.status === 'queued' ? { status: 'watching' } : {}) });
         ctx.say(`${w.title}: season ${s}`);
         ctx.rerender();
@@ -279,6 +310,13 @@ export default {
         const w = item(b.dataset.id);
         await ctx.store.update('watchlist', w.id, { status: 'done', done_on: t });
         await ctx.award('CHA', XP.watched, 'watched', w.id, `Watched ${w.title}`);
+        ctx.rerender();
+      },
+      rewatch: async (b) => {
+        const w = item(b.dataset.id);
+        await ctx.store.update('watchlist', w.id, { status: 'watching', done_on: null });
+        tab = 'watching'; flash = w.id;
+        ctx.say(`${w.title} is back in Watching`);
         ctx.rerender();
       },
       requeue: async (b) => {
