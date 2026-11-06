@@ -1,6 +1,13 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.47', date: '2026-11-07', title: 'Football',
+    items: [
+      'New Football section: results, fixtures and league tables for the Premier League, LaLiga, Bundesliga, Serie A, Ligue 1 and the Singapore Premier League.',
+      'Live scores update by themselves, and kick-off times show in your own time zone.',
+    ],
+  },
+  {
     version: '1.46', date: '2026-11-07', title: 'Watching',
     items: [
       'Watchlist has a Watching tab for what you’re in the middle of, next to Want to watch and Watched.',

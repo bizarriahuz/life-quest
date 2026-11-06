@@ -39,6 +39,7 @@ const P = {
   logout: '<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 17l-5-5 5-5M5 12h11"/>',
   comment: '<path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-8l-5 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/>',
   send: '<path d="M4 12 20 4l-6 16-3-7z"/><path d="m11 13 9-9"/>',
+  football: '<circle cx="12" cy="12" r="9"/><path d="m12 7.5 3.8 2.8-1.5 4.4H9.7l-1.5-4.4z"/><path d="M12 3v4.5M15.8 10.3l4.6-1.4M14.3 14.7l2.8 3.9M9.7 14.7l-2.8 3.9M8.2 10.3 3.6 8.9"/>',
   games: '<rect x="2.5" y="7" width="19" height="11" rx="5.5"/><path d="M7 10.5v4M5 12.5h4"/><circle cx="15.5" cy="11.5" r=".9"/><circle cx="17.8" cy="13.8" r=".9"/>',
   chess: '<path d="M8 21h9"/><path d="M9 21v-2.5c0-1.4.5-2.6 1.4-3.8L8 12.5c-.8-.8-.6-2 .3-2.6L12 7.5V5l1.5-1.5L15 5c2.4 1.5 3.5 4 3.5 7.2V21"/><circle cx="13.6" cy="8.6" r=".6"/>',
   grid: '<rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/>',

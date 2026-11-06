@@ -1386,3 +1386,9 @@ alter table public.mtg_matches add column if not exists opponents text check (op
 alter table public.mtg_matches add column if not exists went_first boolean;
 alter table public.mtg_matches add column if not exists turns smallint check (turns is null or turns between 1 and 99);
 alter table public.mtg_decks add column if not exists upgrades text check (upgrades is null or char_length(upgrades) <= 5000);
+
+-- ---------- 1.47: Football section ----------
+alter table public.profiles drop constraint if exists profiles_sections_check;
+alter table public.profiles add constraint profiles_sections_check check (sections is null or sections <@ array['tasks','goals','projects','calendar','clients','prayer','fitness','sleep','books','comics','learning','notes','mood','quotes','hobbies','games','chess','mtg','watchlist','music','people','finance','couple','football']);
+alter table public.profiles drop constraint if exists profiles_seen_intros_check;
+alter table public.profiles add constraint profiles_seen_intros_check check (seen_intros is null or (cardinality(seen_intros) <= 100 and seen_intros <@ array['tasks','goals','projects','calendar','clients','prayer','fitness','sleep','books','comics','learning','notes','mood','quotes','hobbies','games','chess','mtg','watchlist','music','people','finance','couple','football']));
