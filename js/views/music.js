@@ -1,4 +1,4 @@
-import { html, raw, wire, mount, today, fmtDate, empty } from '../ui.js';
+import { html, raw, wire, mount, today, fmtDate, empty, skeleton } from '../ui.js';
 import { icon } from '../icons.js';
 import { XP } from '../game.js';
 import { searchAlbums, lastfmEnabled, listening, cachedListening, checkUser } from '../music.js';
@@ -73,7 +73,7 @@ export default {
 
       ${lastfmEnabled ? html`
         <section class="card lfm" id="lfm">
-          ${lfmUser ? html`<div class="card-head"><h2>Listening</h2><span class="meta">Last.fm · ${lfmUser}</span></div><p class="small muted">Loading your plays…</p>` : html`
+          ${lfmUser ? html`<div class="card-head"><h2>Listening</h2><span class="meta">Last.fm · ${lfmUser}</span></div>${skeleton('Loading your plays', [65, 50, 58], true)}` : html`
             <div class="card-head"><h2>Connect Last.fm</h2></div>
             <p class="small muted" style="margin-bottom:10px">See what you’ve been playing, your top albums this week and top artists this month. Connect Spotify or Apple Music to Last.fm so it records your plays.</p>
             <form data-form="lfmuser" class="row">

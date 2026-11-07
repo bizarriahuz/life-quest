@@ -1234,6 +1234,16 @@ a.item.set-row { color: inherit; text-decoration: none; display: flex; align-ite
 
 /* ---------- MTG extras ---------- */
 .mtg-more summary { cursor: pointer; font-size: 13.5px; color: var(--muted); }
+/* Loading skeletons. They fade in after a short wait, so a fast load never flashes them. */
+.skel { display: grid; gap: 14px; padding: 4px 0; opacity: 0; animation: skel-in .2s var(--ease) .3s forwards; }
+.skel-row { display: flex; align-items: center; gap: 12px; }
+.skel-bar, .skel-dot, .skel-board { background: linear-gradient(90deg, var(--line) 30%, var(--line-2) 50%, var(--line) 70%) 0 0 / 300% 100%; animation: skel-shine 1.4s linear infinite; }
+.skel-bar { height: 12px; border-radius: 6px; }
+.skel-dot { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; }
+.skel-board { width: 100%; max-width: 420px; aspect-ratio: 1; border-radius: 12px; margin: 0 auto; }
+@keyframes skel-in { to { opacity: 1; } }
+@keyframes skel-shine { from { background-position: 100% 0; } to { background-position: 0 0; } }
+@media (prefers-reduced-motion: reduce) { .skel { opacity: 1; } .skel-bar, .skel-dot, .skel-board { animation: none !important; } }
 .dice-row { display: flex; flex-wrap: wrap; gap: 8px; }
 .dice-out { margin-top: 12px; display: grid; gap: 2px; }
 .dice-out p { margin: 0; }

@@ -1,4 +1,4 @@
-import { html, raw, wire, mount, today, relDate, empty } from '../ui.js';
+import { html, raw, wire, mount, today, relDate, empty, skeleton } from '../ui.js';
 import { icon } from '../icons.js';
 import { XP } from '../game.js';
 import { parseDecklist, lookupCard, analyse, cardKey, bracketOf } from '../mtg.js';
@@ -201,7 +201,7 @@ export default {
               </div>` : ''}
             ${an ? html`<div class="deck-value"><span><b>US${usd(an.totals.commander + an.totals.main)}</b> deck value</span>
               <span class="small faint">${an.totals.side ? `+ US${usd(an.totals.side)} sideboard · ` : ''}TCGplayer prices via Scryfall, updated daily${an.unpriced ? ` · ${an.unpriced} without a price` : ''}</span></div>`
-              : tried.has(deck.id) ? '' : html`<p class="small faint deck-value">Getting prices…</p>`}
+              : tried.has(deck.id) ? '' : skeleton('Getting prices', [40])}
             <details class="cardlist-box"><summary>Card list${an ? ', priciest first' : ''}</summary>
               ${['commander', 'main', 'side', 'maybe'].filter((s) => parsed.cards.some((c) => c.section === s)).map((s) => {
                 const list = parsed.cards.filter((c) => c.section === s);
@@ -243,7 +243,7 @@ export default {
                 <textarea name="upgrades" rows="4" maxlength="5000" placeholder="Cards you want for this deck, one per line&#10;1 Smothering Tithe&#10;1 Cyclonic Rift" aria-label="Upgrades">${deck.upgrades || ''}</textarea>
                 <div class="row end">${upEditing ? html`<button type="button" class="btn sm" data-act="upcancel">Cancel</button>` : ''}<button class="btn sm primary">Save list</button></div></form>`
               : (() => { const up = upParse(deck.upgrades); const ua = upAnalysis.get(deck.id); return html`
-                ${ua ? html`<p><b>US${usd(up.cards.reduce((n, c) => n + (ua.prices[cardKey(c)] || 0) * c.qty, 0))}</b> <span class="small muted">to buy all ${up.cards.length}</span></p>` : html`<p class="small faint">Getting prices…</p>`}
+                ${ua ? html`<p><b>US${usd(up.cards.reduce((n, c) => n + (ua.prices[cardKey(c)] || 0) * c.qty, 0))}</b> <span class="small muted">to buy all ${up.cards.length}</span></p>` : skeleton('Getting prices', [40])}
                 <ul class="cardlist priced">${up.cards.map((c) => html`<li><span class="num">${c.qty}</span><span class="cl-name">${c.name}${ua?.info[cardKey(c)]?.gc ? html` <span class="cl-foil">Game Changer</span>` : ''}</span>${ua ? html`<span class="cl-price">${usd(ua.prices[cardKey(c)] == null ? null : ua.prices[cardKey(c)] * c.qty)}</span>` : ''}</li>`)}</ul>`; })()}
           </div>
 

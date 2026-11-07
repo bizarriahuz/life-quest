@@ -1,4 +1,4 @@
-import { html, raw, wire, mount, today, fmtDate, empty } from '../ui.js';
+import { html, raw, wire, mount, today, fmtDate, empty, skeleton } from '../ui.js';
 import { icon } from '../icons.js';
 import { XP } from '../game.js';
 import { tmdbEnabled, search, findByImdb, imdbIdFrom, details, providers } from '../tmdb.js';
@@ -187,7 +187,7 @@ export default {
     const choose = async (r) => {
       close();
       input.value = r.title;
-      pickedBox.innerHTML = html`<p class="small muted">Getting details…</p>`.s;
+      pickedBox.innerHTML = skeleton('Getting details', [60, 85, 75]).s;
       try { picked = await details(r.type, r.id); } catch (e) { picked = null; pickedBox.innerHTML = ''; ctx.say(e.message); return; }
       input.value = picked.title;
       pickedBox.innerHTML = pickCard(picked).s;

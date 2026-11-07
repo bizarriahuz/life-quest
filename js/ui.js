@@ -84,6 +84,9 @@ export function greeting() {
 export const bar = (pct, cls = '') =>
   html`<div class="bar ${cls}" role="progressbar" aria-valuenow="${Math.round(pct)}" aria-valuemin="0" aria-valuemax="100"><i style="width:${Math.max(0, Math.min(100, pct))}%"></i></div>`;
 
+// Loading placeholder: grey shapes where content will land. `rows` is a list of bar widths (%),
+// `round` adds a circle in front of each (crests, covers). Read out as `label`.
+export const skeleton = (label, rows = [80, 60, 70], round = false) => html`<div class="skel" role="status" aria-label="${label}">${rows.map((w) => html`<div class="skel-row">${round ? html`<span class="skel-dot"></span>` : ''}<span class="skel-bar" style="width:${w}%"></span></div>`)}</div>`;
 export const empty = (msg) => html`<p class="empty">${msg}</p>`;
 
 // ---------- toast ----------

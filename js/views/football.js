@@ -1,6 +1,6 @@
 // Football: results, fixtures and tables for the top five European leagues and the Singapore Premier League.
 // Scores come through /api/football (a Cloudflare function that relays ESPN's public feed and keeps a short copy).
-import { html, raw, wire, mount, today, addDays, fmtDate, empty } from '../ui.js';
+import { html, raw, wire, mount, today, addDays, fmtDate, empty, skeleton } from '../ui.js';
 import { icon } from '../icons.js';
 
 export const LEAGUES = [
@@ -52,7 +52,7 @@ export default {
       <div class="seg fb-views" role="radiogroup" aria-label="Show">
         ${[['results', 'Results'], ['fixtures', 'Fixtures'], ['table', 'Table']].map(([k, label]) => html`<label><input type="radio" name="fbv" value="${k}" data-change="view" ${view === k ? 'checked' : ''}><span>${label}</span></label>`)}
       </div>
-      <div id="fb-body"><section class="card"><p class="muted small">Loading…</p></section></div>
+      <div id="fb-body"><section class="card">${skeleton('Loading matches', [70, 55, 65, 50, 60, 45], true)}</section></div>
       <p class="small faint fb-credit">Scores and tables from ESPN. Times are shown in your phone’s time zone.</p>`);
 
     const body = el.querySelector('#fb-body');

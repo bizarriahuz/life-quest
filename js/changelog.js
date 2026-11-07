@@ -1,6 +1,13 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.50', date: '2026-11-07', title: 'Smoother loading',
+    items: [
+      'While football scores, MTG prices, your music plays, the chess puzzle or show details load, you now see the shape of what’s coming instead of “Loading…”.',
+      'Quick loads skip it entirely, so nothing flashes.',
+    ],
+  },
+  {
     version: '1.49', date: '2026-11-07', title: 'Dice in MTG',
     items: [
       'New dice roller on the MTG page: tap D2, D4, D6, D8, D10, D12, D20 or D100.',

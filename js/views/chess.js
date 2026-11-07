@@ -1,7 +1,7 @@
 // Chess: play Stockfish at five levels, solve the Lichess daily puzzle, replay past games.
 // The board (chessground), rules (chess.js) and engine (Stockfish) load only when this
 // section is opened, so nothing else in the app gets heavier.
-import { html, raw, wire, mount, today, addDays, fmtDate, relDate, empty } from '../ui.js';
+import { html, raw, wire, mount, today, addDays, fmtDate, relDate, empty, skeleton } from '../ui.js';
 import { icon } from '../icons.js';
 import { XP } from '../game.js';
 import { LEVELS, bestMove, startEngine, engineLoaded } from '../engine.js';
@@ -316,7 +316,7 @@ async function dailyPuzzle(day) {
 
 async function puzzlePane(el, ctx, rec, streak) {
   const t = today();
-  mount(el, html`<section class="card"><p class="muted">Loading today’s puzzle…</p></section>`);
+  mount(el, html`<section class="card"><div class="skel skel-board" role="status" aria-label="Loading today’s puzzle"></div></section>`);
   let data;
   try { data = await dailyPuzzle(t); } catch (err) { mount(el, html`<section class="card"><p class="muted">${err.message}</p></section>`); return; }
   if (!el.isConnected) return;
