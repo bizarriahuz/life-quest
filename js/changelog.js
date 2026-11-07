@@ -1,6 +1,14 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.51', date: '2026-11-08', title: '10 new themes',
+    items: [
+      'Four new dark themes: Oxide Burgundy, Midnight Olive, Obsidian Plum and Petroleum Teal.',
+      'Six new soft themes: Sea Salt, Soft Sage, Misty Lavender, Dusty Rose, Dusty Blush and Soft Butter.',
+      'Pick one in Settings → Theme.',
+    ],
+  },
+  {
     version: '1.50', date: '2026-11-07', title: 'Smoother loading',
     items: [
       'While football scores, MTG prices, your music plays, the chess puzzle or show details load, you now see the shape of what’s coming instead of “Loading…”.',

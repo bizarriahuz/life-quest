@@ -1392,3 +1392,9 @@ alter table public.profiles drop constraint if exists profiles_sections_check;
 alter table public.profiles add constraint profiles_sections_check check (sections is null or sections <@ array['tasks','goals','projects','calendar','clients','prayer','fitness','sleep','books','comics','learning','notes','mood','quotes','hobbies','games','chess','mtg','watchlist','music','people','finance','couple','football']);
 alter table public.profiles drop constraint if exists profiles_seen_intros_check;
 alter table public.profiles add constraint profiles_seen_intros_check check (seen_intros is null or (cardinality(seen_intros) <= 100 and seen_intros <@ array['tasks','goals','projects','calendar','clients','prayer','fitness','sleep','books','comics','learning','notes','mood','quotes','hobbies','games','chess','mtg','watchlist','music','people','finance','couple','football']));
+
+-- 2026-11-08 · 1.51 duo themes
+alter table public.profiles drop constraint if exists profiles_theme_check;
+alter table public.profiles add constraint profiles_theme_check check (theme in
+  ('midnight','ocean','forest','plum','dusk','paper','sand','blush','lavender','peach','mint','sky','butter','candy','sage',
+   'burgundy','olive','obsidian','petrol','coastal','ivory','mist','rose','cream','meadow'));
