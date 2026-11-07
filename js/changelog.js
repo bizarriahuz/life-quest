@@ -1,6 +1,12 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.52', date: '2026-11-08', title: 'New heading font',
+    items: [
+      'Headings now use Space Grotesk; everything else stays in Inter. The About page uses the same two fonts.',
+    ],
+  },
+  {
     version: '1.51', date: '2026-11-08', title: '10 new themes',
     items: [
       'Four new dark themes: Oxide Burgundy, Midnight Olive, Obsidian Plum and Petroleum Teal.',
