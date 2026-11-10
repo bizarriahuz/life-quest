@@ -2,16 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#000000">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#251626">
 <meta name="color-scheme" content="dark">
-<title>Life Quest · Your real life, levelled up</title>
-<meta name="description" content="Your habits, goals, fitness, sleep, reading, money, friends, games and hobbies in one calm app, in the colours you choose. Every win helps you level up. Free, no ads, works on any device.">
+<title>Life Quest: your real life, levelled up</title>
+<meta name="description" content="Habits, goals, fitness, sleep, reading, money, meals, friends, games and hobbies in one calm app, in the colours you choose. Every win helps you level up. Free, no ads, works on any device.">
 <link rel="canonical" href="https://lifequestapp.pages.dev/about">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Life Quest">
-<meta property="og:title" content="Life Quest · Your real life, levelled up">
-<meta property="og:description" content="Habits, goals, sleep, reading, money, people, games and hobbies in one app. Every win helps you level up. Free, no ads.">
+<meta property="og:title" content="Life Quest: your real life, levelled up">
+<meta property="og:description" content="Habits, goals, sleep, reading, money, meals, people, games and hobbies in one app. Every win helps you level up. Free, no ads.">
 <meta property="og:url" content="https://lifequestapp.pages.dev/about">
 <meta property="og:image" content="https://lifequestapp.pages.dev/img/showcase/og.png?v=2">
 <meta property="og:image:width" content="1200">
@@ -21,457 +21,345 @@
 <link rel="apple-touch-icon" href="/icon-180.png">
 <link rel="preload" href="/fonts/space-grotesk.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+<!--
+  Design: the page is shown in Obsidian Plum, one of the app's own 25 themes, so it looks like the product.
+  Type is the app's pair, chosen by the owner: Space Grotesk for headings, Inter for text.
+  avoid-ai-design-ignore-file: T1, T2 (the fonts were the owner's choice)
+  The one signature: a day's XP ledger that ticks up and levels you up (GSAP, js/about.js).
+-->
 <style>
 @font-face{font-family:'Inter';src:url('/fonts/inter.woff2') format('woff2');font-weight:100 900;font-display:swap}
 @font-face{font-family:'Space Grotesk';src:url('/fonts/space-grotesk.woff2') format('woff2');font-weight:300 700;font-display:swap}
+:root{
+  --ground:#251626;      /* Obsidian Plum */
+  --raised:#30202c;
+  --raised-2:#3a2a33;
+  --gold:#d5bd91;        /* Antique Champagne: actions, XP, bars */
+  --ink:#f1e6d1;         /* text */
+  --ink-2:#c9b9a8;       /* secondary text */
+  --rule:rgba(213,189,145,.16);
+  --ease:cubic-bezier(.23,1,.32,1);
+  --display:'Space Grotesk',ui-sans-serif,system-ui,sans-serif;
+  --text:'Inter',ui-sans-serif,system-ui,sans-serif;
+}
 *,*::before,*::after{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%}
-body{margin:0;background:#000}
-a{color:#ffffff}a:hover{color:#d4d4d4}
-:focus-visible{outline:2px solid #fff;outline-offset:3px;border-radius:6px}
-.lq-shots{scrollbar-width:thin;scrollbar-color:#3a3a3a transparent}
-.lq-shots::-webkit-scrollbar{height:6px}
-.lq-shots::-webkit-scrollbar-thumb{background:#3a3a3a;border-radius:999px}
-.lq-btn:hover{background:#e5e5e5;color:#000}
-.lq-cta{transition:transform .15s,box-shadow .15s}.lq-cta:hover{transform:translateY(-1px);box-shadow:0 14px 40px rgba(255,255,255,.2)!important}
-@media (max-width:600px){.lq-cta{width:100%}}
-.lq-btn-ghost:hover{border-color:#ffffff;color:#fff}
-.lq-feature:hover{border-color:rgba(255,255,255,.22)}
-@media (max-width:600px){
-  h1{font-size:56px!important}
-  section[aria-label="At a glance"] > div{border-left:0!important;border-top:1px solid rgba(255,255,255,.12)}
-  section[aria-label="At a glance"] > div:nth-child(-n+2){border-top:0}
-  section[aria-label="At a glance"]{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+html{-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--ground);color:var(--ink);font:400 17px/1.6 var(--text);font-feature-settings:'cv11','ss01';-webkit-font-smoothing:antialiased}
+a{color:var(--gold)}
+:focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:6px}
+h1,h2,h3{font-family:var(--display);font-weight:600;margin:0;color:var(--ink);letter-spacing:-.02em}
+p{margin:0}
+.wrap{max-width:1120px;margin:0 auto;padding:0 20px}
+section{padding:88px 0;border-top:1px solid var(--rule)}
+.lede{color:var(--ink-2);max-width:56ch}
+
+/* Hero */
+.hero{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:56px;align-items:center;padding:72px 0 96px;border:0}
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:40px;color:var(--ink-2);font-size:15px}
+.brand img{width:40px;height:40px;border-radius:10px}
+.hero h1{font-size:clamp(52px,8.5vw,104px);line-height:.92;letter-spacing:-.045em}
+.hero .tag{font-family:var(--display);font-size:clamp(22px,2.6vw,30px);line-height:1.2;color:var(--gold);margin-top:18px;letter-spacing:-.01em}
+.hero .lede{margin-top:22px}
+.ctas{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;margin-top:32px}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:52px;padding:0 26px;border-radius:999px;background:var(--gold);color:var(--ground);font:600 16px var(--text);text-decoration:none;transition:transform .16s var(--ease),background-color .2s var(--ease);touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.btn:active{transform:scale(.97)}
+.quiet{color:var(--ink-2);font-size:15px}
+.quiet a{color:var(--ink)}
+@media (hover:hover) and (pointer:fine){.btn:hover{background:#e2cda6}.quiet a:hover{color:var(--gold)}}
+
+/* The ledger (signature) */
+.ledger{background:var(--raised);border:1px solid var(--rule);border-radius:20px;padding:22px 22px 20px;box-shadow:0 30px 80px rgba(10,4,10,.45)}
+.ledger-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.ledger-head h2{font-size:17px;letter-spacing:-.01em}
+.ledger-head span{font-size:14px;color:var(--ink-2)}
+.ledger ol{list-style:none;margin:0;padding:0}
+.ledger li{display:grid;grid-template-columns:62px 1fr auto;gap:12px;align-items:baseline;padding:11px 0;border-top:1px solid var(--rule);font-size:15px}
+.ledger li:first-child{border-top:0}
+.ledger time{color:var(--ink-2);font-variant-numeric:tabular-nums;font-size:13.5px}
+.ledger .what small{display:block;color:var(--ink-2);font-size:13px}
+.ledger .xp{font:600 15px var(--display);color:var(--gold);font-variant-numeric:tabular-nums;white-space:nowrap}
+.lvl{margin-top:16px;padding-top:16px;border-top:1px solid var(--rule)}
+.lvl-row{display:flex;justify-content:space-between;align-items:baseline;font-size:14px;color:var(--ink-2);margin-bottom:8px}
+.lvl-row b{font:600 22px var(--display);color:var(--ink);letter-spacing:-.01em}
+.lvl-row output{font-variant-numeric:tabular-nums}
+.bar{height:10px;border-radius:5px;background:var(--raised-2);overflow:hidden}
+.bar i{display:block;height:100%;width:var(--w,0%);background:var(--gold);border-radius:5px;transform-origin:left center}
+.levelup{margin-top:12px;font-size:14px;color:var(--gold);min-height:1.6em}
+
+/* Character sheet */
+.sheet{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:56px;align-items:start}
+.sheet h2,.sec-title{font-size:clamp(32px,4.4vw,52px);line-height:1.02}
+.sheet .lede{margin-top:18px}
+.stats{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:26px 32px}
+.stats li{display:grid;gap:8px}
+.stats .top{display:flex;justify-content:space-between;align-items:baseline}
+.stats h3{font-size:19px;letter-spacing:-.01em}
+.stats .lv{font:600 14px var(--display);color:var(--gold);font-variant-numeric:tabular-nums}
+.stats p{color:var(--ink-2);font-size:14.5px;line-height:1.45}
+
+/* Screens */
+.screens-head{display:flex;justify-content:space-between;align-items:end;gap:20px;flex-wrap:wrap;margin-bottom:28px}
+.shots{display:flex;gap:18px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px 20px 18px;margin:0 -20px;scrollbar-width:thin;scrollbar-color:var(--raised-2) transparent;overscroll-behavior-x:contain}
+.shot{flex:none;width:248px;margin:0;scroll-snap-align:start;display:grid;gap:12px}
+.shot img{width:100%;height:auto;border-radius:22px;border:1px solid var(--rule);background:var(--raised);aspect-ratio:9/19.5;object-fit:cover}
+.shot figcaption{font-size:14px;color:var(--ink-2);line-height:1.45}
+.shot figcaption b{display:block;font:600 16px var(--display);color:var(--ink);margin-bottom:2px;letter-spacing:-.01em}
+
+/* Sections list */
+.groups{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:40px 40px;margin-top:40px}
+.groups h3{font-size:15px;color:var(--gold);letter-spacing:0;font-weight:600;margin-bottom:12px}
+.groups dl{margin:0;display:grid;gap:14px}
+.groups dt{font:600 17px var(--display);letter-spacing:-.01em}
+.groups dd{margin:2px 0 0;color:var(--ink-2);font-size:15px;line-height:1.5}
+
+/* Themes */
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:12px;margin-top:36px}
+.sw{border-radius:14px;overflow:hidden;border:1px solid var(--rule);background:var(--b);display:flex;flex-direction:column}
+.sw .chip{height:64px;display:flex;align-items:end;gap:6px;padding:10px}
+.sw .chip i{width:16px;height:16px;border-radius:50%;background:var(--a)}
+.sw .chip i+i{width:28px;height:6px;border-radius:3px;background:var(--t);opacity:.8;align-self:center}
+.sw span{display:block;flex:1;padding:8px 10px;font-size:13px;color:var(--ink);background:var(--raised)}
+.sw.here{outline:2px solid var(--gold);outline-offset:2px}
+
+/* New + promises + facts */
+.split{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:56px}
+.news{margin:0;padding:0;list-style:none;display:grid;gap:14px}
+.news li{padding-left:18px;position:relative;color:var(--ink)}
+.news li::before{content:'';position:absolute;left:0;top:.7em;width:7px;height:7px;border-radius:50%;background:var(--gold)}
+.history{margin-top:28px;color:var(--ink-2);font-size:14.5px}
+.history summary{cursor:pointer;color:var(--ink)}
+.history ol{margin:14px 0 0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px 20px}
+.history b{color:var(--ink);font-variant-numeric:tabular-nums;font-weight:600;margin-right:8px}
+.promises{display:grid;gap:28px}
+.promises h3{font-size:21px;letter-spacing:-.01em;margin-bottom:6px}
+.promises p{color:var(--ink-2)}
+.facts{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:18px 32px;margin:32px 0 0}
+.facts div{border-top:1px solid var(--rule);padding-top:10px}
+.facts dt{font-size:14px;color:var(--ink-2)}
+.facts dd{margin:2px 0 0}
+.install{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;margin-top:28px}
+.install h3{font-size:17px;margin-bottom:4px}
+.install p{color:var(--ink-2);font-size:15px}
+footer{padding:96px 0 64px;border-top:1px solid var(--rule)}
+footer h2{font-size:clamp(40px,6vw,72px);line-height:.95;letter-spacing:-.04em;max-width:12ch}
+footer .small{color:var(--ink-2);font-size:14.5px;margin-top:40px;max-width:60ch}
+
+@media (prefers-reduced-motion:reduce){.btn{transition:none}.btn:active{transform:none}}
+@media (max-width:860px){
+  .hero,.sheet,.split{grid-template-columns:1fr;gap:40px}
+  .groups{grid-template-columns:repeat(2,minmax(0,1fr))}
+  section{padding:64px 0}
+}
+@media (max-width:560px){
+  body{font-size:16px}
+  .hero{padding:40px 0 64px}
+  .brand{margin-bottom:28px}
+  .stats,.groups,.install{grid-template-columns:1fr}
+  .btn{width:100%}
+  .ledger{padding:18px 16px}
+  .ledger li{grid-template-columns:54px 1fr auto;gap:10px}
 }
 </style>
 </head>
 <body>
-<div style="background: #000000; color: #ffffff; font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; font-size: 16px; line-height: 1.55; min-height: 100vh; -webkit-font-smoothing: antialiased">
-<div style="max-width: 1080px; margin: 0 auto; padding: 72px 24px 48px; box-sizing: border-box; display: flex; flex-direction: column; gap: 64px">
+<div class="wrap">
 
-  <!-- ===== Header ===== -->
-  <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 32px">
-    <img src="/icon-512.png" alt="Life Quest app icon" style="width: 148px; height: 148px; border-radius: 34px; border: 1px solid rgba(255,255,255,.14); flex: none; display: block">
-    <div style="flex: 1 1 360px; min-width: 0; display: flex; flex-direction: column; gap: 10px">
-      <p style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: #a3a3a3">Lifestyle · Free</p>
-      <h1 style="margin: 0; font-family: 'Space Grotesk', ui-sans-serif, sans-serif; font-weight: 600; font-size: 72px; line-height: .95; letter-spacing: -.035em">Life Quest</h1>
-      <p style="margin: 0; font-size: 21px; color: #d4d4d4">Your real life, levelled up.</p>
-      <p style="margin: 0; font-size: 14px; color: #a3a3a3">By Zuhair · Made in Singapore</p>
-      <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 14px; align-items: center">
-        <a class="lq-btn lq-cta" href="/?start=1" style="display: inline-flex; align-items: center; justify-content: center; gap: 10px; height: 58px; padding: 0 32px; border-radius: 999px; background: #ffffff; color: #000000; font-weight: 650; font-size: 18px; letter-spacing: -.01em; text-decoration: none; box-shadow: 0 10px 34px rgba(255,255,255,.14)">Start your quest — free <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a>
-        <a class="lq-btn-ghost" href="https://buymeacoffee.com/faustianecho" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; height: 48px; padding: 0 22px; border-radius: 999px; border: 1px solid rgba(255,255,255,.28); color: #ffffff; font-weight: 500; font-size: 15px; text-decoration: none">Buy me a coffee</a>
+  <header class="hero">
+    <div>
+      <p class="brand"><img src="/icon-512.png" alt="" width="40" height="40">Made in Singapore by Zuhair</p>
+      <h1 class="h-title">Life Quest</h1>
+      <p class="tag h-tag">Your real life, levelled up.</p>
+      <p class="lede h-lede">Habits, goals, training, sleep, reading, money, meals and the people you love, in one calm app. Everything you do earns points, your stats grow, and you level up.</p>
+      <div class="ctas h-ctas">
+        <a class="btn" href="/?start=1">Start your quest, free</a>
+        <p class="quiet">Have an account? <a href="/">Sign in</a></p>
       </div>
-      <p style="margin: 2px 0 0; font-size: 14px; color: #a3a3a3; max-width: 520px">Works right in your browser, nothing to download. Make a free account in seconds, then add it to your Home Screen if you’d like it to feel like an app. <a href="/" style="color: #d4d4d4">Already have an account? Sign in</a></p>
     </div>
+
+    <aside class="ledger" aria-label="An example day in Life Quest">
+      <div class="ledger-head"><h2>A Tuesday, in points</h2><span>Example</span></div>
+      <ol>
+        <li><time>6:40am</time><span class="what">Slept 7h 40m<small>Hit your sleep goal</small></span><span class="xp" data-xp="15">+15 Rest</span></li>
+        <li><time>7:05am</time><span class="what">Ran 5 km<small>31 minutes</small></span><span class="xp" data-xp="56">+56 Strength</span></li>
+        <li><time>9:30am</time><span class="what">Focus session<small>25 minutes, no phone</small></span><span class="xp" data-xp="15">+15 Discipline</span></li>
+        <li><time>1:10pm</time><span class="what">Drank two litres<small>Daily habit, 12 days running</small></span><span class="xp" data-xp="10">+10 Discipline</span></li>
+        <li><time>6:15pm</time><span class="what">Called Mum<small>It had been three weeks</small></span><span class="xp" data-xp="10">+10 Connection</span></li>
+        <li><time>10:30pm</time><span class="what">Wrote one line<small>“Long run, good call, early night.”</small></span><span class="xp" data-xp="5">+5 Reflection</span></li>
+      </ol>
+      <div class="lvl">
+        <div class="lvl-row"><b>Level <span class="lv-num">7</span></b><output class="lv-xp">111 XP today</output></div>
+        <div class="bar" role="img" aria-label="Level progress"><i class="lv-bar" style="--w:100%"></i></div>
+        <p class="levelup">You reached level 7.</p>
+      </div>
+    </aside>
   </header>
 
-  <!-- ===== Info strip ===== -->
-  <section aria-label="At a glance" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); border-top: 1px solid rgba(255,255,255,.12); border-bottom: 1px solid rgba(255,255,255,.12)">
-    <div style="padding: 22px 16px; text-align: center; display: flex; flex-direction: column; gap: 4px">
-      <span style="font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: #a3a3a3">Price</span>
-      <span style="font-size: 28px; font-weight: 700; letter-spacing: -.02em">Free</span>
-      <span style="font-size: 13px; color: #a3a3a3">No ads, ever</span>
+  <section class="sheet" aria-labelledby="s-stats">
+    <div>
+      <h2 id="s-stats">Eight stats, one of you.</h2>
+      <p class="lede">Each part of your life feeds a stat. Run and your Strength goes up. Read and it’s Knowledge. Call a friend and it’s Connection. Turn on only the parts you want, and only those count.</p>
     </div>
-    <div style="padding: 22px 16px; text-align: center; display: flex; flex-direction: column; gap: 4px; border-left: 1px solid rgba(255,255,255,.12)">
-      <span style="font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: #a3a3a3">Sections</span>
-      <span style="font-size: 28px; font-weight: 700; letter-spacing: -.02em">20+</span>
-      <span style="font-size: 13px; color: #a3a3a3">Use only what you need</span>
-    </div>
-    <div style="padding: 22px 16px; text-align: center; display: flex; flex-direction: column; gap: 4px; border-left: 1px solid rgba(255,255,255,.12)">
-      <span style="font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: #a3a3a3">Daily games</span>
-      <span style="font-size: 28px; font-weight: 700; letter-spacing: -.02em">4</span>
-      <span style="font-size: 13px; color: #a3a3a3">New puzzles every day</span>
-    </div>
-    <div style="padding: 22px 16px; text-align: center; display: flex; flex-direction: column; gap: 4px; border-left: 1px solid rgba(255,255,255,.12)">
-      <span style="font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: #a3a3a3">Themes</span>
-      <span style="font-size: 28px; font-weight: 700; letter-spacing: -.02em">15</span>
-      <span style="font-size: 13px; color: #a3a3a3">From bold to pastel</span>
-    </div>
-    <div style="padding: 22px 16px; text-align: center; display: flex; flex-direction: column; gap: 4px; border-left: 1px solid rgba(255,255,255,.12)">
-      <span style="font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: #a3a3a3">Works on</span>
-      <span style="font-size: 28px; font-weight: 700; letter-spacing: -.02em">Any</span>
-      <span style="font-size: 13px; color: #a3a3a3">iPhone, Android, desktop</span>
-    </div>
-    <div style="padding: 22px 16px; text-align: center; display: flex; flex-direction: column; gap: 4px; border-left: 1px solid rgba(255,255,255,.12)">
-      <span style="font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: #a3a3a3">Version</span>
-      <span style="font-size: 28px; font-weight: 700; letter-spacing: -.02em">1.52</span>
-      <span style="font-size: 13px; color: #a3a3a3">Updated 7 Nov 2026</span>
-    </div>
-  </section>
-
-  <!-- ===== Screenshots ===== -->
-  <section aria-labelledby="lq-preview" style="display: flex; flex-direction: column; gap: 20px">
-    <h2 id="lq-preview" style="margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -.02em">Preview</h2>
-    <div class="lq-shots" style="display: flex; gap: 20px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 16px; margin: 0 -24px; padding-left: 24px; padding-right: 24px">
-
-      <figure style="margin: 0; flex: none; width: 272px; scroll-snap-align: start; display: flex; flex-direction: column; gap: 16px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1); border-radius: 28px; padding: 22px 16px 16px; box-sizing: border-box">
-        <figcaption style="padding: 0 6px; display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Space Grotesk', ui-sans-serif, sans-serif; font-weight: 600; letter-spacing: -.01em; font-size: 30px; line-height: 1.05">Your day at a glance</span><span style="font-size: 13px; color: #a3a3a3">What’s on today, a note from someone you love, and how your week is going.</span></figcaption>
-        <img decoding="async" fetchpriority="high" src="/img/showcase/home.webp?v=4" alt="Home screen with four summary tiles above the level and stat bars" style="width: 100%; aspect-ratio: 390 / 844; border-radius: 22px; border: 1px solid rgba(255,255,255,.12); display: block; object-fit: cover">
-      </figure>
-
-      <figure style="margin: 0; flex: none; width: 272px; scroll-snap-align: start; display: flex; flex-direction: column; gap: 16px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1); border-radius: 28px; padding: 22px 16px 16px; box-sizing: border-box">
-        <figcaption style="padding: 0 6px; display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Space Grotesk', ui-sans-serif, sans-serif; font-weight: 600; letter-spacing: -.01em; font-size: 30px; line-height: 1.05">Everything, by date</span><span style="font-size: 13px; color: #a3a3a3">Your plans, your deadlines and your phone calendar, all in one place.</span></figcaption>
-        <img loading="lazy" decoding="async" src="/img/showcase/calendar.webp?v=2" alt="Calendar in the Lavender theme with a month grid, coloured dots and today’s agenda" style="width: 100%; aspect-ratio: 390 / 844; border-radius: 22px; border: 1px solid rgba(255,255,255,.12); display: block; object-fit: cover">
-      </figure>
-
-      <figure style="margin: 0; flex: none; width: 272px; scroll-snap-align: start; display: flex; flex-direction: column; gap: 16px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1); border-radius: 28px; padding: 22px 16px 16px; box-sizing: border-box">
-        <figcaption style="padding: 0 6px; display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Space Grotesk', ui-sans-serif, sans-serif; font-weight: 600; letter-spacing: -.01em; font-size: 30px; line-height: 1.05">Plan it together</span><span style="font-size: 13px; color: #a3a3a3">Plan trips and big days with friends and family. Split the costs too.</span></figcaption>
-        <img loading="lazy" decoding="async" src="/img/showcase/projects.webp?v=2" alt="A shared project for a Japan trip in the Sage theme, with tasks assigned to Aisyah, Hafiz and you" style="width: 100%; aspect-ratio: 390 / 844; border-radius: 22px; border: 1px solid rgba(255,255,255,.12); display: block; object-fit: cover">
-      </figure>
-
-      <figure style="margin: 0; flex: none; width: 272px; scroll-snap-align: start; display: flex; flex-direction: column; gap: 16px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1); border-radius: 28px; padding: 22px 16px 16px; box-sizing: border-box">
-        <figcaption style="padding: 0 6px; display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Space Grotesk', ui-sans-serif, sans-serif; font-weight: 600; letter-spacing: -.01em; font-size: 30px; line-height: 1.05">Look back on your week</span><span style="font-size: 13px; color: #a3a3a3">A friendly recap of everything you did this week.</span></figcaption>
-        <img loading="lazy" decoding="async" src="/img/showcase/review.webp?v=2" alt="Week in review in the Peach theme with a bar chart of XP per day" style="width: 100%; aspect-ratio: 390 / 844; border-radius: 22px; border: 1px solid rgba(255,255,255,.12); display: block; object-fit: cover">
-      </figure>
-
-      <figure style="margin: 0; flex: none; width: 272px; scroll-snap-align: start; display: flex; flex-direction: column; gap: 16px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1); border-radius: 28px; padding: 22px 16px 16px; box-sizing: border-box">
-        <figcaption style="padding: 0 6px; display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Space Grotesk', ui-sans-serif, sans-serif; font-weight: 600; letter-spacing: -.01em; font-size: 30px; line-height: 1.05">Your colours</span><span style="font-size: 13px; color: #a3a3a3">25 looks, from crisp black-and-white to rich darks and soft pastels.</span></figcaption>
-        <img loading="lazy" decoding="async" src="/img/showcase/themes.webp?v=2" alt="Settings with the theme dropdown open, in the Lavender theme" style="width: 100%; aspect-ratio: 390 / 844; border-radius: 22px; border: 1px solid rgba(255,255,255,.12); display: block; object-fit: cover">
-      </figure>
-
-      <figure style="margin: 0; flex: none; width: 272px; scroll-snap-align: start; display: flex; flex-direction: column; gap: 16px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1); border-radius: 28px; padding: 22px 16px 16px; box-sizing: border-box">
-        <figcaption style="padding: 0 6px; display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Space Grotesk', ui-sans-serif, sans-serif; font-weight: 600; letter-spacing: -.01em; font-size: 30px; line-height: 1.05">Just the two of you</span><span style="font-size: 13px; color: #a3a3a3">Days together, a question each day, date ideas and little notes.</span></figcaption>
-        <img loading="lazy" decoding="async" src="/img/showcase/couple.webp" alt="Couple space in the Blush theme: 2,781 days together, a note from Aisyah and both answers to the question of the day" style="width: 100%; aspect-ratio: 390 / 844; border-radius: 22px; border: 1px solid rgba(255,255,255,.12); display: block; object-fit: cover">
-      </figure>
-
-      <figure style="margin: 0; flex: none; width: 272px; scroll-snap-align: start; display: flex; flex-direction: column; gap: 16px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1); border-radius: 28px; padding: 22px 16px 16px; box-sizing: border-box">
-        <figcaption style="padding: 0 6px; display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Space Grotesk', ui-sans-serif, sans-serif; font-weight: 600; letter-spacing: -.01em; font-size: 30px; line-height: 1.05">A quick daily game</span><span style="font-size: 13px; color: #a3a3a3">Daily Word, Word Hive, Sudoku and Chess, with streaks.</span></figcaption>
-        <img loading="lazy" decoding="async" src="/img/showcase/games.webp" alt="Games list in the Ocean theme with Daily Word solved, Word Hive, Sudoku and Chess" style="width: 100%; aspect-ratio: 390 / 844; border-radius: 22px; border: 1px solid rgba(255,255,255,.12); display: block; object-fit: cover">
-      </figure>
-
-      <figure style="margin: 0; flex: none; width: 272px; scroll-snap-align: start; display: flex; flex-direction: column; gap: 16px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1); border-radius: 28px; padding: 22px 16px 16px; box-sizing: border-box">
-        <figcaption style="padding: 0 6px; display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Space Grotesk', ui-sans-serif, sans-serif; font-weight: 600; letter-spacing: -.01em; font-size: 30px; line-height: 1.05">Make the words</span><span style="font-size: 13px; color: #a3a3a3">Word Hive: seven letters, one in the middle, climb to Genius.</span></figcaption>
-        <img loading="lazy" decoding="async" src="/img/showcase/hive.webp" alt="Word Hive with a honeycomb of seven letters and the rank bar at Nice" style="width: 100%; aspect-ratio: 390 / 844; border-radius: 22px; border: 1px solid rgba(255,255,255,.12); display: block; object-fit: cover">
-      </figure>
-
-      <figure style="margin: 0; flex: none; width: 272px; scroll-snap-align: start; display: flex; flex-direction: column; gap: 16px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1); border-radius: 28px; padding: 22px 16px 16px; box-sizing: border-box">
-        <figcaption style="padding: 0 6px; display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Space Grotesk', ui-sans-serif, sans-serif; font-weight: 600; letter-spacing: -.01em; font-size: 30px; line-height: 1.05">Three puzzles a day</span><span style="font-size: 13px; color: #a3a3a3">Sudoku at Easy, Medium and Hard, with notes and a timer.</span></figcaption>
-        <img loading="lazy" decoding="async" src="/img/showcase/sudoku.webp" alt="A Medium Sudoku in progress in the Sky theme with pencil notes and the number pad" style="width: 100%; aspect-ratio: 390 / 844; border-radius: 22px; border: 1px solid rgba(255,255,255,.12); display: block; object-fit: cover">
-      </figure>
-
-      <figure style="margin: 0; flex: none; width: 272px; scroll-snap-align: start; display: flex; flex-direction: column; gap: 16px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1); border-radius: 28px; padding: 22px 16px 16px; box-sizing: border-box">
-        <figcaption style="padding: 0 6px; display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Space Grotesk', ui-sans-serif, sans-serif; font-weight: 600; letter-spacing: -.01em; font-size: 30px; line-height: 1.05">Every win counts</span><span style="font-size: 13px; color: #a3a3a3">Every little thing you do helps you level up.</span></figcaption>
-        <img decoding="async" fetchpriority="high" src="/img/showcase/levelup.webp?v=9" alt="Level up card announcing level 9" style="width: 100%; aspect-ratio: 390 / 844; border-radius: 22px; border: 1px solid rgba(255,255,255,.12); display: block; object-fit: cover">
-      </figure>
-
-      <figure style="margin: 0; flex: none; width: 272px; scroll-snap-align: start; display: flex; flex-direction: column; gap: 16px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1); border-radius: 28px; padding: 22px 16px 16px; box-sizing: border-box">
-        <figcaption style="padding: 0 6px; display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Space Grotesk', ui-sans-serif, sans-serif; font-weight: 600; letter-spacing: -.01em; font-size: 30px; line-height: 1.05">Habits, jobs and to-dos</span><span style="font-size: 13px; color: #a3a3a3">Never forget the small stuff. What’s due soonest stays on top.</span></figcaption>
-        <img loading="lazy" decoding="async" src="/img/showcase/tasks.webp?v=9" alt="Tasks page with jobs and a to-do list showing repeats, a note and a goal link" style="width: 100%; aspect-ratio: 390 / 844; border-radius: 22px; border: 1px solid rgba(255,255,255,.12); display: block; object-fit: cover">
-      </figure>
-
-      <figure style="margin: 0; flex: none; width: 272px; scroll-snap-align: start; display: flex; flex-direction: column; gap: 16px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1); border-radius: 28px; padding: 22px 16px 16px; box-sizing: border-box">
-        <figcaption style="padding: 0 6px; display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Space Grotesk', ui-sans-serif, sans-serif; font-weight: 600; letter-spacing: -.01em; font-size: 30px; line-height: 1.05">Goals, one step at a time</span><span style="font-size: 13px; color: #a3a3a3">Break big goals into milestones and tick them off.</span></figcaption>
-        <img loading="lazy" decoding="async" src="/img/showcase/goals.webp?v=9" alt="Goals page in the Peach theme with milestone progress" style="width: 100%; aspect-ratio: 390 / 844; border-radius: 22px; border: 1px solid rgba(255,255,255,.12); display: block; object-fit: cover">
-      </figure>
-
-      <figure style="margin: 0; flex: none; width: 272px; scroll-snap-align: start; display: flex; flex-direction: column; gap: 16px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1); border-radius: 28px; padding: 22px 16px 16px; box-sizing: border-box">
-        <figcaption style="padding: 0 6px; display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Space Grotesk', ui-sans-serif, sans-serif; font-weight: 600; letter-spacing: -.01em; font-size: 30px; line-height: 1.05">Stay close to your people</span><span style="font-size: 13px; color: #a3a3a3">See who’s due a catch-up. Log a call in one tap.</span></figcaption>
-        <img loading="lazy" decoding="async" src="/img/showcase/people.webp?v=9" alt="People page listing who is overdue for a catch-up, with Message, Call and Visit buttons" style="width: 100%; aspect-ratio: 390 / 844; border-radius: 22px; border: 1px solid rgba(255,255,255,.12); display: block; object-fit: cover">
-      </figure>
-
-      <figure style="margin: 0; flex: none; width: 272px; scroll-snap-align: start; display: flex; flex-direction: column; gap: 16px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1); border-radius: 28px; padding: 22px 16px 16px; box-sizing: border-box">
-        <figcaption style="padding: 0 6px; display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Space Grotesk', ui-sans-serif, sans-serif; font-weight: 600; letter-spacing: -.01em; font-size: 30px; line-height: 1.05">How are you, really?</span><span style="font-size: 13px; color: #a3a3a3">A daily check-in and one thing you’re grateful for.</span></figcaption>
-        <img loading="lazy" decoding="async" src="/img/showcase/mood.webp?v=9" alt="Mood page in the Mint theme with a five-face check-in and mood calendar" style="width: 100%; aspect-ratio: 390 / 844; border-radius: 22px; border: 1px solid rgba(255,255,255,.12); display: block; object-fit: cover">
-      </figure>
-
-      <figure style="margin: 0; flex: none; width: 272px; scroll-snap-align: start; display: flex; flex-direction: column; gap: 16px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1); border-radius: 28px; padding: 22px 16px 16px; box-sizing: border-box">
-        <figcaption style="padding: 0 6px; display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Space Grotesk', ui-sans-serif, sans-serif; font-weight: 600; letter-spacing: -.01em; font-size: 30px; line-height: 1.05">Your decks, your record</span><span style="font-size: 13px; color: #a3a3a3">For Magic players: your decks, games and win rates.</span></figcaption>
-        <img loading="lazy" decoding="async" src="/img/showcase/mtg.webp" alt="MTG deck page with record, win rate and a mana curve chart" style="width: 100%; aspect-ratio: 390 / 844; border-radius: 22px; border: 1px solid rgba(255,255,255,.12); display: block; object-fit: cover">
-      </figure>
-
-      <figure style="margin: 0; flex: none; width: 272px; scroll-snap-align: start; display: flex; flex-direction: column; gap: 16px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1); border-radius: 28px; padding: 22px 16px 16px; box-sizing: border-box">
-        <figcaption style="padding: 0 6px; display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Space Grotesk', ui-sans-serif, sans-serif; font-weight: 600; letter-spacing: -.01em; font-size: 30px; line-height: 1.05">What to watch next</span><span style="font-size: 13px; color: #a3a3a3">Find something to watch, see where it’s streaming, and remember what you loved.</span></figcaption>
-        <img loading="lazy" decoding="async" src="/img/showcase/watchlist.webp?v=2" alt="Watchlist in the Sky theme with posters and streaming services" style="width: 100%; aspect-ratio: 390 / 844; border-radius: 22px; border: 1px solid rgba(255,255,255,.12); display: block; object-fit: cover">
-      </figure>
-
-      <figure style="margin: 0; flex: none; width: 272px; scroll-snap-align: start; display: flex; flex-direction: column; gap: 16px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1); border-radius: 28px; padding: 22px 16px 16px; box-sizing: border-box">
-        <figcaption style="padding: 0 6px; display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Space Grotesk', ui-sans-serif, sans-serif; font-weight: 600; letter-spacing: -.01em; font-size: 30px; line-height: 1.05">Albums you love</span><span style="font-size: 13px; color: #a3a3a3">Albums to try and the ones you love, with covers and ratings.</span></figcaption>
-        <img loading="lazy" decoding="async" src="/img/showcase/music.webp?v=2" alt="Music page in the Cotton candy theme with album covers and ratings" style="width: 100%; aspect-ratio: 390 / 844; border-radius: 22px; border: 1px solid rgba(255,255,255,.12); display: block; object-fit: cover">
-      </figure>
-
-      <figure style="margin: 0; flex: none; width: 272px; scroll-snap-align: start; display: flex; flex-direction: column; gap: 16px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1); border-radius: 28px; padding: 22px 16px 16px; box-sizing: border-box">
-        <figcaption style="padding: 0 6px; display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Space Grotesk', ui-sans-serif, sans-serif; font-weight: 600; letter-spacing: -.01em; font-size: 30px; line-height: 1.05">Budgets that keep you honest</span><span style="font-size: 13px; color: #a3a3a3">See where your money goes and watch your savings grow.</span></figcaption>
-        <img loading="lazy" decoding="async" src="/img/showcase/finance.webp?v=9" alt="Finance page with budget bars and savings goals" style="width: 100%; aspect-ratio: 390 / 844; border-radius: 22px; border: 1px solid rgba(255,255,255,.12); display: block; object-fit: cover">
-      </figure>
-
-      <figure style="margin: 0; flex: none; width: 272px; scroll-snap-align: start; display: flex; flex-direction: column; gap: 16px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1); border-radius: 28px; padding: 22px 16px 16px; box-sizing: border-box">
-        <figcaption style="padding: 0 6px; display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Space Grotesk', ui-sans-serif, sans-serif; font-weight: 600; letter-spacing: -.01em; font-size: 30px; line-height: 1.05">Your comic pile, scanned in</span><span style="font-size: 13px; color: #a3a3a3">Point your camera at the barcode. Done.</span></figcaption>
-        <img loading="lazy" decoding="async" src="/img/showcase/comics.webp" alt="Comics page with a reading list, pile and rated comics with covers" style="width: 100%; aspect-ratio: 390 / 844; border-radius: 22px; border: 1px solid rgba(255,255,255,.12); display: block; object-fit: cover">
-      </figure>
-
-      <figure style="margin: 0; flex: none; width: 272px; scroll-snap-align: start; display: flex; flex-direction: column; gap: 16px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1); border-radius: 28px; padding: 22px 16px 16px; box-sizing: border-box">
-        <figcaption style="padding: 0 6px; display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Space Grotesk', ui-sans-serif, sans-serif; font-weight: 600; letter-spacing: -.01em; font-size: 30px; line-height: 1.05">Read more, page by page</span><span style="font-size: 13px; color: #a3a3a3">Scan a book’s barcode and it’s added, cover and all.</span></figcaption>
-        <img loading="lazy" decoding="async" src="/img/showcase/books.webp" alt="Books page with reading progress, a want-to-read list and finished books" style="width: 100%; aspect-ratio: 390 / 844; border-radius: 22px; border: 1px solid rgba(255,255,255,.12); display: block; object-fit: cover">
-      </figure>
-
-      <figure style="margin: 0; flex: none; width: 272px; scroll-snap-align: start; display: flex; flex-direction: column; gap: 16px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1); border-radius: 28px; padding: 22px 16px 16px; box-sizing: border-box">
-        <figcaption style="padding: 0 6px; display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Space Grotesk', ui-sans-serif, sans-serif; font-weight: 600; letter-spacing: -.01em; font-size: 30px; line-height: 1.05">Training at a glance</span><span style="font-size: 13px; color: #a3a3a3">Runs, workouts and sport, week by week.</span></figcaption>
-        <img loading="lazy" decoding="async" src="/img/showcase/fitness.webp?v=9" alt="Fitness page with a seven-day minutes chart and workout history" style="width: 100%; aspect-ratio: 390 / 844; border-radius: 22px; border: 1px solid rgba(255,255,255,.12); display: block; object-fit: cover">
-      </figure>
-
-      <figure style="margin: 0; flex: none; width: 272px; scroll-snap-align: start; display: flex; flex-direction: column; gap: 16px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1); border-radius: 28px; padding: 22px 16px 16px; box-sizing: border-box">
-        <figcaption style="padding: 0 6px; display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Space Grotesk', ui-sans-serif, sans-serif; font-weight: 600; letter-spacing: -.01em; font-size: 30px; line-height: 1.05">Make it yours</span><span style="font-size: 13px; color: #a3a3a3">Pick your colours and turn on only what you need.</span></figcaption>
-        <img loading="lazy" decoding="async" src="/img/showcase/settings.webp?v=9" alt="Settings menu in the Dusk theme: Sections, Appearance, Profile, What’s new, Feedback and Account" style="width: 100%; aspect-ratio: 390 / 844; border-radius: 22px; border: 1px solid rgba(255,255,255,.12); display: block; object-fit: cover">
-      </figure>
-
-    </div>
-  </section>
-
-  <!-- ===== Description ===== -->
-  <section style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 40px; align-items: start">
-    <div style="display: flex; flex-direction: column; gap: 14px">
-      <h2 style="margin: 0; font-family: 'Space Grotesk', ui-sans-serif, sans-serif; font-weight: 600; font-size: 44px; line-height: 1.05">One app for the life you're building.</h2>
-    </div>
-    <div style="display: flex; flex-direction: column; gap: 14px; color: #d4d4d4; font-size: 17px">
-      <p style="margin: 0">Life Quest brings your habits, goals, training, sleep, reading, money, relationships and hobbies into one calm app, then turns your progress into something you can see.</p>
-      <p style="margin: 0">Every run, every page read, every friend you call and every puzzle you solve earns you points. Watch your Strength, Knowledge, Connection and more grow, and level up as you go.</p>
-      <p style="margin: 0">Turn on only what fits your life, and pick from 25 looks, from crisp black-and-white to rich darks and soft pastels. It works on your phone and your laptop, and what you add is yours alone.</p>
-    </div>
-  </section>
-
-  <!-- ===== What's new ===== -->
-  <section aria-labelledby="lq-new" style="display: flex; flex-direction: column; gap: 18px; padding: 32px; border-radius: 24px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1)">
-    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px">
-      <h2 id="lq-new" style="margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -.02em">What's New</h2>
-      <span style="font-size: 14px; color: #a3a3a3">Version 1.52 · 7 Nov 2026</span>
-    </div>
-    <ul style="margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; color: #d4d4d4">
-      <li>Football: results, fixtures and tables for the top five leagues and the Singapore Premier League.</li>
-      <li>Couple: a private space for you and your partner, with days together, a question to answer each day, a jar of date ideas, memories and little notes.</li>
-      <li>Games: a new word puzzle, Word Hive and three Sudokus every day, plus Chess. Everyone gets the same puzzles, so you can compare.</li>
-      <li>Plan events together: add a date to a shared project and it shows in everyone’s calendar.</li>
-      <li>Keep a copy of everything you’ve added, and bring it back any time.</li>
-      <li>Reply to and react to notes in shared projects.</li>
-      <li>Keep track of which episode you’re up to in a series.</li>
-      <li>Pick what you want to track when you join. You can change it any time.</li>
+    <ul class="stats">
+      <li><div class="top"><h3>Strength</h3><span class="lv">Lv 9</span></div><div class="bar"><i style="--w:72%"></i></div><p>Runs, workouts and sport</p></li>
+      <li><div class="top"><h3>Discipline</h3><span class="lv">Lv 12</span></div><div class="bar"><i style="--w:45%"></i></div><p>Tasks, habits, goals and focus time</p></li>
+      <li><div class="top"><h3>Knowledge</h3><span class="lv">Lv 6</span></div><div class="bar"><i style="--w:58%"></i></div><p>Books, comics and courses</p></li>
+      <li><div class="top"><h3>Reflection</h3><span class="lv">Lv 5</span></div><div class="bar"><i style="--w:30%"></i></div><p>Notes, one line a day, mood and quotes</p></li>
+      <li><div class="top"><h3>Craft</h3><span class="lv">Lv 8</span></div><div class="bar"><i style="--w:64%"></i></div><p>Hobbies, games, films and music</p></li>
+      <li><div class="top"><h3>Rest</h3><span class="lv">Lv 4</span></div><div class="bar"><i style="--w:80%"></i></div><p>Sleep, against a goal you set</p></li>
+      <li><div class="top"><h3>Connection</h3><span class="lv">Lv 7</span></div><div class="bar"><i style="--w:38%"></i></div><p>Friends, family and your partner</p></li>
+      <li><div class="top"><h3>Wealth</h3><span class="lv">Lv 3</span></div><div class="bar"><i style="--w:52%"></i></div><p>Budgets, savings and client work</p></li>
     </ul>
-    <div style="display: flex; flex-wrap: wrap; gap: 8px; padding-top: 6px">
-      <span style="font-size: 13px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.16); color: #d4d4d4">1.43 Backup &amp; restore</span>
-      <span style="font-size: 13px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.16); color: #d4d4d4">1.41 Shared events</span>
-      <span style="font-size: 13px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.16); color: #d4d4d4">1.38 Couple</span>
-      <span style="font-size: 13px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.16); color: #d4d4d4">1.37 Sudoku &amp; Word Hive</span>
-      <span style="font-size: 13px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.16); color: #d4d4d4">1.36 Games &amp; Daily Word</span>
-      <span style="font-size: 13px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.16); color: #d4d4d4">1.35 Chess</span>
-      <span style="font-size: 13px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.16); color: #d4d4d4">1.34 Replies &amp; reactions</span>
-      <span style="font-size: 13px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.16); color: #d4d4d4">1.31 Pick your sections</span>
-      <span style="font-size: 13px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.16); color: #d4d4d4">1.26 Calendar</span>
-      <span style="font-size: 13px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.16); color: #d4d4d4">1.25 Shared projects</span>
-      <span style="font-size: 13px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.16); color: #d4d4d4">1.23 Week in review &amp; search</span>
-      <span style="font-size: 13px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.16); color: #d4d4d4">1.21 Swipe between sections</span>
-      <span style="font-size: 13px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.16); color: #d4d4d4">1.20 15 themes</span>
-      <span style="font-size: 13px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.16); color: #d4d4d4">1.19 Music &amp; Last.fm</span>
-      <span style="font-size: 13px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.16); color: #d4d4d4">1.17 Smarter Watchlist</span>
-      <span style="font-size: 13px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.16); color: #d4d4d4">1.15 Goals, Mood, People &amp; more</span>
-      <span style="font-size: 13px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.16); color: #d4d4d4">1.14 Sleep tracker</span>
-      <span style="font-size: 13px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.16); color: #d4d4d4">1.12 Comics &amp; barcode scanner</span>
-      <span style="font-size: 13px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.16); color: #d4d4d4">1.8 Reorder sections</span>
-      <span style="font-size: 13px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.16); color: #d4d4d4">1.7 Settings &amp; Finance</span>
-      <span style="font-size: 13px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.16); color: #d4d4d4">1.5 Book scanning</span>
-      <span style="font-size: 13px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.16); color: #d4d4d4">1.0 Launch</span>
+  </section>
+
+  <section aria-labelledby="s-screens">
+    <div class="screens-head">
+      <h2 id="s-screens" class="sec-title">See it on a phone.</h2>
+      <p class="quiet">Swipe through. Every screen is the real app.</p>
+    </div>
+    <div class="shots" tabindex="0" aria-label="Screenshots, scroll sideways">
+      <figure class="shot"><img decoding="async" fetchpriority="high" src="/img/showcase/home.webp?v=4" alt="Home screen with four summary tiles above the level and stat bars"><figcaption><b>Your day at a glance</b>What’s on today, a note from someone you love, and how your week is going.</figcaption></figure>
+      <figure class="shot"><img loading="lazy" decoding="async" src="/img/showcase/calendar.webp?v=2" alt="Calendar in the Lavender theme with a month grid, coloured dots and today’s agenda"><figcaption><b>Everything, by date</b>Your plans, your deadlines and your phone calendar, all in one place.</figcaption></figure>
+      <figure class="shot"><img loading="lazy" decoding="async" src="/img/showcase/projects.webp?v=2" alt="A shared project for a Japan trip in the Sage theme, with tasks assigned to Aisyah, Hafiz and you"><figcaption><b>Plan it together</b>Plan trips and big days with friends and family. Split the costs too.</figcaption></figure>
+      <figure class="shot"><img loading="lazy" decoding="async" src="/img/showcase/review.webp?v=2" alt="Week in review in the Peach theme with a bar chart of XP per day"><figcaption><b>Look back on your week</b>A friendly recap of everything you did this week.</figcaption></figure>
+      <figure class="shot"><img loading="lazy" decoding="async" src="/img/showcase/themes.webp?v=2" alt="Settings with the theme dropdown open, in the Lavender theme"><figcaption><b>Your colours</b>25 looks, from crisp black-and-white to rich darks and soft pastels.</figcaption></figure>
+      <figure class="shot"><img loading="lazy" decoding="async" src="/img/showcase/couple.webp" alt="Couple space in the Blush theme: 2,781 days together, a note from Aisyah and both answers to the question of the day"><figcaption><b>Just the two of you</b>Days together, a question each day, date ideas and little notes.</figcaption></figure>
+      <figure class="shot"><img loading="lazy" decoding="async" src="/img/showcase/games.webp" alt="Games list in the Ocean theme with Daily Word solved, Word Hive, Sudoku and Chess"><figcaption><b>A quick daily game</b>Daily Word, Word Hive, Sudoku and Chess, with streaks.</figcaption></figure>
+      <figure class="shot"><img loading="lazy" decoding="async" src="/img/showcase/hive.webp" alt="Word Hive with a honeycomb of seven letters and the rank bar at Nice"><figcaption><b>Make the words</b>Word Hive: seven letters, one in the middle, climb to Genius.</figcaption></figure>
+      <figure class="shot"><img loading="lazy" decoding="async" src="/img/showcase/sudoku.webp" alt="A Medium Sudoku in progress in the Sky theme with pencil notes and the number pad"><figcaption><b>Three puzzles a day</b>Sudoku at Easy, Medium and Hard, with notes and a timer.</figcaption></figure>
+      <figure class="shot"><img decoding="async" fetchpriority="high" src="/img/showcase/levelup.webp?v=9" alt="Level up card announcing level 9"><figcaption><b>Every win counts</b>Every little thing you do helps you level up.</figcaption></figure>
+      <figure class="shot"><img loading="lazy" decoding="async" src="/img/showcase/tasks.webp?v=9" alt="Tasks page with jobs and a to-do list showing repeats, a note and a goal link"><figcaption><b>Habits, jobs and to-dos</b>Never forget the small stuff. What’s due soonest stays on top.</figcaption></figure>
+      <figure class="shot"><img loading="lazy" decoding="async" src="/img/showcase/goals.webp?v=9" alt="Goals page in the Peach theme with milestone progress"><figcaption><b>Goals, one step at a time</b>Break big goals into milestones and tick them off.</figcaption></figure>
+      <figure class="shot"><img loading="lazy" decoding="async" src="/img/showcase/people.webp?v=9" alt="People page listing who is overdue for a catch-up, with Message, Call and Visit buttons"><figcaption><b>Stay close to your people</b>See who’s due a catch-up. Log a call in one tap.</figcaption></figure>
+      <figure class="shot"><img loading="lazy" decoding="async" src="/img/showcase/mood.webp?v=9" alt="Mood page in the Mint theme with a five-face check-in and mood calendar"><figcaption><b>How are you, really?</b>A daily check-in and one thing you’re grateful for.</figcaption></figure>
+      <figure class="shot"><img loading="lazy" decoding="async" src="/img/showcase/mtg.webp" alt="MTG deck page with record, win rate and a mana curve chart"><figcaption><b>Your decks, your record</b>For Magic players: your decks, games and win rates.</figcaption></figure>
+      <figure class="shot"><img loading="lazy" decoding="async" src="/img/showcase/watchlist.webp?v=2" alt="Watchlist in the Sky theme with posters and streaming services"><figcaption><b>What to watch next</b>Find something to watch, see where it’s streaming, and remember what you loved.</figcaption></figure>
+      <figure class="shot"><img loading="lazy" decoding="async" src="/img/showcase/music.webp?v=2" alt="Music page in the Cotton candy theme with album covers and ratings"><figcaption><b>Albums you love</b>Albums to try and the ones you love, with covers and ratings.</figcaption></figure>
+      <figure class="shot"><img loading="lazy" decoding="async" src="/img/showcase/finance.webp?v=9" alt="Finance page with budget bars and savings goals"><figcaption><b>Budgets that keep you honest</b>See where your money goes and watch your savings grow.</figcaption></figure>
+      <figure class="shot"><img loading="lazy" decoding="async" src="/img/showcase/comics.webp" alt="Comics page with a reading list, pile and rated comics with covers"><figcaption><b>Your comic pile, scanned in</b>Point your camera at the barcode. Done.</figcaption></figure>
+      <figure class="shot"><img loading="lazy" decoding="async" src="/img/showcase/books.webp" alt="Books page with reading progress, a want-to-read list and finished books"><figcaption><b>Read more, page by page</b>Scan a book’s barcode and it’s added, cover and all.</figcaption></figure>
+      <figure class="shot"><img loading="lazy" decoding="async" src="/img/showcase/fitness.webp?v=9" alt="Fitness page with a seven-day minutes chart and workout history"><figcaption><b>Training at a glance</b>Runs, workouts and sport, week by week.</figcaption></figure>
+      <figure class="shot"><img loading="lazy" decoding="async" src="/img/showcase/settings.webp?v=9" alt="Settings menu in the Dusk theme: Sections, Appearance, Profile, What’s new, Feedback and Account"><figcaption><b>Make it yours</b>Pick your colours and turn on only what you need.</figcaption></figure>
     </div>
   </section>
 
-  <!-- ===== Features ===== -->
-  <section aria-labelledby="lq-inside" style="display: flex; flex-direction: column; gap: 22px">
-    <h2 id="lq-inside" style="margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -.02em">Everything inside</h2>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px">
-      <div class="lq-feature" style="display: flex; flex-direction: column; gap: 10px; padding: 22px; border-radius: 18px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1)">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"></rect><path d="m8 12 3 3 5-6"></path></svg>
-        <h3 style="margin: 0; font-size: 18px; font-weight: 600">Tasks</h3>
-        <p style="margin: 0; font-size: 14px; color: #a3a3a3">Your to-dos, daily habits and anything that repeats, so nothing slips through the cracks.</p>
-      </div>
-      <div class="lq-feature" style="display: flex; flex-direction: column; gap: 10px; padding: 22px; border-radius: 18px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1)">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16.5" rx="3"></rect><path d="M3 9.5h18M8 3v3M16 3v3"></path><path d="M7.5 13.5h2M11 13.5h2M14.5 13.5h2M7.5 17h2M11 17h2"></path></svg>
-        <h3 style="margin: 0; font-size: 18px; font-weight: 600">Calendar</h3>
-        <p style="margin: 0; font-size: 14px; color: #a3a3a3">Your plans and deadlines in one view, next to your Google, iPhone or Outlook calendar.</p>
-      </div>
-      <div class="lq-feature" style="display: flex; flex-direction: column; gap: 10px; padding: 22px; border-radius: 18px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1)">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4"></path><path d="M5 4h11l-2 4 2 4H5"></path></svg>
-        <h3 style="margin: 0; font-size: 18px; font-weight: 600">Goals</h3>
-        <p style="margin: 0; font-size: 14px; color: #a3a3a3">Turn big dreams into small steps, and see how far you’ve come.</p>
-      </div>
-      <div class="lq-feature" style="display: flex; flex-direction: column; gap: 10px; padding: 22px; border-radius: 18px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1)">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H9l2 2.5h7.5A2.5 2.5 0 0 1 21 10v7.5a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5z"></path><circle cx="10" cy="13.5" r="1.8"></circle><circle cx="15" cy="13.5" r="1.8"></circle></svg>
-        <h3 style="margin: 0; font-size: 18px; font-weight: 600">Projects</h3>
-        <p style="margin: 0; font-size: 14px; color: #a3a3a3">Plan trips, weddings and big days with the people you invite: to-dos, events, notes, photos and who owes what.</p>
-      </div>
-      <div class="lq-feature" style="display: flex; flex-direction: column; gap: 10px; padding: 22px; border-radius: 18px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1)">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 19.5S3 15.6 3 10.9A3.7 3.7 0 0 1 9.5 8.6a3.7 3.7 0 0 1 6.5 2.3c0 4.7-6.5 8.6-6.5 8.6z"></path><path d="M14.6 6.2A3.2 3.2 0 0 1 21 7.9c0 2.2-1.5 4.2-3.1 5.7"></path></svg>
-        <h3 style="margin: 0; font-size: 18px; font-weight: 600">Couple</h3>
-        <p style="margin: 0; font-size: 14px; color: #a3a3a3">Just for the two of you: count your days together, answer a fun question each day, pick a date from the jar, and leave each other little notes.</p>
-      </div>
-      <div class="lq-feature" style="display: flex; flex-direction: column; gap: 10px; padding: 22px; border-radius: 18px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1)">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2.5"></rect><path d="M8.5 7V5.5A1.5 1.5 0 0 1 10 4h4a1.5 1.5 0 0 1 1.5 1.5V7"></path><path d="M3 12.5h18"></path></svg>
-        <h3 style="margin: 0; font-size: 18px; font-weight: 600">Clients</h3>
-        <p style="margin: 0; font-size: 14px; color: #a3a3a3">For freelancers: every job from first enquiry to paid.</p>
-      </div>
-      <div class="lq-feature" style="display: flex; flex-direction: column; gap: 10px; padding: 22px; border-radius: 18px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1)">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11"></path></svg>
-        <h3 style="margin: 0; font-size: 18px; font-weight: 600">Fitness</h3>
-        <p style="margin: 0; font-size: 14px; color: #a3a3a3">Runs, workouts and sport, with your weekly and monthly totals.</p>
-      </div>
-      <div class="lq-feature" style="display: flex; flex-direction: column; gap: 10px; padding: 22px; border-radius: 18px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1)">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6"></path><path d="M3 15h18M3 18v2M21 18v2"></path><path d="M7 10V8a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2"></path><path d="M15.5 3.5h3l-3 3h3"></path></svg>
-        <h3 style="margin: 0; font-size: 18px; font-weight: 600">Sleep</h3>
-        <p style="margin: 0; font-size: 14px; color: #a3a3a3">When you slept, how long, and how well, against a goal you set.</p>
-      </div>
-      <div class="lq-feature" style="display: flex; flex-direction: column; gap: 10px; padding: 22px; border-radius: 18px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1)">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"></path><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"></path></svg>
-        <h3 style="margin: 0; font-size: 18px; font-weight: 600">Books</h3>
-        <p style="margin: 0; font-size: 14px; color: #a3a3a3">What you’re reading, what’s next and what you loved. Scan the barcode to add a book.</p>
-      </div>
-      <div class="lq-feature" style="display: flex; flex-direction: column; gap: 10px; padding: 22px; border-radius: 18px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1)">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-9l-5 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"></path><path d="m9.5 8.5-1 4.5M12 8l2 5M15 10.5h2"></path></svg>
-        <h3 style="margin: 0; font-size: 18px; font-weight: 600">Comics</h3>
-        <p style="margin: 0; font-size: 14px; color: #a3a3a3">Your collection and reading pile, from single issues to manga. Just scan the cover.</p>
-      </div>
-      <div class="lq-feature" style="display: flex; flex-direction: column; gap: 10px; padding: 22px; border-radius: 18px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1)">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 9 12 4.5 21.5 9 12 13.5z"></path><path d="M6.5 11v5c1.5 1.6 3.5 2.4 5.5 2.4s4-.8 5.5-2.4v-5"></path><path d="M21.5 9v5"></path></svg>
-        <h3 style="margin: 0; font-size: 18px; font-weight: 600">Learning</h3>
-        <p style="margin: 0; font-size: 14px; color: #a3a3a3">Courses and new skills, with the time you’ve put in.</p>
-      </div>
-      <div class="lq-feature" style="display: flex; flex-direction: column; gap: 10px; padding: 22px; border-radius: 18px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1)">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="3"></rect><path d="M3 10h18"></path><path d="M16 14.5h2"></path><path d="M6 6V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"></path></svg>
-        <h3 style="margin: 0; font-size: 18px; font-weight: 600">Finance</h3>
-        <p style="margin: 0; font-size: 14px; color: #a3a3a3">Spending, budgets and savings goals you can watch fill up.</p>
-      </div>
-      <div class="lq-feature" style="display: flex; flex-direction: column; gap: 10px; padding: 22px; border-radius: 18px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1)">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>
-        <h3 style="margin: 0; font-size: 18px; font-weight: 600">Notes</h3>
-        <p style="margin: 0; font-size: 14px; color: #a3a3a3">A private journal for your thoughts and ideas.</p>
-      </div>
-      <div class="lq-feature" style="display: flex; flex-direction: column; gap: 10px; padding: 22px; border-radius: 18px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1)">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M8.5 14.5c.9 1.2 2.1 1.8 3.5 1.8s2.6-.6 3.5-1.8"></path><path d="M9 9.5h.01M15 9.5h.01"></path></svg>
-        <h3 style="margin: 0; font-size: 18px; font-weight: 600">Mood</h3>
-        <p style="margin: 0; font-size: 14px; color: #a3a3a3">How you feel each day, and one thing you’re grateful for.</p>
-      </div>
-      <div class="lq-feature" style="display: flex; flex-direction: column; gap: 10px; padding: 22px; border-radius: 18px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1)">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h4v4c0 3-1.5 5-4 6"></path><path d="M14 7h4v4c0 3-1.5 5-4 6"></path></svg>
-        <h3 style="margin: 0; font-size: 18px; font-weight: 600">Quotes</h3>
-        <p style="margin: 0; font-size: 14px; color: #a3a3a3">Words that inspire you, with a fresh one every day.</p>
-      </div>
-      <div class="lq-feature" style="display: flex; flex-direction: column; gap: 10px; padding: 22px; border-radius: 18px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1)">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"></path></svg>
-        <h3 style="margin: 0; font-size: 18px; font-weight: 600">Hobbies</h3>
-        <p style="margin: 0; font-size: 14px; color: #a3a3a3">The time you spend on the things you love, from painting to guitar.</p>
-      </div>
-      <div class="lq-feature" style="display: flex; flex-direction: column; gap: 10px; padding: 22px; border-radius: 18px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1)">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6.5" y="3" width="11" height="16" rx="2" transform="rotate(8 12 11)"></rect><rect x="4" y="5" width="11" height="16" rx="2" transform="rotate(-6 9.5 13)"></rect></svg>
-        <h3 style="margin: 0; font-size: 18px; font-weight: 600">MTG</h3>
-        <p style="margin: 0; font-size: 14px; color: #a3a3a3">For Magic: The Gathering players: a life counter for game night, your decks and what they’re worth, sample hands, and your win rates.</p>
-      </div>
-      <div class="lq-feature" style="display: flex; flex-direction: column; gap: 10px; padding: 22px; border-radius: 18px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1)">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h9"></path><path d="M9 21v-2.5c0-1.4.5-2.6 1.4-3.8L8 12.5c-.8-.8-.6-2 .3-2.6L12 7.5V5l1.5-1.5L15 5c2.4 1.5 3.5 4 3.5 7.2V21"></path><circle cx="13.6" cy="8.6" r=".6"></circle></svg>
-        <h3 style="margin: 0; font-size: 18px; font-weight: 600">Games</h3>
-        <p style="margin: 0; font-size: 14px; color: #a3a3a3">New word puzzles and Sudokus every day, the same for everyone, plus Chess against the computer from beginner to master.</p>
-      </div>
-      <div class="lq-feature" style="display: flex; flex-direction: column; gap: 10px; padding: 22px; border-radius: 18px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1)">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="m12 7.5 3.8 2.8-1.5 4.4H9.7l-1.5-4.4z"></path><path d="M12 3v4.5M15.8 10.3l4.6-1.4M14.3 14.7l2.8 3.9M9.7 14.7l-2.8 3.9M8.2 10.3 3.6 8.9"></path></svg>
-        <h3 style="margin: 0; font-size: 18px; font-weight: 600">Football</h3>
-        <p style="margin: 0; font-size: 14px; color: #a3a3a3">Scores, fixtures and tables for the top five European leagues and the Singapore Premier League, with live scores.</p>
-      </div>
-      <div class="lq-feature" style="display: flex; flex-direction: column; gap: 10px; padding: 22px; border-radius: 18px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1)">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2.5"></rect><path d="M8 21h8M12 17v4"></path><path d="m10.5 8.8 4 2.2-4 2.2z"></path></svg>
-        <h3 style="margin: 0; font-size: 18px; font-weight: 600">Watchlist</h3>
-        <p style="margin: 0; font-size: 14px; color: #a3a3a3">Films and series to watch, where to stream them, which episode you’re on, and what you thought.</p>
-      </div>
-      <div class="lq-feature" style="display: flex; flex-direction: column; gap: 10px; padding: 22px; border-radius: 18px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1)">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l11-2v13"></path><circle cx="6.5" cy="18" r="2.5"></circle><circle cx="17.5" cy="16" r="2.5"></circle></svg>
-        <h3 style="margin: 0; font-size: 18px; font-weight: 600">Music</h3>
-        <p style="margin: 0; font-size: 14px; color: #a3a3a3">Albums to try and the ones you love, with covers and ratings.</p>
-      </div>
-      <div class="lq-feature" style="display: flex; flex-direction: column; gap: 10px; padding: 22px; border-radius: 18px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1)">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1.4 0 2-1 2-2 0-1.6-1.5-1.9-1.5-3.3 0-1 .8-1.7 1.8-1.7H17a4 4 0 0 0 4-4c0-4-4-7-9-7z"></path><circle cx="7.5" cy="11" r="1"></circle><circle cx="10" cy="7" r="1"></circle><circle cx="15" cy="7.5" r="1"></circle></svg>
-        <h3 style="margin: 0; font-size: 18px; font-weight: 600">Themes</h3>
-        <p style="margin: 0; font-size: 14px; color: #a3a3a3">15 looks, from crisp black-and-white to deep darks and soft pastels.</p>
-      </div>
-      <div class="lq-feature" style="display: flex; flex-direction: column; gap: 10px; padding: 22px; border-radius: 18px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1)">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20c.6-3.4 3.2-5.5 6.5-5.5s5.9 2.1 6.5 5.5"></path><path d="M15.5 4.8a3.5 3.5 0 0 1 0 6.4M18 14.8c1.9.8 3.1 2.6 3.5 5.2"></path></svg>
-        <h3 style="margin: 0; font-size: 18px; font-weight: 600">People</h3>
-        <p style="margin: 0; font-size: 14px; color: #a3a3a3">A gentle nudge when it’s been a while since you caught up with someone.</p>
-      </div>
-      <div class="lq-feature" style="display: flex; flex-direction: column; gap: 10px; padding: 22px; border-radius: 18px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1)">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16" rx="3"></rect><path d="M3 9.5h18M8 3v3M16 3v3"></path><path d="M7.5 16.5l2.5-3 2.5 2 4-4.5"></path></svg>
-        <h3 style="margin: 0; font-size: 18px; font-weight: 600">Week in review</h3>
-        <p style="margin: 0; font-size: 14px; color: #a3a3a3">Every Sunday, a friendly recap of your week.</p>
-      </div>
-      <div class="lq-feature" style="display: flex; flex-direction: column; gap: 10px; padding: 22px; border-radius: 18px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1)">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
-        <h3 style="margin: 0; font-size: 18px; font-weight: 600">Search everything</h3>
-        <p style="margin: 0; font-size: 14px; color: #a3a3a3">Find any note, book, quote or person in a second.</p>
-      </div>
+  <section aria-labelledby="s-inside">
+    <h2 id="s-inside" class="sec-title">Turn on only what fits your life.</h2>
+    <div class="groups">
+      <div><h3>Every day</h3><dl>
+        <div><dt>Tasks and habits</dt><dd>To-dos, jobs, and daily habits with streaks.</dd></div>
+        <div><dt>Calendar</dt><dd>Your plans and deadlines next to your Google, iPhone or Outlook calendar.</dd></div>
+        <div><dt>Weather</dt><dd>Today’s weather under the date, with a heads-up before it rains.</dd></div>
+        <div><dt>Focus</dt><dd>A timer for deep work, with breaks.</dd></div>
+        <div><dt>Meals</dt><dd>Plan the week’s meals and keep your recipes.</dd></div>
+      </dl></div>
+      <div><h3>Body and mind</h3><dl>
+        <div><dt>Fitness</dt><dd>Runs, workouts and sport, week by week.</dd></div>
+        <div><dt>Sleep</dt><dd>When you slept, how long and how well.</dd></div>
+        <div><dt>One line a day</dt><dd>A sentence about today, and what you wrote this day last year.</dd></div>
+        <div><dt>Mood, notes and quotes</dt><dd>A daily check-in, a private journal, and words that keep you going.</dd></div>
+        <div><dt>Books, comics and learning</dt><dd>Scan a barcode to add a book. Track courses and the time you put in.</dd></div>
+      </dl></div>
+      <div><h3>People</h3><dl>
+        <div><dt>People</dt><dd>A nudge when it’s been a while, birthdays coming up, and gift ideas you’ll actually remember.</dd></div>
+        <div><dt>Couple</dt><dd>Days together, a question each day, date ideas, notes and shared lists for the two of you.</dd></div>
+        <div><dt>Projects</dt><dd>Plan trips and big days with others: to-dos, events, photos and who owes what.</dd></div>
+      </dl></div>
+      <div><h3>Money and work</h3><dl>
+        <div><dt>Finance</dt><dd>Spending, budgets, savings goals and every subscription you pay for.</dd></div>
+        <div><dt>Renewals</dt><dd>Passport, insurance, road tax and warranties, with a reminder before they run out.</dd></div>
+        <div><dt>Clients and goals</dt><dd>Side jobs from enquiry to paid. Big goals broken into steps.</dd></div>
+      </dl></div>
+      <div><h3>Play</h3><dl>
+        <div><dt>Daily games</dt><dd>Daily Word, Word Hive, three Sudokus and Chess. Everyone gets the same puzzles.</dd></div>
+        <div><dt>Football</dt><dd>Live scores, fixtures and tables for the top five leagues and the Singapore Premier League.</dd></div>
+        <div><dt>MTG</dt><dd>A life counter, dice, your decks, what they’re worth and your win rates.</dd></div>
+        <div><dt>Watchlist and music</dt><dd>What to watch next and where it’s streaming. Albums to try and the ones you love.</dd></div>
+      </dl></div>
+      <div><h3>Looking back</h3><dl>
+        <div><dt>Week in review</dt><dd>Every Sunday, a friendly recap of your week.</dd></div>
+        <div><dt>Search</dt><dd>Find any note, book, quote or person in a second.</dd></div>
+      </dl></div>
     </div>
   </section>
 
-  <!-- ===== Desktop ===== -->
-  <section aria-labelledby="lq-desk" style="display: flex; flex-direction: column; gap: 22px">
-    <div style="display: flex; flex-direction: column; gap: 6px">
-      <h2 id="lq-desk" style="margin: 0; font-family: 'Space Grotesk', ui-sans-serif, sans-serif; font-weight: 600; font-size: 44px; line-height: 1.05">Just as good on a big screen.</h2>
-      <p style="margin: 0; color: #a3a3a3; font-size: 16px">Same account, same data. Start on your phone, pick it up on your laptop.</p>
-    </div>
-    <img loading="lazy" decoding="async" src="/img/showcase/desktop.webp?v=4" alt="Life Quest on a laptop: sidebar menu with the Home dashboard" style="width: 100%; aspect-ratio: 16 / 10; object-fit: cover; object-position: top; border-radius: 22px; border: 1px solid rgba(255,255,255,.14); display: block">
+  <section aria-labelledby="s-themes">
+    <h2 id="s-themes" class="sec-title">25 colourways.</h2>
+    <p class="lede" style="margin-top:16px">This page is in Obsidian Plum. Pick any of them in Settings and the whole app changes with it.</p>
+    <div class="swatches" id="swatches" aria-label="All themes"></div>
   </section>
 
-  <!-- ===== Privacy ===== -->
-  <section aria-labelledby="lq-priv" style="display: flex; flex-direction: column; gap: 22px">
-    <h2 id="lq-priv" style="margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -.02em">Your data stays yours</h2>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px">
-      <div style="display: flex; flex-direction: column; gap: 10px; padding: 24px; border-radius: 18px; border: 1px solid rgba(255,255,255,.14)">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg>
-        <h3 style="margin: 0; font-size: 18px; font-weight: 600">Locked to your account</h3>
-        <p style="margin: 0; font-size: 14px; color: #a3a3a3">Only you can see what you add. Shared projects and couple spaces are seen only by the people you invite.</p>
-      </div>
-      <div style="display: flex; flex-direction: column; gap: 10px; padding: 24px; border-radius: 18px; border: 1px solid rgba(255,255,255,.14)">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M5.6 5.6 18.4 18.4"></path></svg>
-        <h3 style="margin: 0; font-size: 18px; font-weight: 600">No ads, no trackers</h3>
-        <p style="margin: 0; font-size: 14px; color: #a3a3a3">Nothing is sold and there are no ads. It’s made and looked after by one person.</p>
-      </div>
-      <div style="display: flex; flex-direction: column; gap: 10px; padding: 24px; border-radius: 18px; border: 1px solid rgba(255,255,255,.14)">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"></path><path d="M3 21v-5h5"></path></svg>
-        <h3 style="margin: 0; font-size: 18px; font-weight: 600">Synced everywhere</h3>
-        <p style="margin: 0; font-size: 14px; color: #a3a3a3">Sign in on your phone or laptop and everything’s there. Keep your own copy any time, and bring it back if you ever need to.</p>
-      </div>
+  <section class="split" aria-labelledby="s-new">
+    <div>
+      <h2 id="s-new" class="sec-title">New in 1.53</h2>
+      <p class="quiet" style="margin-top:12px">11 November 2026</p>
+    </div>
+    <div>
+      <ul class="news">
+        <li>Daily habits now show streaks and the last seven days.</li>
+        <li>One line a day, with what you wrote a month and a year ago.</li>
+        <li>Meals: plan the week and keep recipes. Send the ingredients to a shared shopping list.</li>
+        <li>Renewals: your passport, insurance and warranties, with a reminder before they expire.</li>
+        <li>Subscriptions in Finance, with what they cost you a month and a year.</li>
+        <li>Birthdays and gift ideas in People. A focus timer. Weather on Home.</li>
+        <li>Couples can keep more than one shared list: groceries, the house, a trip.</li>
+      </ul>
+      <details class="history"><summary>Earlier updates</summary>
+        <ol>
+          <li><b>1.52</b>New heading font</li><li><b>1.51</b>Ten new themes</li><li><b>1.49</b>Dice for MTG</li>
+          <li><b>1.47</b>Football</li><li><b>1.45</b>MTG life counter</li><li><b>1.43</b>Backup and restore</li>
+          <li><b>1.41</b>Shared events</li><li><b>1.38</b>Couple</li><li><b>1.37</b>Sudoku and Word Hive</li>
+          <li><b>1.36</b>Games and Daily Word</li><li><b>1.35</b>Chess</li><li><b>1.31</b>Pick your sections</li>
+          <li><b>1.26</b>Calendar</li><li><b>1.25</b>Shared projects</li><li><b>1.23</b>Week in review and search</li>
+          <li><b>1.19</b>Music and Last.fm</li><li><b>1.15</b>Goals, Mood and People</li><li><b>1.14</b>Sleep</li>
+          <li><b>1.12</b>Comics and barcode scanning</li><li><b>1.7</b>Finance</li><li><b>1.0</b>Launch</li>
+        </ol>
+      </details>
     </div>
   </section>
 
-  <!-- ===== Information ===== -->
-  <section aria-labelledby="lq-info" style="display: flex; flex-direction: column; gap: 14px">
-    <h2 id="lq-info" style="margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -.02em">Good to know</h2>
-    <dl style="margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); column-gap: 40px">
-      <div style="display: flex; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,.1)"><dt style="color: #a3a3a3">Developer</dt><dd style="margin: 0; text-align: right">Zuhair</dd></div>
-      <div style="display: flex; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,.1)"><dt style="color: #a3a3a3">Category</dt><dd style="margin: 0; text-align: right">Lifestyle</dd></div>
-            <div style="display: flex; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,.1)"><dt style="color: #a3a3a3">Works on</dt><dd style="margin: 0; text-align: right">Phones, tablets and computers</dd></div>
-                  <div style="display: flex; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,.1)"><dt style="color: #a3a3a3">Film &amp; TV info</dt><dd style="margin: 0; text-align: right">TMDB and JustWatch</dd></div>
-      <div style="display: flex; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,.1)"><dt style="color: #a3a3a3">Music info</dt><dd style="margin: 0; text-align: right">Apple Music, MusicBrainz, Last.fm</dd></div>
-      <div style="display: flex; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,.1)"><dt style="color: #a3a3a3">Magic card info</dt><dd style="margin: 0; text-align: right">Scryfall</dd></div>
-      <div style="display: flex; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,.1)"><dt style="color: #a3a3a3">Chess</dt><dd style="margin: 0; text-align: right">Stockfish and Lichess (open source)</dd></div>
-      <div style="display: flex; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,.1)"><dt style="color: #a3a3a3">Word lists</dt><dd style="margin: 0; text-align: right">SCOWL by Kevin Atkinson</dd></div>
-      <div style="display: flex; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,.1)"><dt style="color: #a3a3a3">Price</dt><dd style="margin: 0; text-align: right">Free</dd></div>
-      <div style="display: flex; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,.1)"><dt style="color: #a3a3a3">Copyright</dt><dd style="margin: 0; text-align: right">© 2026 Zuhair</dd></div>
+  <section class="split" aria-labelledby="s-yours">
+    <h2 id="s-yours" class="sec-title">Your data stays yours.</h2>
+    <div class="promises">
+      <div><h3>Only you can see it</h3><p>What you add is locked to your account. Shared projects and couple spaces are seen only by the people you invite.</p></div>
+      <div><h3>No ads, nothing sold</h3><p>There are no ads and no trackers. It’s made and looked after by one person.</p></div>
+      <div><h3>Take a copy any time</h3><p>Sign in on your phone or laptop and it’s all there. Download everything as a file, and bring it back if you ever need to.</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-facts">
+    <h2 id="s-facts" class="sec-title">Good to know.</h2>
+    <dl class="facts">
+      <div><dt>Price</dt><dd>Free, with no ads</dd></div>
+      <div><dt>Works on</dt><dd>Phones, tablets and computers, in any browser</dd></div>
+      <div><dt>Made by</dt><dd>Zuhair, in Singapore</dd></div>
+      <div><dt>Film and TV info</dt><dd>TMDB and JustWatch</dd></div>
+      <div><dt>Music info</dt><dd>Apple Music, MusicBrainz, Last.fm</dd></div>
+      <div><dt>Magic card info</dt><dd>Scryfall</dd></div>
+      <div><dt>Football</dt><dd>ESPN</dd></div>
+      <div><dt>Weather</dt><dd>Open-Meteo</dd></div>
+      <div><dt>Chess</dt><dd>Stockfish and Lichess (open source)</dd></div>
+      <div><dt>Word lists</dt><dd>SCOWL by Kevin Atkinson</dd></div>
+      <div><dt>Animation</dt><dd>GSAP</dd></div>
+      <div><dt>Copyright</dt><dd>© 2026 Zuhair</dd></div>
     </dl>
+    <div class="install">
+      <div><h3>On an iPhone</h3><p>Open it in Safari, tap Share, then Add to Home Screen. It opens like an app.</p></div>
+      <div><h3>On Android</h3><p>Open it in Chrome, tap the menu, then Add to Home screen or Install app.</p></div>
+    </div>
   </section>
 
-  <!-- ===== Footer CTA ===== -->
-  <footer style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: 18px; padding: 56px 24px 24px; border-top: 1px solid rgba(255,255,255,.12)">
-    <img src="/icon-512.png" alt="" style="width: 72px; height: 72px; border-radius: 18px; border: 1px solid rgba(255,255,255,.14); display: block">
-    <p style="margin: 0; font-family: 'Space Grotesk', ui-sans-serif, sans-serif; font-weight: 600; letter-spacing: -.01em; font-size: 44px; line-height: 1.05">Start your quest.</p>
-    <a class="lq-btn lq-cta" href="/?start=1" style="display: inline-flex; align-items: center; justify-content: center; gap: 10px; height: 58px; padding: 0 32px; border-radius: 999px; background: #ffffff; color: #000000; font-weight: 650; font-size: 18px; letter-spacing: -.01em; text-decoration: none; box-shadow: 0 10px 34px rgba(255,255,255,.14)">Start your quest — free <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a>
-    <p style="margin: 0; font-size: 14px; color: #d4d4d4">Free, no ads, works in any browser. <a href="/" style="color: #a3a3a3">Sign in</a></p>
-    <div class="lq-install" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; width: 100%; max-width: 640px; margin-top: 10px; text-align: left">
-      <div style="padding: 18px 20px; border-radius: 16px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1)">
-        <p style="margin: 0 0 6px; font-weight: 600; font-size: 15px">Add it to your iPhone</p>
-        <p style="margin: 0; font-size: 14px; color: #a3a3a3">Open it in Safari, tap <b style="color:#d4d4d4;font-weight:600">Share</b>, then <b style="color:#d4d4d4;font-weight:600">Add to Home Screen</b>.</p>
-      </div>
-      <div style="padding: 18px 20px; border-radius: 16px; background: #0d0d0d; border: 1px solid rgba(255,255,255,.1)">
-        <p style="margin: 0 0 6px; font-weight: 600; font-size: 15px">Add it to your Android</p>
-        <p style="margin: 0; font-size: 14px; color: #a3a3a3">Open it in Chrome, tap <b style="color:#d4d4d4;font-weight:600">⋮</b>, then <b style="color:#d4d4d4;font-weight:600">Add to Home screen</b> or <b style="color:#d4d4d4;font-weight:600">Install app</b>.</p>
-      </div>
+  <footer>
+    <h2 class="f-title">Start with one habit.</h2>
+    <div class="ctas">
+      <a class="btn" href="/?start=1">Start your quest, free</a>
+      <p class="quiet">Have an account? <a href="/">Sign in</a></p>
     </div>
-    <p style="margin: 0; font-size: 12.5px; color: #8a8a8a">Optional. It works the same in a normal browser tab, on your phone or laptop.</p>
-    <p style="margin: 0; font-size: 13px; color: #a3a3a3">Built and kept running by one person, free of ads. If it helps you, you can <a href="https://buymeacoffee.com/faustianecho" target="_blank" rel="noopener noreferrer">buy me a coffee</a>.</p>
+    <p class="small">Life Quest is built and kept running by one person. If it helps you, you can <a href="https://buymeacoffee.com/faustianecho" target="_blank" rel="noopener noreferrer">buy me a coffee</a>.</p>
   </footer>
 
 </div>
-</div>
+<script src="/js/vendor/gsap/gsap.min.js" defer></script>
+<script src="/js/vendor/gsap/ScrollTrigger.min.js" defer></script>
+<script type="module" src="/js/about.js"></script>
 </body>
 </html>

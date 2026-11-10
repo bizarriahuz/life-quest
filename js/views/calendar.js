@@ -5,6 +5,9 @@ import { icon } from '../icons.js';
 import { REPEATS, toggleTask } from '../tasklogic.js';
 import { cachedFeed, loadFeed, forgetFeed, expandICS } from '../ics.js';
 import { findCouple } from './couple.js';
+import { renewalsBetween } from '../subs.js';
+import { money } from '../game.js';
+import { nextBirthday } from './people.js';
 
 let month = null;          // 'YYYY-MM' on screen
 let sel = null;            // selected day
@@ -19,6 +22,9 @@ export const SRC = {
   client:  { label: 'Client',   view: 'clients' },
   couple:  { label: 'Couple',   view: 'couple' },
   feed:    { label: 'Calendar', view: 'calendar' },
+  renewal: { label: 'Renewal',  view: 'renewals' },
+  sub:     { label: 'Subscription', view: 'finance' },
+  bday:    { label: 'Birthday', view: 'people' },
 };
 const FEED_HOSTS = /^(calendar\.google\.com|p\d+-(caldav|calendars)\.icloud\.com|(www\.)?icloud\.com|outlook\.(live|office365|office)\.com)$/;
 export function feedOk(link) {
@@ -112,6 +118,19 @@ export async function collect(ctx, from, to, { fetchFeeds = false, onFeed } = {}
         }
       }
     }
+  }
+
+  // Renewals (expiry dates), subscription payments and birthdays.
+  const [rens, subs, people] = await Promise.all([
+    get('renewals', 'renewals', { gte: ['expires_on', from], lte: ['expires_on', to] }),
+    get('finance', 'subscriptions', {}),
+    get('people', 'contacts', {}),
+  ]);
+  for (const r of rens) items.push({ key: r.expires_on, title: `${r.title} expires`, src: 'renewal', href: '#/renewals' });
+  for (const x of subs) for (const k of renewalsBetween(x, from, to)) items.push({ key: k, title: x.name, src: 'sub', href: '#/finance', sub: money(x.amount, ctx.currency) });
+  for (const p of people) {
+    if (!p.birthday) continue;
+    for (let k = nextBirthday(p.birthday, from), n = 0; k && k <= to && n < 3; n += 1, k = nextBirthday(p.birthday, addDays(k, 1))) items.push({ key: k, title: `${p.name}’s birthday`, src: 'bday', href: '#/people' });
   }
 
   // Phone calendars

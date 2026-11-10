@@ -140,7 +140,12 @@ const DEFAULTS = {
   mtg_matches: { players: 4, note: null, opponents: null, went_first: null, turns: null },
   moods: { gratitude: null },
   albums: { artist: null, year: null, tracks: null, genre: null, art_url: null, itunes_id: null, apple_url: null, status: 'want', listened_on: null, rating: null, note: null },
-  contacts: { relation: null, every_days: 30, note: null },
+  contacts: { relation: null, every_days: 30, note: null, birthday: null, gift_ideas: null },
+  journal_lines: {},
+  renewals: { remind_days: 30, note: null },
+  subscriptions: { every: 'monthly', note: null },
+  recipes: { ingredients: null, steps: null, link: null },
+  meal_plan: { slot: 'dinner', recipe_id: null },
   contact_logs: { how: 'message', note: null },
   word_games: { guesses: [], solved: false, finished: false },
   sudoku_games: { notes: [], mistakes: 0, seconds: 0, solved: false },
@@ -157,7 +162,7 @@ const DEFAULTS = {
   project_entries: { start_time: null, end_time: null, yearly: false, photo_path: null, body: null, amount: null, paid_by: null, assignee_id: null, due_on: null, done: false, done_by: null, done_on: null },
   watchlist: { season: null, episode: null, kind: 'film', status: 'queued', rating: null, note: null, done_on: null, tmdb_id: null, tmdb_type: null, imdb_id: null, year: null, poster_url: null, details: null, overview: null },
 };
-const UNIQUE = { word_games: ['day'], sudoku_games: ['day', 'level'], hive_games: ['day'], chess_puzzles: ['day'], prayer_logs: ['prayed_on', 'prayer'], hobbies: ['name'], finance_categories: ['kind', 'name'], sleep_logs: ['slept_on'], moods: ['logged_on'] };
+const UNIQUE = { word_games: ['day'], sudoku_games: ['day', 'level'], hive_games: ['day'], chess_puzzles: ['day'], prayer_logs: ['prayed_on', 'prayer'], hobbies: ['name'], finance_categories: ['kind', 'name'], sleep_logs: ['slept_on'], moods: ['logged_on'], journal_lines: ['day'], meal_plan: ['day', 'slot'] };
 
 const cmp = (a, b) => (a == null ? (b == null ? 0 : 1) : b == null ? -1 : a < b ? -1 : a > b ? 1 : 0);
 

@@ -4,6 +4,7 @@ import { icon } from '../icons.js';
 import { SECTIONS, CURRENCIES } from '../game.js';
 import { CHANGELOG, LATEST, hasUnseen, markSeen } from '../changelog.js';
 import { THEMES, DEFAULT_THEME, applyTheme } from '../theme.js';
+import { weatherLoc, weatherOff, setWeatherLoc, useMyLocation } from '../weather.js';
 
 const swatch = (t) => html`<span class="sw" style="--s0:${t.swatch[0]};--s1:${t.swatch[1]};--s2:${t.swatch[2]};--s3:${t.swatch[3]}" aria-hidden="true"><i></i></span>`;
 const themeLabel = (t) => html`${swatch(t)}<span class="grow">${t.label} <span class="faint small">${t.group}</span></span>`;
@@ -118,6 +119,15 @@ async function appearance(el, ctx) {
               </label>`)}`)}
         </div>
       </details>
+    </section>
+    <section class="card">
+      <div class="card-head"><h2>Weather on Home</h2><span class="meta">${weatherOff() ? 'Off' : weatherLoc().name}</span></div>
+      <p class="small muted" style="margin-bottom:12px">A line under the date with today’s weather and a heads-up before rain. Your location is rounded to about a kilometre and isn’t saved anywhere but this device.</p>
+      <div class="row wrap" style="gap:8px">
+        <button class="btn sm" data-act="wx-here">Use my location</button>
+        <button class="btn sm" data-act="wx-sg">Singapore</button>
+        <button class="btn sm" data-act="wx-off">Turn off</button>
+      </div>
     </section>`);
   // Close the dropdown when tapping elsewhere or pressing Escape.
   const dd = el.querySelector('#theme-dd');
@@ -127,6 +137,9 @@ async function appearance(el, ctx) {
   });
   dd.addEventListener('keydown', (e) => { if (e.key === 'Escape') { dd.open = false; dd.querySelector('summary').focus(); } });
   wire(el, {
+    'wx-here': async () => { await useMyLocation(); ctx.say('Weather will use your location'); ctx.rerender(); },
+    'wx-sg': () => { setWeatherLoc(null); ctx.say('Weather for Singapore'); ctx.rerender(); },
+    'wx-off': () => { setWeatherLoc({ ...weatherLoc(), off: true }); ctx.say('Weather turned off'); ctx.rerender(); },
     theme: async (r) => {
       const id = applyTheme(r.value);
       const t = THEMES.find((x) => x.id === id);
@@ -422,12 +435,14 @@ async function account(el, ctx) {
 const EXPORT_TABLES = ['profiles', 'tasks', 'calendar_events', 'goals', 'goal_milestones', 'notes', 'quotes', 'moods', 'sleep_logs', 'workouts',
   'prayer_logs', 'books', 'comics', 'learning_items', 'learning_sessions', 'hobbies', 'hobby_sessions', 'watchlist', 'albums', 'mtg_decks', 'mtg_matches',
   'contacts', 'contact_logs', 'transactions', 'finance_categories', 'savings_goals', 'savings_contributions', 'client_projects',
+  'journal_lines', 'renewals', 'subscriptions', 'recipes', 'meal_plan',
   'word_games', 'hive_games', 'sudoku_games', 'chess_games', 'chess_puzzles', 'xp_events',
   'projects', 'project_members', 'project_entries', 'project_comments', 'project_reactions'];
 // Restore: parents before the things that point at them.
 const RESTORE_TABLES = ['goals', 'goal_milestones', 'tasks', 'calendar_events', 'notes', 'quotes', 'moods', 'sleep_logs', 'workouts', 'prayer_logs',
   'books', 'comics', 'learning_items', 'learning_sessions', 'hobbies', 'hobby_sessions', 'watchlist', 'albums', 'mtg_decks', 'mtg_matches',
   'contacts', 'contact_logs', 'finance_categories', 'transactions', 'savings_goals', 'savings_contributions', 'client_projects',
+  'journal_lines', 'renewals', 'subscriptions', 'recipes', 'meal_plan',
   'word_games', 'hive_games', 'sudoku_games', 'chess_games', 'chess_puzzles', 'xp_events'];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export async function planRestore(ctx, f) {

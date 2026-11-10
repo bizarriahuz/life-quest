@@ -5,6 +5,11 @@ import { cachedTimes, loadMonth, nextPrayer, untilText } from '../prayertimes.js
 import { weekStart } from './review.js';
 import { collect as calCollect, clock } from './calendar.js';
 import { addDays } from '../ui.js';
+import { weatherNow, weatherText } from '../weather.js';
+import { dueSoon, daysUntil, whenText } from './renewals.js';
+import { nextBirthday } from './people.js';
+import { SLOTS } from './meals.js';
+import { minutesOf } from './focus.js';
 import { STATS, XP, overallLevel, statLevel, totalXP, strongest, statVisible, money } from '../game.js';
 
 let renaming = false;
@@ -58,6 +63,14 @@ export default {
       ctx.store.list('projects', {}).then((r) => r.filter((p) => p.kind !== 'couple')).catch(() => []),
       ctx.store.list('project_entries', { match: { kind: 'task', done: false } }).catch(() => []),
     ]).then(([ps, open]) => [ps, open.filter((x) => ps.some((p) => p.id === x.project_id))]) : [[], []];
+    const [jToday, rens, mealsToday, focusToday] = await Promise.all([
+      on.has('journal') ? ctx.store.list('journal_lines', { match: { day: t } }).then((r) => r[0] || null).catch(() => null) : null,
+      on.has('renewals') ? ctx.store.list('renewals', {}).catch(() => []) : none,
+      on.has('meals') ? ctx.store.list('meal_plan', { match: { day: t } }).catch(() => []) : none,
+      on.has('focus') ? ctx.store.list('xp_events', { match: { source: 'focus' }, gte: ['created_at', isoOf(t)] }).catch(() => []) : none,
+    ]);
+    const renSoon = rens.filter((r) => dueSoon(r, t)).sort((a, b) => a.expires_on.localeCompare(b.expires_on));
+    const focusMin = focusToday.reduce((n, e) => n + minutesOf(e), 0);
     const us = on.has('couple') ? await findCouple(ctx) : null;
     const [usNotes, usAnswer] = us ? await Promise.all([
       ctx.store.list('project_entries', { match: { project_id: us.id, kind: 'love', assignee_id: ctx.store.user.id, done: false } }).catch(() => []),
@@ -120,6 +133,7 @@ export default {
     const lastSeen = {};
     for (const l of contactLogs) if (!lastSeen[l.contact_id] || l.contacted_on > lastSeen[l.contact_id]) lastSeen[l.contact_id] = l.contacted_on;
     const overdue = contacts.filter((c) => !lastSeen[c.id] || addDays(lastSeen[c.id], c.every_days) <= t);
+    const bdaySoon = contacts.map((c) => ({ c, n: c.birthday ? daysUntil(t, nextBirthday(c.birthday, t)) : 99 })).filter((x) => x.n <= 7).sort((a, b) => a.n - b.n);
     const lm = lastMatch[0];
     const todayRows = {
       games: () => html`<a href="#/games">${raw(icon('games'))}<span class="t-label">Games</span>
@@ -151,7 +165,7 @@ export default {
       music: () => html`<a href="#/music">${raw(icon('music'))}<span class="t-label">Music</span>
               <span class="t-val"><span class="t-txt">${albumsAll.filter((a) => a.status === 'want').length} to listen · ${albumsAll.filter((a) => a.status === 'listened' && (a.listened_on || '').startsWith(t.slice(0, 7))).length} this month</span></span></a>`,
       people: () => html`<a href="#/people">${raw(icon('people'))}<span class="t-label">People</span>
-              <span class="t-val"><span class="t-txt">${contacts.length ? (overdue.length ? `${overdue.slice(0, 2).map((c) => c.name).join(', ')}${overdue.length > 2 ? ` +${overdue.length - 2}` : ''} to catch up` : 'All caught up') : 'Add someone'}</span></span></a>`,
+              <span class="t-val"><span class="t-txt">${bdaySoon.length ? `${bdaySoon[0].c.name}’s birthday ${bdaySoon[0].n === 0 ? 'today' : bdaySoon[0].n === 1 ? 'tomorrow' : `in ${bdaySoon[0].n} days`}${overdue.length ? ` · ${overdue.length} to catch up` : ''}` : ''}${bdaySoon.length ? '' : contacts.length ? (overdue.length ? `${overdue.slice(0, 2).map((c) => c.name).join(', ')}${overdue.length > 2 ? ` +${overdue.length - 2}` : ''} to catch up` : 'All caught up') : 'Add someone'}</span></span></a>`,
       prayer: () => html`<a href="#/prayer">${raw(icon('prayer'))}<span class="t-label">Prayer</span>
               <span class="t-val"><span class="dots">${['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'].map((p) =>
                 html`<i class="${prayers.some((x) => x.prayer === p) ? 'on' : ''}"></i>`)}<i class="aw ${awradDone ? 'on' : ''}" title="Daily Awrad ${awradDone ? 'done' : 'not yet'}"></i></span><span class="t-txt">${prayers.length === 5 ? '5/5 ✓' : nextP ? `${PNAME[nextP.key]} ${nextP.label}` : `${prayers.length}/5`}</span></span></a>`,
@@ -165,6 +179,14 @@ export default {
               <span class="t-val"><span class="t-txt">${comicsReading.length ? comicsReading.map((c) => c.title + (c.issue ? ` ${/^\d+$/.test(c.issue) ? '#' : ''}${c.issue}` : '')).join(', ') : `${comicsMonth} read this month · ${comicsPile} in pile`}</span></span></a>`,
       sleep: () => html`<a href="#/sleep">${raw(icon('sleep'))}<span class="t-label">Sleep</span>
               <span class="t-val"><span class="t-txt">${lastSleep ? `${hmin(lastSleep.duration_min)}${lastSleep.slept_on === t ? ' last night' : ''} · avg ${hmin(sleepAvg)}` : 'Log last night'}</span></span></a>`,
+      journal: () => html`<a href="#/journal">${raw(icon('journal'))}<span class="t-label">One line</span>
+              <span class="t-val"><span class="t-txt">${jToday ? `“${jToday.body}”` : 'Write today’s line'}</span></span></a>`,
+      meals: () => html`<a href="#/meals">${raw(icon('meals'))}<span class="t-label">Meals</span>
+              <span class="t-val"><span class="t-txt">${mealsToday.length ? Object.keys(SLOTS).map((k) => mealsToday.find((x) => x.slot === k)).filter(Boolean).map((x) => `${SLOTS[x.slot]}: ${x.title}`).join(' · ') : 'Nothing planned today'}</span></span></a>`,
+      renewals: () => html`<a href="#/renewals">${raw(icon('renewals'))}<span class="t-label">Renewals</span>
+              <span class="t-val"><span class="t-txt">${renSoon.length ? `${renSoon[0].title} ${whenText(daysUntil(t, renSoon[0].expires_on))}${renSoon.length > 1 ? ` · +${renSoon.length - 1}` : ''}` : rens.length ? 'Nothing due soon' : 'Add your passport or insurance'}</span></span></a>`,
+      focus: () => html`<a href="#/focus">${raw(icon('focus'))}<span class="t-label">Focus</span>
+              <span class="t-val"><span class="t-txt">${focusMin ? `${focusMin} minutes today` : 'Start a focus session'}</span></span></a>`,
       books: () => html`<a href="#/books">${raw(icon('books'))}<span class="t-label">Reading</span>
               <span class="t-val">${reading.length ? reading.map((b) => b.title).join(', ') : 'Nothing in progress'}</span></a>`,
     };
@@ -195,7 +217,7 @@ export default {
 
     mount(el, html`
       <header class="page-head">
-        <div><h1>${greeting()}</h1><p>${fmtDate(t, { weekday: 'long', day: 'numeric', month: 'long' })}</p></div>
+        <div><h1>${greeting()}</h1><p>${fmtDate(t, { weekday: 'long', day: 'numeric', month: 'long' })}<span class="wx" id="home-wx"></span></p></div>
       </header>
 
       <div class="tiles">${tiles.slice(0, 4).map((x) => html`
@@ -280,6 +302,8 @@ export default {
             ${on.has('mtg') ? html`<li class="item">MTG: ${XP.mtgMatch} per game, +${XP.mtgWin} for a win</li>` : ''}
             ${on.has('watchlist') ? html`<li class="item">Watchlist: ${XP.watched} per film or series finished</li>` : ''}
             ${on.has('music') ? html`<li class="item">Music: ${XP.listened} per album listened to</li>` : ''}
+            ${on.has('journal') ? html`<li class="item">One line a day: ${XP.journalLine} per line</li>` : ''}
+            ${on.has('focus') ? html`<li class="item">Focus: ${XP.focus25} per 25 minutes finished</li>` : ''}
             ${on.has('people') ? html`<li class="item">People: ${XP.contact} for each person you catch up with, once a day</li>` : ''}
             ${on.has('finance') && on.has('prayer') ? html`<li class="item">Donations: ${XP.sadaqahDay} Faith on each day you give</li>` : ''}
             <li class="item">Undo or delete something and its XP is removed.</li>
@@ -288,6 +312,7 @@ export default {
       </section>
     `);
 
+    weatherNow().then((w) => { const s = el.querySelector('#home-wx'); if (s && w) s.textContent = ` · ${weatherText(w)}`; }).catch(() => {});
     wire(el, {
       'rename-open': () => { renaming = true; ctx.rerender(); },
       rename: async ({ hero_name }) => {

@@ -1,7 +1,7 @@
 import { html, raw, wire, mount, today, relDate, empty } from '../ui.js';
 import { icon } from '../icons.js';
 import { XP } from '../game.js';
-import { REPEATS, REPEAT_SHORT, toggleTask } from '../tasklogic.js';
+import { REPEATS, REPEAT_SHORT, toggleTask, habitDays, habitStreak, habitWeek } from '../tasklogic.js';
 
 const KIND = { side: 'Side', main: 'Main', job: 'Job', daily: 'Daily' };
 let editing = null;     // id of the task being edited
@@ -9,11 +9,16 @@ const byDue = (a, b) => (a.due_on || '9999').localeCompare(b.due_on || '9999');
 const soonest = (a, b) => byDue(a, b) || a.created_at.localeCompare(b.created_at);
 
 // One task row. Shared with Goals (linked tasks) so they look the same.
-export function taskItem(q, isDone, { goalName = null, canDelete = true, canEdit = false } = {}) {
+export function taskItem(q, isDone, { goalName = null, canDelete = true, canEdit = false, habit = null } = {}) {
   const t = today();
   const subs = [];
   if (q.due_on && !isDone) subs.push(html`<span class="${q.due_on < t ? 'due-late' : ''}">${q.due_on < t ? 'Overdue · ' : 'Due '}${relDate(q.due_on)}</span>`);
   if (q.repeat) subs.push(html`<span class="rep">${raw(icon('repeat', 13))}${REPEAT_SHORT[q.repeat]}</span>`);
+  if (habit) {
+    const n = habitStreak(habit, t);
+    subs.push(html`<span class="hb-week" aria-hidden="true">${habitWeek(habit, t).map((d) => html`<i class="${d.on ? 'on' : ''}"></i>`)}</span>`);
+    subs.push(html`<span class="${n >= 3 ? 'hb-hot' : ''}">${n ? `${n}-day streak` : 'Start a streak'}</span>`);
+  }
   if (goalName) subs.push(html`<span class="goal-tag">${raw(icon('goals', 13))}${goalName}</span>`);
   const note = q.note ? html`<p class="sub task-note" data-act="note" title="Tap to show all">${q.note}</p>` : '';
   return html`
@@ -38,9 +43,10 @@ export default {
   label: 'Tasks',
   async render(el, ctx) {
     const t = today();
-    const [all, goals] = await Promise.all([
+    const [all, goals, habits] = await Promise.all([
       ctx.store.list('tasks', { order: 'created_at', asc: true }),
       ctx.sections.has('goals') ? ctx.store.list('goals', { match: { status: 'active' } }) : Promise.resolve([]),
+      habitDays(ctx),
     ]);
     const goalName = Object.fromEntries(goals.map((g) => [g.id, g.title]));
     const daily = all.filter((q) => q.kind === 'daily');
@@ -77,7 +83,7 @@ export default {
       </li>`;
     const item = (q, isDone) => (q.id === editing && !(isDone && q.kind !== 'daily')
       ? editForm(q)
-      : taskItem(q, isDone, { goalName: goalName[q.goal_id] || null, canEdit: true }));
+      : taskItem(q, isDone, { goalName: goalName[q.goal_id] || null, canEdit: true, habit: q.kind === 'daily' ? (habits[q.id] || new Set()) : null }));
 
     mount(el, html`
       <header class="page-head"><div><h1>Tasks</h1><p>${jobs.length} job${jobs.length === 1 ? '' : 's'} · ${active.length} to do · ${dailyDone}/${daily.length} dailies done</p></div></header>
@@ -111,7 +117,7 @@ export default {
       </section>
 
       <section class="card">
-        <div class="card-head"><h2>Daily</h2><span class="meta">Resets every day</span></div>
+        <div class="card-head"><h2>Daily habits</h2><span class="meta">Resets every day</span></div>
         ${daily.length ? html`<ul class="list">${daily.map((q) => item(q, q.done_on === t))}</ul>`
           : empty('Add habits you want to repeat every day.')}
       </section>

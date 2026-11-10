@@ -15,6 +15,9 @@ export const SECTIONS = [
   { id: 'comics',  label: 'Comics',  hint: 'Your collection and reading pile, with barcode scanning' },
   { id: 'learning', label: 'Learning', hint: 'Courses, certifications and skills, with time spent' },
   { id: 'notes',   label: 'Notes',   hint: 'Journal and notes' },
+  { id: 'journal', label: 'One line', hint: 'One line a day, and what you wrote on this day before',
+    intro: { blurb: 'Write one line about your day. In a year, you get to look back.',
+      features: ['One sentence a day, takes ten seconds', '“On this day” shows what you wrote a month and a year ago', 'A streak to keep you going', 'Reflection XP for every line'] } },
   { id: 'mood',    label: 'Mood',    hint: 'A daily check-in and one thing you’re grateful for' },
   { id: 'quotes',  label: 'Quotes',  hint: 'Words to live by' },
   { id: 'hobbies', label: 'Hobbies', hint: 'Time spent on things you love' },
@@ -31,7 +34,16 @@ export const SECTIONS = [
   { id: 'couple',  label: 'Couple',  hint: 'A private space for you and your partner',
     intro: { blurb: 'A private space for you and your partner. Only the two of you can see it.',
       features: ['Count your days together, with an anniversary countdown', 'A question of the day: see each other’s answers once you’ve both replied', 'A daily idea, like “Compliment them today”', 'A jar of date ideas that picks one for you, and memories with photos', 'Leave each other little notes, keep countdowns and a shared list', 'Earn Connection XP together'] } },
-  { id: 'finance', label: 'Finance', hint: 'Spending, budgets, savings goals and donations' },
+  { id: 'finance', label: 'Finance', hint: 'Spending, budgets, savings goals, subscriptions and donations' },
+  { id: 'meals',   label: 'Meals',   hint: 'Plan the week’s meals and keep your recipes',
+    intro: { blurb: 'Plan what you’re eating this week, and keep your favourite recipes in one place.',
+      features: ['Breakfast, lunch and dinner for the week ahead', 'Save recipes with ingredients, steps and a link', 'Send a recipe’s ingredients to your shared shopping list', 'Today’s meals show on Home'] } },
+  { id: 'renewals', label: 'Renewals', hint: 'Passport, warranties, road tax and insurance: a reminder before they expire',
+    intro: { blurb: 'Never get caught out by an expired passport or a lapsed warranty again.',
+      features: ['Add anything that expires: passport, insurance, warranties, road tax', 'Choose how early you want a heads-up', 'Upcoming renewals show on Home and in your Calendar'] } },
+  { id: 'focus',   label: 'Focus',   hint: 'A focus timer for deep work, with breaks',
+    intro: { blurb: 'A simple focus timer: work for a set time, then take a short break.',
+      features: ['25 or 50 minute sessions, with 5 or 10 minute breaks', 'Keeps running if you switch pages', 'See your focus time for today and this week', 'Discipline XP for every session you finish'] } },
 ];
 // Sections that existed before "new section" pop-ups were added. Nobody is shown a
 // pop-up for these. Any section added later should get an `intro` like this:
@@ -51,9 +63,9 @@ export function enabledSections(profile) {
 
 export const STATS = {
   STR: { name: 'Strength',   from: 'Fitness',        view: 'fitness', sections: ['fitness'] },
-  DEX: { name: 'Discipline', from: 'Tasks, goals & projects', view: 'tasks', sections: ['tasks', 'goals', 'projects'] },
+  DEX: { name: 'Discipline', from: 'Tasks, goals & focus', view: 'tasks', sections: ['tasks', 'goals', 'projects', 'focus'] },
   INT: { name: 'Knowledge',  from: 'Reading & learning', view: 'books', sections: ['books', 'comics', 'learning'] },
-  WIS: { name: 'Reflection', from: 'Notes, mood & quotes', view: 'notes', sections: ['notes', 'mood', 'quotes'] },
+  WIS: { name: 'Reflection', from: 'Notes, mood & quotes', view: 'notes', sections: ['notes', 'journal', 'mood', 'quotes'] },
   CHA: { name: 'Craft',      from: 'Hobbies, games & media', view: 'hobbies', sections: ['hobbies', 'games', 'mtg', 'watchlist', 'music'] },
   FTH: { name: 'Faith',      from: 'Prayer & donations', view: 'prayer', sections: ['prayer'] },
   RST: { name: 'Rest',       from: 'Sleep',          view: 'sleep',   sections: ['sleep'] },
@@ -96,6 +108,8 @@ export const XP = {
   mtgMatch: 10,
   mtgWin: 5,
   mood: 10,
+  journalLine: 5,
+  focus25: 15,   // a finished 25-minute focus session (50 minutes earns double)
   contact: 10,
   watched: 5,
   listened: 5,

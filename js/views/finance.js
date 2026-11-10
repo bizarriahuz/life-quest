@@ -1,6 +1,7 @@
 import { html, raw, wire, mount, today, fmtDate, relDate, bar, empty } from '../ui.js';
 import { icon } from '../icons.js';
 import { XP, money, cents } from '../game.js';
+import { EVERY, perMonth, nextRenewal } from '../subs.js';
 
 const DEFAULT_CATEGORIES = [
   ['expense', 'Food'], ['expense', 'Transport'], ['expense', 'Bills'], ['expense', 'Shopping'],
@@ -65,11 +66,15 @@ export default {
 
     let cats = await ctx.store.list('finance_categories', { order: 'name', asc: true });
     if (!cats.length) { await seedDefaults(ctx.store); cats = await ctx.store.list('finance_categories', { order: 'name', asc: true }); }
-    const [txns, goals, contribs] = await Promise.all([
+    const [txns, goals, contribs, subs] = await Promise.all([
       ctx.store.list('transactions', { gte: ['occurred_on', from], lte: ['occurred_on', to], order: 'occurred_on' }),
       ctx.store.list('savings_goals', { order: 'created_at', asc: true }),
       ctx.store.list('savings_contributions', { order: 'made_on' }),
+      ctx.store.list('subscriptions', {}).catch(() => []),
     ]);
+    const tday = today();
+    const subRows = subs.map((x) => ({ ...x, next: nextRenewal(x, tday) })).sort((a, b) => a.next.localeCompare(b.next));
+    const subMonthly = subs.reduce((n, x) => n + perMonth(x), 0);
     checkLastMonth(ctx, cats).catch(() => {});
 
     txns.sort((a, b) => b.occurred_on.localeCompare(a.occurred_on) || b.created_at.localeCompare(a.created_at));
@@ -142,6 +147,24 @@ export default {
         ${expCats.filter((c) => Number(c.budget) > 0 || spentIn(c.id) > 0).map((c) => budgetRow(c.name, spentIn(c.id), Number(c.budget) || 0))}
         ${uncategorised ? budgetRow('Uncategorised', uncategorised, 0) : ''}
         ${!totalBudget && !spent ? empty('Set monthly budgets under Categories below.') : ''}
+      </section>
+
+      <section class="card">
+        <div class="card-head"><h2>Subscriptions</h2><span class="meta">${subs.length ? `${money(subMonthly, ctx.currency)} a month · ${money(subMonthly * 12, ctx.currency, { maximumFractionDigits: 0 })} a year` : 'Netflix, phone, gym…'}</span></div>
+        ${subRows.length ? html`<ul class="list">${subRows.map((x) => html`<li class="item">
+          <div class="body"><p class="title">${x.name}</p><p class="sub">${money(x.amount, ctx.currency)} · ${EVERY[x.every].toLowerCase()} · next ${relDate(x.next)}</p></div>
+          <button class="icon-btn" data-act="delsub" data-id="${x.id}" aria-label="Delete ${x.name}">${raw(icon('trash'))}</button>
+        </li>`)}</ul>` : ''}
+        <details ${subs.length ? '' : 'open'}><summary>Add a subscription</summary>
+          <form data-form="addsub" class="form" style="margin-top:10px">
+            <div class="fields">
+              <label class="field">Name<input name="name" maxlength="60" required placeholder="e.g. Netflix"></label>
+              <label class="field">Amount<input name="amount" type="number" inputmode="decimal" step="0.01" min="0.01" required></label>
+              <label class="field">How often<select name="every">${Object.entries(EVERY).map(([k, v]) => html`<option value="${k}" ${k === 'monthly' ? 'selected' : ''}>${v}</option>`)}</select></label>
+              <label class="field">Next payment<input name="next_on" type="date" required value="${tday}"></label>
+            </div>
+            <div class="row end"><button class="btn primary">${raw(icon('plus', 18))}Add</button></div>
+          </form></details>
       </section>
 
       <section class="card">
@@ -225,6 +248,17 @@ export default {
     const amountOk = (n) => n > 0 && n < 1e10;
 
     wire(el, {
+      addsub: async (v) => {
+        const amount = Number(v.amount);
+        if (!amountOk(amount)) { ctx.say('Enter an amount'); return; }
+        await ctx.store.insert('subscriptions', { name: v.name, amount: Math.round(amount * 100) / 100, every: EVERY[v.every] ? v.every : 'monthly', next_on: v.next_on || tday });
+        ctx.say(`${v.name} added`); ctx.rerender();
+      },
+      delsub: async (b) => {
+        const x = subs.find((r) => r.id === b.dataset.id);
+        if (!confirm(`Delete ${x.name}?`)) return;
+        await ctx.store.remove('subscriptions', x.id); ctx.rerender();
+      },
       prevm: () => { month = shiftMonth(month, -1); ctx.rerender(); },
       nextm: () => { if (month < cur) { month = shiftMonth(month, 1); ctx.rerender(); } },
       add: async (v, form) => {

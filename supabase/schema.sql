@@ -1398,3 +1398,74 @@ alter table public.profiles drop constraint if exists profiles_theme_check;
 alter table public.profiles add constraint profiles_theme_check check (theme in
   ('midnight','ocean','forest','plum','dusk','paper','sand','blush','lavender','peach','mint','sky','butter','candy','sage',
    'burgundy','olive','obsidian','petrol','coastal','ivory','mist','rose','cream','meadow'));
+
+-- ---------- 1.53: everyday features ----------
+-- One line a day, Renewals (expiry dates), Meals, Subscriptions (in Finance), birthdays + gift ideas (in People).
+create table if not exists public.journal_lines (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  day        date not null default current_date,
+  body       text not null check (char_length(body) between 1 and 280),
+  created_at timestamptz not null default now(),
+  unique (user_id, day)
+);
+create table if not exists public.renewals (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  title       text not null check (char_length(title) between 1 and 80),
+  expires_on  date not null,
+  remind_days int not null default 30 check (remind_days between 1 and 365),
+  note        text check (note is null or char_length(note) <= 200),
+  created_at  timestamptz not null default now()
+);
+create table if not exists public.subscriptions (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  name       text not null check (char_length(name) between 1 and 60),
+  amount     numeric(12,2) not null check (amount > 0 and amount < 1000000),
+  every      text not null default 'monthly' check (every in ('weekly','monthly','quarterly','yearly')),
+  next_on    date not null,
+  note       text check (note is null or char_length(note) <= 200),
+  created_at timestamptz not null default now()
+);
+create table if not exists public.recipes (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  title       text not null check (char_length(title) between 1 and 120),
+  ingredients text check (ingredients is null or char_length(ingredients) <= 3000),
+  steps       text check (steps is null or char_length(steps) <= 5000),
+  link        text check (link is null or (link ~ '^https?://' and char_length(link) <= 300)),
+  created_at  timestamptz not null default now()
+);
+create table if not exists public.meal_plan (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  day        date not null,
+  slot       text not null default 'dinner' check (slot in ('breakfast','lunch','dinner')),
+  title      text not null check (char_length(title) between 1 and 120),
+  recipe_id  uuid,
+  created_at timestamptz not null default now(),
+  unique (user_id, day, slot)
+);
+do $$
+declare r record;
+begin
+  for r in select * from (values
+    ('journal_lines', 20000, 'lines'), ('renewals', 500, 'renewals'), ('subscriptions', 300, 'subscriptions'),
+    ('recipes', 1000, 'recipes'), ('meal_plan', 5000, 'planned meals')
+  ) as t(tbl, cap, label) loop
+    execute format('alter table public.%I enable row level security', r.tbl);
+    execute format('create policy "own rows" on public.%I for all to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()))', r.tbl);
+    execute format('create index if not exists %I on public.%I (user_id, created_at)', r.tbl || '_user_created_idx', r.tbl);
+    execute format('grant select, insert, update, delete on public.%I to authenticated', r.tbl);
+    execute format('revoke truncate, references, trigger on public.%I from authenticated', r.tbl);
+    execute format('revoke all on public.%I from anon', r.tbl);
+    execute format('create trigger row_limits before insert on public.%I for each row execute function public.enforce_row_limits(%L, %L)', r.tbl, r.cap, r.label);
+  end loop;
+end $$;
+alter table public.contacts add column if not exists birthday date;
+alter table public.contacts add column if not exists gift_ideas text check (gift_ideas is null or char_length(gift_ideas) <= 1000);
+alter table public.profiles drop constraint if exists profiles_sections_check;
+alter table public.profiles add constraint profiles_sections_check check (sections is null or sections <@ array['tasks','goals','projects','calendar','clients','prayer','fitness','sleep','books','comics','learning','notes','mood','quotes','hobbies','games','chess','mtg','watchlist','music','people','finance','couple','football','journal','renewals','meals','focus']);
+alter table public.profiles drop constraint if exists profiles_seen_intros_check;
+alter table public.profiles add constraint profiles_seen_intros_check check (seen_intros is null or (cardinality(seen_intros) <= 100 and seen_intros <@ array['tasks','goals','projects','calendar','clients','prayer','fitness','sleep','books','comics','learning','notes','mood','quotes','hobbies','games','chess','mtg','watchlist','music','people','finance','couple','football','journal','renewals','meals','focus']));

@@ -1303,6 +1303,37 @@ a.item.set-row { color: inherit; text-decoration: none; display: flex; align-ite
 .adm-secs i { height: 10px; border-radius: 5px; background: var(--accent); min-width: 2px; opacity: .8; }
 .adm-secs b { text-align: right; font-variant-numeric: tabular-nums; }
 .src-couple { background: #e0607e; }
+.src-renewal { background: #d08a3a; } .src-sub { background: #7a8fa6; } .src-bday { background: #c9679b; }
+/* 1.53 everyday features */
+.hb-week { display: inline-flex; gap: 3px; vertical-align: middle; margin-right: 2px; }
+.hb-week i { width: 7px; height: 7px; border-radius: 50%; background: var(--line-2); }
+.hb-week i.on { background: var(--accent); }
+.hb-hot { color: var(--accent-text); font-weight: 600; }
+.cp-lists { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+.cp-lists em { font-style: normal; opacity: .7; margin-left: 2px; }
+.cp-newlist { gap: 6px; flex: 1 1 200px; }
+.cp-newlist input { min-width: 0; flex: 1; }
+.pp-details { margin-top: 10px; width: 100%; }
+.person.open { flex-wrap: wrap; }
+.pp-bday { color: var(--accent-text); }
+.ml-week { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 2px; }
+.ml-week li { display: grid; grid-template-columns: 92px 1fr; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); align-items: baseline; }
+.ml-week li.today .ml-day { color: var(--accent-text); font-weight: 600; }
+.ml-day { margin: 0; font-size: 14px; color: var(--muted); }
+.ml-slots { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+.ml-meal { display: inline-flex; align-items: center; gap: 6px; }
+.ml-meal .icon-btn.sm { width: 26px; height: 26px; }
+.ml-recipe details { width: 100%; }
+.ml-recipe summary { display: flex; justify-content: space-between; gap: 10px; cursor: pointer; list-style: none; }
+.ml-recipe summary::-webkit-details-marker { display: none; }
+.ml-ingr { margin: 10px 0; padding-left: 18px; display: grid; gap: 2px; }
+.fc-card { text-align: center; display: grid; gap: 14px; padding-block: 28px; }
+.fc-phase { margin: 0; color: var(--muted); }
+.fc-time { margin: 0; font: 600 64px/1 var(--font-display); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.fc-bar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; max-width: 360px; width: 100%; margin: 0 auto; }
+.fc-bar i { display: block; height: 100%; background: var(--accent); transition: width 1s linear; }
+.wx { color: var(--muted); }
+
 .ev-when { flex: none; width: 74px; display: grid; font-size: 11.5px; color: var(--muted); line-height: 1.3; }
 .ev-when b { font-size: 14px; color: var(--fg); }
 .restore-plan { margin-top: 12px; padding: 12px; border-radius: 12px; background: var(--surface-2); display: grid; gap: 4px; }

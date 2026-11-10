@@ -1,10 +1,19 @@
-import { html, raw, wire, mount, today, addDays, relDate, relDateInline, empty } from '../ui.js';
+import { html, raw, wire, mount, today, addDays, relDate, relDateInline, fmtDate, empty } from '../ui.js';
 import { icon } from '../icons.js';
 import { XP } from '../game.js';
 
 const HOW = { call: 'Call', visit: 'Visit', message: 'Message', other: 'Other' };
 const EVERY = [[7, 'Every week'], [14, 'Every 2 weeks'], [30, 'Every month'], [60, 'Every 2 months'], [90, 'Every 3 months'], [180, 'Twice a year'], [365, 'Once a year']];
 const daysBetween = (a, b) => Math.round((new Date(`${b}T00:00`) - new Date(`${a}T00:00`)) / 864e5);
+// Next birthday on or after `t` (29 Feb falls on 28 Feb in other years).
+export function nextBirthday(bday, t) {
+  if (!bday) return null;
+  const [, m, d] = bday.split('-').map(Number);
+  const on = (y) => `${y}-${String(m).padStart(2, '0')}-${String(Math.min(d, new Date(y, m, 0).getDate())).padStart(2, '0')}`;
+  const y = Number(t.slice(0, 4));
+  return on(y) >= t ? on(y) : on(y + 1);
+}
+let details = null;   // person whose birthday/gift ideas are open
 const everyLabel = (n) => (EVERY.find(([d]) => d === n)?.[1] || `Every ${n} days`).toLowerCase();
 
 export default {
@@ -28,11 +37,20 @@ export default {
     const nameOf = Object.fromEntries(people.map((p) => [p.id, p.name]));
     const month = logs.filter((l) => l.contacted_on > addDays(t, -30)).length;
 
+    const bdays = people.map((p) => ({ p, next: nextBirthday(p.birthday, t) })).filter((x) => x.next)
+      .map((x) => ({ ...x, n: daysBetween(t, x.next) })).sort((a, b) => a.n - b.n);
+    const soonBday = Object.fromEntries(bdays.filter((x) => x.n <= 30).map((x) => [x.p.id, x.n]));
+    const detailForm = (p) => html`<form data-form="details" data-id="${p.id}" class="form pp-details">
+        <label class="field">Birthday<input type="date" name="birthday" value="${p.birthday || ''}"></label>
+        <label class="field">Gift ideas<textarea name="gift_ideas" maxlength="1000" rows="3" placeholder="Things they mentioned wanting, sizes, favourite brands…">${p.gift_ideas || ''}</textarea></label>
+        <div class="row end"><button type="button" class="btn sm" data-act="details-close">Cancel</button><button class="btn primary sm">Save</button></div>
+      </form>`;
     const row = ({ p, last, left }) => html`
-      <li class="item person">
+      <li class="item person ${details === p.id ? 'open' : ''}">
         <div class="body">
           <p class="title">${p.name}${p.relation ? html` <span class="muted">· ${p.relation}</span>` : ''}</p>
           <p class="sub ${left < 0 ? 'due-late' : ''}">${last ? `${HOW[last.how]} ${relDateInline(last.contacted_on)}` : 'Not logged yet'} · ${left < 0 ? `${-left} day${left === -1 ? '' : 's'} overdue` : left === 0 ? 'due today' : `in ${left} day${left === 1 ? '' : 's'}`}</p>
+          ${p.id in soonBday ? html`<p class="sub pp-bday">${soonBday[p.id] === 0 ? 'Birthday today' : soonBday[p.id] === 1 ? 'Birthday tomorrow' : `Birthday in ${soonBday[p.id]} days`}${p.gift_ideas ? ` · gift ideas saved` : ''}</p>` : ''}
         </div>
         <div class="row quick">
           ${['message', 'call', 'visit'].map((h) => html`<button class="btn sm" data-act="log" data-id="${p.id}" data-how="${h}" aria-label="Log a ${h} with ${p.name}">${HOW[h]}</button>`)}
@@ -40,8 +58,10 @@ export default {
         <details class="more"><summary class="icon-btn" aria-label="More for ${p.name}">⋯</summary>
           <div class="more-menu">
             ${EVERY.filter(([d]) => d !== p.every_days).map(([d, l]) => html`<button class="text-btn" data-act="every" data-id="${p.id}" data-days="${d}">${l}</button>`)}
+            <button class="text-btn" data-act="details-open" data-id="${p.id}">Birthday &amp; gift ideas</button>
             <button class="text-btn" data-act="delperson" data-id="${p.id}">Remove ${p.name}</button>
           </div></details>
+        ${details === p.id ? detailForm(p) : ''}
       </li>`;
 
     mount(el, html`
@@ -58,6 +78,15 @@ export default {
           <ul class="list">${later.map(row)}</ul>
         </section>` : ''}
 
+      ${bdays.length ? html`<section class="card">
+        <div class="card-head"><h2>Birthdays</h2><span class="meta">Next ${Math.min(bdays.length, 5)}</span></div>
+        <ul class="list">${bdays.slice(0, 5).map(({ p, next, n }) => html`<li class="item">
+          <div class="body"><p class="title">${p.name}</p><p class="sub">${fmtDate(next, { weekday: 'short', day: 'numeric', month: 'short' })} · ${n === 0 ? 'today' : n === 1 ? 'tomorrow' : `in ${n} days`}</p>
+            ${p.gift_ideas ? html`<p class="sub" style="white-space:pre-line">Gift ideas: ${p.gift_ideas}</p>` : ''}</div>
+          <button class="icon-btn" data-act="details-open" data-id="${p.id}" aria-label="Edit birthday and gift ideas for ${p.name}">${raw(icon('edit'))}</button>
+        </li>`)}</ul>
+      </section>` : ''}
+
       <section class="card">
         <div class="card-head"><h2>Add someone</h2></div>
         <form data-form="add" class="form">
@@ -65,6 +94,7 @@ export default {
             <label class="field">Name<input name="name" maxlength="80" required placeholder="e.g. Mak"></label>
             <label class="field">Who<input name="relation" maxlength="60" placeholder="Family, friend, mentor…"></label>
             <label class="field">Keep in touch<select name="every_days">${EVERY.map(([d, l]) => html`<option value="${d}" ${d === 30 ? 'selected' : ''}>${l}</option>`)}</select></label>
+            <label class="field">Birthday<input type="date" name="birthday"></label>
           </div>
           <div class="row end"><button class="btn primary">${raw(icon('plus', 18))}Add</button></div>
         </form>
@@ -84,10 +114,16 @@ export default {
     wire(el, {
       add: async (v, form) => {
         const every = EVERY.some(([d]) => d === +v.every_days) ? +v.every_days : 30;
-        await ctx.store.insert('contacts', { name: v.name.replace(/\s+/g, ' '), relation: v.relation || null, every_days: every });
+        await ctx.store.insert('contacts', { name: v.name.replace(/\s+/g, ' '), relation: v.relation || null, every_days: every, birthday: v.birthday || null });
         form.reset();
         ctx.say(`${v.name} added · ${everyLabel(every)}`);
         ctx.rerender();
+      },
+      'details-open': (b) => { details = b.dataset.id; ctx.rerender(); setTimeout(() => el.querySelector('.pp-details input')?.focus(), 50); },
+      'details-close': () => { details = null; ctx.rerender(); },
+      details: async (v, f) => {
+        await ctx.store.update('contacts', f.dataset.id, { birthday: v.birthday || null, gift_ideas: v.gift_ideas || null });
+        details = null; ctx.say('Saved'); ctx.rerender();
       },
       log: async (b) => {
         const p = people.find((x) => x.id === b.dataset.id);

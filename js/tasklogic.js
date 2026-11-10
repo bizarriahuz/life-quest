@@ -26,6 +26,31 @@ export function nextDue(due, repeat, from = today()) {
   return step(from, repeat, 1);
 }
 
+// Habit history for daily tasks: each day a daily is ticked leaves an XP entry "<task id>:<day>".
+// Returns { [taskId]: Set(days) } for the last ~60 days.
+export async function habitDays(ctx) {
+  const since = new Date(Date.now() - 62 * 864e5).toISOString();
+  const evs = await ctx.store.list('xp_events', { match: { source: 'task' }, gte: ['created_at', since] }).catch(() => []);
+  const out = {};
+  for (const e of evs) {
+    const m = /^(.+):(\d{4}-\d{2}-\d{2})$/.exec(e.source_id || '');
+    if (m) (out[m[1]] ||= new Set()).add(m[2]);
+  }
+  return out;
+}
+// Days in a row, counting today if it's ticked, otherwise up to yesterday.
+export function habitStreak(days, t = today()) {
+  if (!days) return 0;
+  let n = 0;
+  const back = (k) => { const [y, m, d] = k.split('-').map(Number); return dateKey(new Date(y, m - 1, d - 1)); };
+  for (let d = days.has(t) ? t : back(t); days.has(d); d = back(d)) n += 1;
+  return n;
+}
+export function habitWeek(days, t = today()) {
+  const [y, m, d] = t.split('-').map(Number);
+  return Array.from({ length: 7 }, (_, i) => { const k = dateKey(new Date(y, m - 1, d - 6 + i)); return { day: k, on: !!days?.has(k) }; });
+}
+
 // Tick or untick one task. Returns nothing; caller re-renders.
 export async function toggleTask(ctx, q) {
   const t = today();

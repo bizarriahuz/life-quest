@@ -1,6 +1,21 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.53', date: '2026-11-11', title: 'Everyday things',
+    items: [
+      'Daily habits now show your streak and the last seven days.',
+      'One line a day: write a sentence about today, and see what you wrote a month and a year ago.',
+      'Meals: plan the week, save recipes, and send the ingredients to your shared shopping list.',
+      'Renewals: passport, insurance, road tax and warranties, with a reminder before they expire.',
+      'Subscriptions in Finance, with what they cost you a month and a year. Payments show in your Calendar.',
+      'People: birthdays (on Home and in your Calendar) and gift ideas.',
+      'Focus: a timer for deep work, with breaks. Earns Discipline XP.',
+      'Weather under the date on Home, with a heads-up before rain. Change the place in Settings → Appearance.',
+      'Couple: keep more than one shared list, like Groceries and House.',
+      'A fresh About page.',
+    ],
+  },
+  {
     version: '1.52', date: '2026-11-08', title: 'New heading font',
     items: [
       'Headings now use Space Grotesk; everything else stays in Inter. The About page uses the same two fonts.',

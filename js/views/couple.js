@@ -8,8 +8,9 @@ import { dayNumber } from './word.js';
 import { inviteUrl, tokenFrom } from './projects.js';
 import { QUESTIONS, SUGGESTIONS } from '../couple-data.js';
 
-const TABS = { today: 'Today', dates: 'Dates', memories: 'Memories', list: 'Our list', us: 'Us' };
+const TABS = { today: 'Today', dates: 'Dates', memories: 'Memories', list: 'Lists', us: 'Us' };
 let tab = 'today';
+let listName = null;          // which shared list is open (null = "Our list")
 let picked = null;            // date idea picked from the jar
 let memoryDraft = null;
 let cdEdit = null;           // countdown being edited       // title carried over from a finished date
@@ -145,8 +146,11 @@ async function renderSpace(el, ctx, couple) {
   const ideasOpen = ideas.filter((x) => !x.done).reverse();
   const ideasDone = ideas.filter((x) => x.done).sort((a, b) => (b.done_on || '').localeCompare(a.done_on || ''));
   const memories = kinds('memory').sort((a, b) => (b.due_on || b.created_at).localeCompare(a.due_on || a.created_at));
-  const listOpen = kinds('task').filter((x) => !x.done);
-  const listDone = kinds('task').filter((x) => x.done).sort((a, b) => (b.done_on || '').localeCompare(a.done_on || ''));
+  const listNames = [...new Set([null, ...kinds('task').map((x) => x.body || null), listName])];
+  const inList = (x) => (x.body || null) === listName;
+  const allOpen = kinds('task').filter((x) => !x.done);
+  const listOpen = allOpen.filter(inList);
+  const listDone = kinds('task').filter((x) => x.done && inList(x)).sort((a, b) => (b.done_on || '').localeCompare(a.done_on || ''));
   const since = couple.together_since;
   const days = daysTogether(since, t);
   const countdowns = kinds('countdown').map((x) => ({ ...x, next: nextOccurrence(x.due_on, x.yearly, t) }));
@@ -286,14 +290,18 @@ async function renderSpace(el, ctx, couple) {
       </li>`)}</ol>` : html`<section class="card">${empty('No memories yet. Save the moments you want to keep, with a photo if you like.')}</section>`}`,
 
     list: () => html`
+      <div class="cp-lists" role="tablist" aria-label="Lists">
+        ${listNames.map((n) => { const c = allOpen.filter((x) => (x.body || null) === n).length; return html`<button class="btn sm ${n === listName ? 'primary' : ''}" data-act="pick-list" data-name="${n || ''}" aria-pressed="${n === listName}">${n || 'Our list'}${c ? html` <em>${c}</em>` : ''}</button>`; })}
+        <form data-form="newlist" class="row cp-newlist"><input name="name" maxlength="40" required placeholder="New list, e.g. Groceries" aria-label="New list name"><button class="btn sm">${raw(icon('plus', 15))}</button></form>
+      </div>
       <section class="card">
         <form data-form="item" class="row">
-          <input name="title" maxlength="200" required placeholder="Add to our list, e.g. Milk, light bulbs" aria-label="New item" class="grow">
+          <input name="title" maxlength="200" required placeholder="Add to ${listName || 'our list'}, e.g. Milk, light bulbs" aria-label="New item" class="grow">
           <button class="btn primary sm">${raw(icon('plus', 15))}Add</button>
         </form>
       </section>
       <section class="card">
-        <div class="card-head"><h2>Our list</h2><span class="meta">${listOpen.length}</span></div>
+        <div class="card-head"><h2>${listName || 'Our list'}</h2><span class="meta">${listOpen.length}</span></div>
         ${listOpen.length ? html`<ul class="list">${listOpen.map((x) => html`<li class="item">
           <button class="check" data-act="tick" data-id="${x.id}" aria-label="Got it: ${x.title}">${raw(icon('check'))}</button>
           <div class="body"><p class="title">${x.title}</p><p class="sub">added by ${who(x).replace(/^You$/, 'you')}</p></div>
@@ -349,7 +357,7 @@ async function renderSpace(el, ctx, couple) {
     <header class="page-head cp-head"><div><h1>${partner ? html`${myName} <span class="cp-amp">&amp;</span> ${PName}` : 'Couple'}</h1>
       <p>${days != null ? `${plural(days, 'day')} together` : 'Your private space'}</p></div></header>
     <div class="seg ptabs cp-tabs" role="tablist" aria-label="Couple">
-      ${Object.entries(TABS).map(([k, v]) => html`<label><input type="radio" name="ctab" value="${k}" data-change="tab" ${tab === k ? 'checked' : ''}><span>${v}${k === 'today' && notesForMe.length ? html` <em>${notesForMe.length}</em>` : k === 'list' && listOpen.length ? html` <em>${listOpen.length}</em>` : ''}</span></label>`)}
+      ${Object.entries(TABS).map(([k, v]) => html`<label><input type="radio" name="ctab" value="${k}" data-change="tab" ${tab === k ? 'checked' : ''}><span>${v}${k === 'today' && notesForMe.length ? html` <em>${notesForMe.length}</em>` : k === 'list' && allOpen.length ? html` <em>${allOpen.length}</em>` : ''}</span></label>`)}
     </div>
     ${panes[tab]()}
   `);
@@ -472,7 +480,9 @@ async function renderSpace(el, ctx, couple) {
       if (x.photo_path) await ctx.store.removePhotos([x.photo_path]).catch(() => {});
       await ctx.store.remove('project_entries', x.id); ctx.rerender();
     },
-    item: async (v, f) => { await add({ kind: 'task', title: v.title }); f.reset(); ctx.rerender(); el.querySelector('form[data-form=item] input')?.focus(); },
+    'pick-list': (b) => { listName = b.dataset.name || null; ctx.rerender(); },
+    newlist: (v) => { listName = v.name.slice(0, 40) || null; ctx.rerender(); setTimeout(() => el.querySelector('form[data-form=item] input')?.focus(), 50); },
+    item: async (v, f) => { await add({ kind: 'task', title: v.title, body: listName }); f.reset(); ctx.rerender(); el.querySelector('form[data-form=item] input')?.focus(); },
     tick: async (b) => { const x = entry(b.dataset.id); if (x) { await ctx.store.update('project_entries', x.id, { done: !x.done }); ctx.rerender(); } },
     del: async (b) => {
       const x = entry(b.dataset.id);
