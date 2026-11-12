@@ -3,7 +3,17 @@
 // It's an estimate: the app says so, and the person can change the number.
 import { whoIs, json, sameSite, allowed } from '../_shared/auth.js';
 
-const MODEL = '@cf/zai-org/glm-4.7-flash';
+// Llama 3.3 70B: supports JSON mode on Workers AI and isn't a "thinking" model (those can spend
+// the whole reply allowance reasoning and return no answer).
+const MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
+const SCHEMA = {
+  type: 'object',
+  properties: {
+    items: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, portion: { type: 'string' }, kcal: { type: 'number' } }, required: ['name', 'kcal'] } },
+    note: { type: 'string' },
+  },
+  required: ['items'],
+};
 const SYSTEM = `You estimate food energy. The user describes what they ate, often Singaporean or Malaysian dishes (hawker food), sometimes with portions.
 Break it into items, assume a typical single portion where none is given, and estimate kilocalories for each.
 Answer only with JSON: {"items":[{"name":"...","portion":"...","kcal":123}],"note":"..."}.
@@ -11,8 +21,9 @@ Answer only with JSON: {"items":[{"name":"...","portion":"...","kcal":123}],"not
 If the text is not food or drink, answer {"items":[],"note":"That doesn't look like food."}.`;
 
 function parse(out) {
-  let text = out?.response ?? out?.choices?.[0]?.message?.content ?? out;
-  if (text && typeof text === 'object') return text;
+  const msg = out?.choices?.[0]?.message;
+  let text = out?.response ?? msg?.content ?? msg?.reasoning_content ?? out?.result?.response ?? out;
+  if (text && typeof text === 'object') return Array.isArray(text.items) ? text : null;
   text = String(text || '').replace(/<think>[\s\S]*?<\/think>/g, '');
   const m = text.match(/\{[\s\S]*\}/);
   return m ? JSON.parse(m[0]) : null;
@@ -28,12 +39,13 @@ export async function onRequestPost({ request, env }) {
   try { text = String((await request.json()).text || '').trim().slice(0, 200); } catch { /* bad body */ }
   if (text.length < 2) return json({ error: 'Type what you ate' }, 400);
   try {
-    const out = await env.AI.run(MODEL, {
-      messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: text }],
-      max_tokens: 600, temperature: 0.2,
-      response_format: { type: 'json_object' },
-    });
-    const d = parse(out);
+    const messages = [{ role: 'system', content: SYSTEM }, { role: 'user', content: text }];
+    let d = null;
+    try {
+      d = parse(await env.AI.run(MODEL, { messages, max_tokens: 700, temperature: 0.2, response_format: { type: 'json_schema', json_schema: SCHEMA } }));
+    } catch { /* JSON mode couldn't be met: ask again plainly below */ }
+    if (!d) d = parse(await env.AI.run(MODEL, { messages, max_tokens: 700, temperature: 0.2 }));
+    if (!d) throw new Error('no answer');
     const items = (Array.isArray(d?.items) ? d.items : []).slice(0, 12).map((x) => ({
       name: String(x.name || '').slice(0, 60), portion: String(x.portion || '').slice(0, 40),
       kcal: Math.max(0, Math.min(5000, Math.round(Number(x.kcal) || 0))),
