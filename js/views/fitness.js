@@ -1,6 +1,15 @@
 import { html, raw, wire, mount, today, addDays, fmtDate, relDate, empty } from '../ui.js';
 import { icon } from '../icons.js';
 import { XP } from '../game.js';
+import { api } from '../api.js';
+
+// Food: type what you ate and get an estimate of the calories (Workers AI, see functions/api/calories.js).
+// It is always shown as an estimate, and you can change the number before or after saving.
+let tab = 'training';
+let guess = null;      // { text, items, total, note } waiting to be saved
+let busy = false;
+const MEALS = [['breakfast', 'Breakfast'], ['lunch', 'Lunch'], ['dinner', 'Dinner'], ['snack', 'Snack']];
+const mealNow = () => { const h = new Date().getHours(); return h < 11 ? 'breakfast' : h < 16 ? 'lunch' : h < 21 ? 'dinner' : 'snack'; };
 
 const KINDS = [['run', 'Run'], ['strength', 'Strength'], ['cardio', 'Cardio'], ['sport', 'Sport'], ['other', 'Other']];
 const kindLabel = (k) => (KINDS.find(([v]) => v === k) || [k, k])[1];
@@ -11,7 +20,15 @@ export default {
   label: 'Fitness',
   async render(el, ctx) {
     const t = today();
-    const rows = await ctx.store.list('workouts', { gte: ['performed_on', addDays(t, -60)], order: 'performed_on' });
+    const [rows, food] = await Promise.all([
+      ctx.store.list('workouts', { gte: ['performed_on', addDays(t, -60)], order: 'performed_on' }),
+      ctx.store.list('food_logs', { gte: ['eaten_on', addDays(t, -6)] }).catch(() => []),
+    ]);
+    food.sort((a, b) => b.eaten_on.localeCompare(a.eaten_on) || b.created_at.localeCompare(a.created_at));
+    const kcalBy = Object.fromEntries(Array.from({ length: 7 }, (_, i) => [addDays(t, i - 6), 0]));
+    for (const f of food) if (f.eaten_on in kcalBy) kcalBy[f.eaten_on] += f.kcal;
+    const todayFood = food.filter((f) => f.eaten_on === t);
+    const signedIn = ctx.store.mode === 'cloud';
     rows.sort((a, b) => b.performed_on.localeCompare(a.performed_on) || b.created_at.localeCompare(a.created_at));
 
     const week = Array.from({ length: 7 }, (_, i) => addDays(t, i - 6));
@@ -23,8 +40,45 @@ export default {
     const weekMin = inWeek.reduce((n, w) => n + (w.duration_min || 0), 0);
 
     mount(el, html`
-      <header class="page-head"><div><h1>Fitness</h1><p>${inWeek.length} session${inWeek.length === 1 ? '' : 's'} this week</p></div></header>
+      <header class="page-head"><div><h1>Fitness</h1><p>${tab === 'food' ? `About ${kcalBy[t].toLocaleString()} kcal today` : `${inWeek.length} session${inWeek.length === 1 ? '' : 's'} this week`}</p></div></header>
+      <div class="seg ptabs" role="tablist" aria-label="Fitness">
+        ${[['training', 'Training'], ['food', 'Food']].map(([k, v]) => html`<label><input type="radio" name="ftab" value="${k}" data-change="tab" ${tab === k ? 'checked' : ''}><span>${v}</span></label>`)}
+      </div>
+      ${tab === 'food' ? html`
+      <section class="card">
+        <div class="card-head"><h2>What did you eat?</h2></div>
+        <form data-form="guess" class="form">
+          <input name="text" maxlength="200" required placeholder="e.g. nasi lemak with fried chicken, teh tarik" aria-label="What you ate" value="${guess?.text || ''}">
+          <div class="row spread" style="gap:8px">
+            <select name="meal" aria-label="Meal" style="width:auto">${MEALS.map(([k, v]) => html`<option value="${k}" ${(guess?.meal || mealNow()) === k ? 'selected' : ''}>${v}</option>`)}</select>
+            <button class="btn primary" ${busy ? 'disabled' : ''}>${busy ? 'Estimating…' : signedIn ? 'Estimate' : 'Add'}</button>
+          </div>
+        </form>
+        ${guess ? html`<div class="fd-guess">
+          ${guess.items.length ? html`<ul class="fd-items">${guess.items.map((x) => html`<li><span>${x.name}${x.portion ? html` <span class="faint">· ${x.portion}</span>` : ''}</span><b>${x.kcal}</b></li>`)}</ul>` : ''}
+          ${guess.note ? html`<p class="small muted">${guess.note}</p>` : ''}
+          <form data-form="savefood" class="row" style="gap:8px;align-items:end">
+            <label class="field" style="max-width:150px">Calories (estimate)<input name="kcal" type="number" inputmode="numeric" min="0" max="5000" required value="${guess.total || ''}"></label>
+            <button class="btn primary">${raw(icon('check', 18))}Save</button>
+            <button type="button" class="btn" data-act="dropguess">Cancel</button>
+          </form>
+        </div>` : ''}
+        <p class="small faint" style="margin-top:10px">${signedIn ? 'Estimates come from AI and can be off, mostly because of portion size and oil. Change the number if you know better.' : 'Sign in to get AI estimates. You can still type the calories yourself.'}</p>
+      </section>
 
+      <section class="card">
+        <div class="card-head"><h2>Today</h2><span class="meta">${kcalBy[t].toLocaleString()} kcal</span></div>
+        ${todayFood.length ? html`<ul class="list">${todayFood.map((f) => html`<li class="item">
+          <div class="body"><p class="title">${f.text}</p><p class="sub">${(MEALS.find(([k]) => k === f.meal) || ['', 'Meal'])[1]}${f.detail ? ` · ${f.detail}` : ''}</p></div>
+          <span class="xp">${f.kcal}</span>
+          <button class="icon-btn" data-act="delfood" data-id="${f.id}" aria-label="Delete ${f.text}">${raw(icon('trash'))}</button>
+        </li>`)}</ul>` : empty('Nothing logged today.')}
+      </section>
+
+      <section class="card">
+        <div class="card-head"><h2>Last 7 days</h2><span class="meta">kcal, estimated</span></div>
+        <div class="fd-week">${Object.entries(kcalBy).map(([d, n]) => html`<div class="${d === t ? 'today' : ''}"><b>${n ? n.toLocaleString() : '–'}</b><span>${d === t ? 'Today' : fmtDate(d, { weekday: 'short' })}</span></div>`)}</div>
+      </section>` : html`
       <div class="kpis">
         <div class="kpi"><b>${inWeek.length}</b><span>Sessions, 7d</span></div>
         <div class="kpi"><b>${weekMin}</b><span>Minutes, 7d</span></div>
@@ -70,10 +124,30 @@ export default {
             <span class="xp">+${XP.workout(w)}</span>
             <button class="icon-btn" data-act="delete" data-id="${w.id}" aria-label="Delete session">${raw(icon('trash'))}</button>
           </li>`)}</ul>` : empty('No sessions yet.')}
-      </section>
+      </section>`}
     `);
 
     wire(el, {
+      tab: (r) => { tab = r.value; ctx.rerender(); },
+      guess: async (v) => {
+        const text = v.text.trim().slice(0, 200);
+        if (!signedIn) { guess = { text, meal: v.meal, items: [], total: null, note: '' }; ctx.rerender(); return; }
+        busy = true; guess = { text, meal: v.meal, items: [], total: null, note: '' }; ctx.rerender();
+        try {
+          const r = await api(ctx, '/api/calories', { method: 'POST', body: { text } });
+          guess = { text, meal: v.meal, ...r };
+          if (!r.items.length) ctx.say(r.note || 'Couldn’t estimate that. Type the number yourself.');
+        } catch (e) { ctx.say(e.message); }
+        busy = false; ctx.rerender();
+      },
+      savefood: async (v) => {
+        const kcal = Math.max(0, Math.min(5000, Math.round(Number(v.kcal) || 0)));
+        const detail = guess.items.length > 1 ? guess.items.map((x) => `${x.name} ${x.kcal}`).join(', ').slice(0, 600) : null;
+        await ctx.store.insert('food_logs', { eaten_on: t, meal: guess.meal || mealNow(), text: guess.text, kcal, detail });
+        guess = null; ctx.say(`Logged ${kcal} kcal`); ctx.rerender();
+      },
+      dropguess: () => { guess = null; ctx.rerender(); },
+      delfood: async (b) => { await ctx.store.remove('food_logs', b.dataset.id); ctx.rerender(); },
       add: async (v, form) => {
         const row = await ctx.store.insert('workouts', {
           kind: v.kind || 'run',

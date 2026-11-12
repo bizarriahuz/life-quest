@@ -1,6 +1,14 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.54', date: '2026-11-12', title: 'Food and Journal',
+    items: [
+      'Fitness has a Food tab: type what you ate, like “nasi lemak with fried chicken”, and get an estimate of the calories. Change the number if you know better. Thanks Beast for the idea.',
+      'One line a day is now Journal: write a line or a whole page, add up to four photos, jump to any day on the calendar, and search what you wrote. Thanks Beast for this one too.',
+      'Journal photos are private to you, and are included in the nightly backup.',
+    ],
+  },
+  {
     version: '1.53', date: '2026-11-11', title: 'Everyday things',
     items: [
       'Daily habits now show your streak and the last seven days.',

@@ -1304,6 +1304,35 @@ a.item.set-row { color: inherit; text-decoration: none; display: flex; align-ite
 .adm-secs b { text-align: right; font-variant-numeric: tabular-nums; }
 .src-couple { background: #e0607e; }
 .src-renewal { background: #d08a3a; } .src-sub { background: #7a8fa6; } .src-bday { background: #c9679b; }
+/* 1.54 food + journal */
+.fd-guess { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); display: grid; gap: 10px; }
+.fd-items { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.fd-items li { display: flex; justify-content: space-between; gap: 12px; }
+.fd-items b { font-variant-numeric: tabular-nums; }
+.fd-week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; }
+.fd-week div { display: grid; gap: 2px; padding: 8px 2px; border-radius: 10px; background: var(--surface-2); }
+.fd-week div.today { outline: 1.5px solid var(--accent); }
+.fd-week b { font-size: 14px; font-variant-numeric: tabular-nums; }
+.fd-week span { font-size: 12px; color: var(--muted); }
+.jr-photos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.jr-photos figure { position: relative; margin: 0; aspect-ratio: 1; border-radius: 12px; overflow: hidden; background: var(--surface-2); }
+.jr-photos img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.jr-photos .icon-btn { position: absolute; top: 4px; right: 4px; width: 28px; height: 28px; background: rgba(0,0,0,.55); color: #fff; }
+label.btn.disabled { opacity: .5; pointer-events: none; }
+.jr-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
+.jr-dow { font-size: 12px; color: var(--faint); padding-bottom: 2px; }
+.jr-day { aspect-ratio: 1; max-height: 46px; width: 100%; border: 0; border-radius: 10px; background: transparent; color: var(--fg); font: inherit; font-size: 14px; font-variant-numeric: tabular-nums; cursor: pointer; position: relative; }
+.jr-day.has { background: var(--surface-2); font-weight: 600; }
+.jr-day.has::after { content: ''; position: absolute; left: 50%; bottom: 5px; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: var(--accent); }
+.jr-day.now { box-shadow: inset 0 0 0 1.5px var(--line-2); }
+.jr-day.sel { background: var(--accent); color: var(--on-accent); }
+.jr-day.sel::after { background: var(--on-accent); }
+.jr-day:disabled { color: var(--faint); cursor: default; }
+.jr-entry { padding: 0; }
+.jr-open { all: unset; box-sizing: border-box; display: grid; gap: 2px; width: 100%; padding: 12px 0; cursor: pointer; }
+.jr-open:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
+.jr-text { white-space: pre-line; overflow-wrap: anywhere; }
+.jr-open .jr-text { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 /* 1.53 everyday features */
 .hb-week { display: inline-flex; gap: 3px; vertical-align: middle; margin-right: 2px; }
 .hb-week i { width: 7px; height: 7px; border-radius: 50%; background: var(--line-2); }

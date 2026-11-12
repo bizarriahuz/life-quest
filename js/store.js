@@ -61,6 +61,8 @@ export function cloudStore(sb, user) {
       }
       return out;
     },
+    // Sign-in token for the app's own server functions (calorie estimates, journal photos).
+    async token() { return (await sb.auth.getSession()).data.session?.access_token || null; },
     // Project photos (private bucket; viewing links expire after an hour)
     async uploadPhoto(path, blob) {
       const { error } = await sb.storage.from('project-photos').upload(path, blob, { contentType: blob.type || 'image/jpeg', upsert: false, cacheControl: '86400' });
@@ -141,7 +143,8 @@ const DEFAULTS = {
   moods: { gratitude: null },
   albums: { artist: null, year: null, tracks: null, genre: null, art_url: null, itunes_id: null, apple_url: null, status: 'want', listened_on: null, rating: null, note: null },
   contacts: { relation: null, every_days: 30, note: null, birthday: null, gift_ideas: null },
-  journal_lines: {},
+  journal_lines: { photos: [] },
+  food_logs: { meal: 'snack', detail: null },
   renewals: { remind_days: 30, note: null },
   subscriptions: { every: 'monthly', note: null },
   recipes: { ingredients: null, steps: null, link: null },

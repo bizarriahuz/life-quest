@@ -179,8 +179,8 @@ export default {
               <span class="t-val"><span class="t-txt">${comicsReading.length ? comicsReading.map((c) => c.title + (c.issue ? ` ${/^\d+$/.test(c.issue) ? '#' : ''}${c.issue}` : '')).join(', ') : `${comicsMonth} read this month · ${comicsPile} in pile`}</span></span></a>`,
       sleep: () => html`<a href="#/sleep">${raw(icon('sleep'))}<span class="t-label">Sleep</span>
               <span class="t-val"><span class="t-txt">${lastSleep ? `${hmin(lastSleep.duration_min)}${lastSleep.slept_on === t ? ' last night' : ''} · avg ${hmin(sleepAvg)}` : 'Log last night'}</span></span></a>`,
-      journal: () => html`<a href="#/journal">${raw(icon('journal'))}<span class="t-label">One line</span>
-              <span class="t-val"><span class="t-txt">${jToday ? `“${jToday.body}”` : 'Write today’s line'}</span></span></a>`,
+      journal: () => html`<a href="#/journal">${raw(icon('journal'))}<span class="t-label">Journal</span>
+              <span class="t-val"><span class="t-txt">${jToday ? `“${jToday.body.split('\n')[0]}”` : 'Write about today'}</span></span></a>`,
       meals: () => html`<a href="#/meals">${raw(icon('meals'))}<span class="t-label">Meals</span>
               <span class="t-val"><span class="t-txt">${mealsToday.length ? Object.keys(SLOTS).map((k) => mealsToday.find((x) => x.slot === k)).filter(Boolean).map((x) => `${SLOTS[x.slot]}: ${x.title}`).join(' · ') : 'Nothing planned today'}</span></span></a>`,
       renewals: () => html`<a href="#/renewals">${raw(icon('renewals'))}<span class="t-label">Renewals</span>
@@ -302,7 +302,7 @@ export default {
             ${on.has('mtg') ? html`<li class="item">MTG: ${XP.mtgMatch} per game, +${XP.mtgWin} for a win</li>` : ''}
             ${on.has('watchlist') ? html`<li class="item">Watchlist: ${XP.watched} per film or series finished</li>` : ''}
             ${on.has('music') ? html`<li class="item">Music: ${XP.listened} per album listened to</li>` : ''}
-            ${on.has('journal') ? html`<li class="item">One line a day: ${XP.journalLine} per line</li>` : ''}
+            ${on.has('journal') ? html`<li class="item">Journal: ${XP.journalLine} for writing about today</li>` : ''}
             ${on.has('focus') ? html`<li class="item">Focus: ${XP.focus25} per 25 minutes finished</li>` : ''}
             ${on.has('people') ? html`<li class="item">People: ${XP.contact} for each person you catch up with, once a day</li>` : ''}
             ${on.has('finance') && on.has('prayer') ? html`<li class="item">Donations: ${XP.sadaqahDay} Faith on each day you give</li>` : ''}

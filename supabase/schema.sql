@@ -1469,3 +1469,28 @@ alter table public.profiles drop constraint if exists profiles_sections_check;
 alter table public.profiles add constraint profiles_sections_check check (sections is null or sections <@ array['tasks','goals','projects','calendar','clients','prayer','fitness','sleep','books','comics','learning','notes','mood','quotes','hobbies','games','chess','mtg','watchlist','music','people','finance','couple','football','journal','renewals','meals','focus']);
 alter table public.profiles drop constraint if exists profiles_seen_intros_check;
 alter table public.profiles add constraint profiles_seen_intros_check check (seen_intros is null or (cardinality(seen_intros) <= 100 and seen_intros <@ array['tasks','goals','projects','calendar','clients','prayer','fitness','sleep','books','comics','learning','notes','mood','quotes','hobbies','games','chess','mtg','watchlist','music','people','finance','couple','football','journal','renewals','meals','focus']));
+
+-- ---------- 1.54: Food (calorie estimates) and Journal (longer entries + photos) ----------
+create table if not exists public.food_logs (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  eaten_on   date not null default current_date,
+  meal       text not null default 'snack' check (meal in ('breakfast','lunch','dinner','snack')),
+  text       text not null check (char_length(text) between 1 and 200),
+  kcal       int not null check (kcal between 0 and 5000),
+  detail     text check (detail is null or char_length(detail) <= 600),
+  created_at timestamptz not null default now()
+);
+alter table public.food_logs enable row level security;
+create policy "own rows" on public.food_logs for all to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
+create index if not exists food_logs_user_created_idx on public.food_logs (user_id, created_at);
+create index if not exists food_logs_user_day_idx on public.food_logs (user_id, eaten_on);
+grant select, insert, update, delete on public.food_logs to authenticated;
+revoke truncate, references, trigger on public.food_logs from authenticated;
+revoke all on public.food_logs from anon;
+create trigger row_limits before insert on public.food_logs for each row execute function public.enforce_row_limits('30000', 'food entries');
+-- Journal: entries can be longer than one line, and hold up to 4 photos (keys in the R2 bucket).
+alter table public.journal_lines drop constraint if exists journal_lines_body_check;
+alter table public.journal_lines add constraint journal_lines_body_check check (char_length(body) between 1 and 10000);
+alter table public.journal_lines add column if not exists photos text[] not null default '{}';
+alter table public.journal_lines add constraint journal_lines_photos_check check (cardinality(photos) <= 4 and array_to_string(photos, ',') ~ '^(u/[0-9a-f-]{36}/[0-9a-f-]{36}\.jpg(,|$))*$');
