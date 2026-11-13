@@ -1447,6 +1447,39 @@ body.lc-on .lc-wrap { position: fixed; inset: 0; z-index: 70; background: #000; 
 .seg.wl-tabs { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; }
 .seg.wl-tabs span { padding-left: 6px; padding-right: 6px; text-align: center; white-space: nowrap; font-size: 13.5px; }
 
+/* ---------- Gundam ---------- */
+.seg.gk-tabs { display: grid; grid-template-columns: repeat(2, 1fr); width: 100%; }
+.seg.gk-tabs span { text-align: center; white-space: nowrap; }
+.gk-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 10px 0; }
+.gk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 14px 10px; }
+.gk-kit { display: grid; gap: 4px; min-width: 0; color: inherit; text-decoration: none; }
+.gk-art { aspect-ratio: 4 / 3; border-radius: 10px; overflow: hidden; background: var(--surface-2); border: 1px solid var(--line); display: grid; place-items: center; }
+.gk-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gk-art img:not([src]) { visibility: hidden; }
+.gk-blank { color: var(--faint); }
+.gk-name { font-size: 14px; font-weight: 600; line-height: 1.25; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.gk-sub { font-size: 12.5px; color: var(--muted); }
+.gk-origin { font-weight: 600; }
+.gk-origin.third_party_copy { color: var(--fg); }
+.gk-origin.third_party_original { color: var(--accent-text); }
+.gk-kit:active .gk-art { transform: scale(.98); }
+.gk-carousel { display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scrollbar-width: none; border-radius: 10px; }
+.gk-carousel::-webkit-scrollbar { display: none; }
+.gk-slide { position: relative; flex: 0 0 100%; scroll-snap-align: center; margin: 0; }
+.gk-slide img { width: 100%; aspect-ratio: 4 / 3; object-fit: contain; background: var(--surface-2); border-radius: 10px; display: block; }
+.gk-slide figcaption { position: absolute; left: 10px; bottom: 8px; padding: 2px 8px; border-radius: 999px; background: rgba(0,0,0,.5); color: #fff; }
+.gk-unphoto { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,.5); color: #fff; }
+.gk-noart { display: grid; place-items: center; gap: 6px; aspect-ratio: 4 / 3; max-height: 220px; width: 100%; background: var(--surface-2); border-radius: 10px; color: var(--faint); }
+.gk-fields { display: grid; gap: 10px; margin: 0; }
+.gk-row { display: grid; grid-template-columns: 96px 1fr; gap: 10px; }
+.gk-row dt { color: var(--muted); font-size: 13.5px; }
+.gk-row dd { margin: 0; overflow-wrap: anywhere; }
+.gk-notes { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); white-space: pre-wrap; overflow-wrap: anywhere; }
+.gk-origin-pick { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; min-width: 0; }
+.seg.gk-origins { display: grid; grid-template-columns: 1fr; border-radius: 14px; }
+.seg.gk-origins span { border-radius: 11px; }
+@media (min-width: 560px) { .seg.gk-origins { grid-template-columns: repeat(3, 1fr); } .seg.gk-origins span { text-align: center; } }
+
 /* ---------- Football ---------- */
 .fb-leagues { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 10px; scrollbar-width: none; }
 .fb-leagues::-webkit-scrollbar { display: none; }

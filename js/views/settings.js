@@ -435,14 +435,14 @@ async function account(el, ctx) {
 const EXPORT_TABLES = ['profiles', 'tasks', 'calendar_events', 'goals', 'goal_milestones', 'notes', 'quotes', 'moods', 'sleep_logs', 'workouts',
   'prayer_logs', 'books', 'comics', 'learning_items', 'learning_sessions', 'hobbies', 'hobby_sessions', 'watchlist', 'albums', 'mtg_decks', 'mtg_matches',
   'contacts', 'contact_logs', 'transactions', 'finance_categories', 'savings_goals', 'savings_contributions', 'client_projects',
-  'journal_lines', 'food_logs', 'renewals', 'subscriptions', 'recipes', 'meal_plan',
+  'journal_lines', 'food_logs', 'renewals', 'subscriptions', 'recipes', 'meal_plan', 'gundam_kits',
   'word_games', 'hive_games', 'sudoku_games', 'chess_games', 'chess_puzzles', 'xp_events',
   'projects', 'project_members', 'project_entries', 'project_comments', 'project_reactions'];
 // Restore: parents before the things that point at them.
 const RESTORE_TABLES = ['goals', 'goal_milestones', 'tasks', 'calendar_events', 'notes', 'quotes', 'moods', 'sleep_logs', 'workouts', 'prayer_logs',
   'books', 'comics', 'learning_items', 'learning_sessions', 'hobbies', 'hobby_sessions', 'watchlist', 'albums', 'mtg_decks', 'mtg_matches',
   'contacts', 'contact_logs', 'finance_categories', 'transactions', 'savings_goals', 'savings_contributions', 'client_projects',
-  'journal_lines', 'food_logs', 'renewals', 'subscriptions', 'recipes', 'meal_plan',
+  'journal_lines', 'food_logs', 'renewals', 'subscriptions', 'recipes', 'meal_plan', 'gundam_kits',
   'word_games', 'hive_games', 'sudoku_games', 'chess_games', 'chess_puzzles', 'xp_events'];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export async function planRestore(ctx, f) {
@@ -480,7 +480,8 @@ export async function runRestore(ctx, plan, progress) {
     const rows = plan.missingBy[t];
     if (!rows?.length) continue;
     progress(`Restoring… ${done.toLocaleString()} of ${plan.missing.toLocaleString()}`);
-    const res = await ctx.store.restore(t, rows.map(fix));
+    // Kit photo files aren't in the backup and their paths name the old kit id, so another account gets the kits without photos.
+    const res = await ctx.store.restore(t, rows.map(fix).map((r) => (t === 'gundam_kits' && plan.otherAccount ? { ...r, photos: [] } : r)));
     added += res.added; skipped += res.skipped; done += rows.length;
   }
   return { added, skipped };

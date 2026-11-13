@@ -1,6 +1,14 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.55', date: '2026-11-13', title: 'Gundam collection',
+    items: [
+      'A new Gundam section for your Gunpla: official Bandai kits on one tab, third-party kits on the other.',
+      'Third-party kits are marked as copies (unlicensed reproductions) or originals (their own designs), so the two never get mixed up.',
+      'Filter by grade, status and brand, add up to eight photos of each kit, and see your backlog and what you’ve spent this year.',
+    ],
+  },
+  {
     version: '1.54', date: '2026-11-12', title: 'Food and Journal',
     items: [
       'Fitness has a Food tab: type what you ate, like “nasi lemak with fried chicken”, and get an estimate of the calories. Change the number if you know better. Thanks Beast for the idea.',

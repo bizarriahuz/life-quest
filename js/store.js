@@ -63,20 +63,20 @@ export function cloudStore(sb, user) {
     },
     // Sign-in token for the app's own server functions (calorie estimates, journal photos).
     async token() { return (await sb.auth.getSession()).data.session?.access_token || null; },
-    // Project photos (private bucket; viewing links expire after an hour)
-    async uploadPhoto(path, blob) {
-      const { error } = await sb.storage.from('project-photos').upload(path, blob, { contentType: blob.type || 'image/jpeg', upsert: false, cacheControl: '86400' });
+    // Photos in a private bucket (project-photos, or kit-photos for Gundam); viewing links expire after an hour
+    async uploadPhoto(path, blob, bucket = 'project-photos') {
+      const { error } = await sb.storage.from(bucket).upload(path, blob, { contentType: blob.type || 'image/jpeg', upsert: false, cacheControl: '86400' });
       if (error) throw error;
     },
-    async photoUrls(paths) {
+    async photoUrls(paths, bucket = 'project-photos') {
       if (!paths.length) return {};
-      const { data, error } = await sb.storage.from('project-photos').createSignedUrls(paths, 3600);
+      const { data, error } = await sb.storage.from(bucket).createSignedUrls(paths, 3600);
       if (error) throw error;
       return Object.fromEntries((data || []).filter((d) => d.signedUrl).map((d) => [d.path, d.signedUrl]));
     },
-    async removePhotos(paths) {
+    async removePhotos(paths, bucket = 'project-photos') {
       if (!paths.length) return;
-      const { error } = await sb.storage.from('project-photos').remove(paths);
+      const { error } = await sb.storage.from(bucket).remove(paths);
       if (error) throw error;
     },
     // Live changes to one project. Returns a function that stops listening.
@@ -144,6 +144,7 @@ const DEFAULTS = {
   albums: { artist: null, year: null, tracks: null, genre: null, art_url: null, itunes_id: null, apple_url: null, status: 'want', listened_on: null, rating: null, note: null },
   contacts: { relation: null, every_days: 30, note: null, birthday: null, gift_ideas: null },
   journal_lines: { photos: [] },
+  gundam_kits: { series: null, grade: 'HG', scale: null, brand: null, origin: 'official', status: 'unbuilt', rating: null, price: null, currency: 'SGD', bought_at: null, store: null, notes: null, photos: [] },
   food_logs: { meal: 'snack', detail: null },
   renewals: { remind_days: 30, note: null },
   subscriptions: { every: 'monthly', note: null },

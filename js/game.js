@@ -27,6 +27,9 @@ export const SECTIONS = [
   { id: 'football', label: 'Football', hint: 'Results, fixtures and tables: top 5 leagues and the Singapore Premier League',
     intro: { blurb: 'Scores, fixtures and league tables, all in one place.',
       features: ['Premier League, LaLiga, Bundesliga, Serie A and Ligue 1', 'The Singapore Premier League too', 'Live scores that update by themselves', 'Fixtures in your own time zone, and full league tables'] } },
+  { id: 'gundam',  label: 'Gundam',  hint: 'Your Gunpla collection: official Bandai and third-party kits, kept apart',
+    intro: { blurb: 'Keep track of your Gunpla: what’s on the shelf, what’s still in the box, and what you want next.',
+      features: ['Official Bandai kits and third-party kits on separate tabs', 'Third-party kits marked as copies or original designs', 'Up to eight photos of each kit', 'See your backlog and what you’ve spent this year'] } },
   { id: 'mtg',     label: 'MTG',     hint: 'Magic: The Gathering decks, decklists and win rates' },
   { id: 'watchlist', label: 'Watchlist', hint: 'Films and series to watch, with ratings' },
   { id: 'music',   label: 'Music',   hint: 'Albums to hear and what you’ve been playing (Last.fm)' },
@@ -53,7 +56,7 @@ export const BASELINE_SECTIONS = new Set(['tasks', 'calendar', 'goals', 'project
   'learning', 'notes', 'mood', 'quotes', 'hobbies', 'mtg', 'watchlist', 'music', 'people', 'finance']);
 export const newSections = () => SECTIONS.filter((s) => s.intro && !BASELINE_SECTIONS.has(s.id));
 
-export const DEFAULT_SECTIONS = ['tasks', 'notes', 'calendar', 'fitness', 'sleep', 'mood', 'finance'];
+export const DEFAULT_SECTIONS = ['tasks', 'notes', 'calendar', 'fitness', 'sleep', 'mood', 'finance', 'gundam'];
 
 export function enabledSections(profile) {
   const s = profile?.sections;
