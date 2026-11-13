@@ -96,3 +96,7 @@ alter table public.profiles drop constraint if exists profiles_sections_check;
 alter table public.profiles add constraint profiles_sections_check check (sections is null or sections <@ array['tasks','goals','projects','calendar','clients','prayer','fitness','sleep','books','comics','learning','notes','mood','quotes','hobbies','games','chess','mtg','watchlist','music','people','finance','couple','football','journal','renewals','meals','focus','gundam']);
 alter table public.profiles drop constraint if exists profiles_seen_intros_check;
 alter table public.profiles add constraint profiles_seen_intros_check check (seen_intros is null or (cardinality(seen_intros) <= 100 and seen_intros <@ array['tasks','goals','projects','calendar','clients','prayer','fitness','sleep','books','comics','learning','notes','mood','quotes','hobbies','games','chess','mtg','watchlist','music','people','finance','couple','football','journal','renewals','meals','focus','gundam']));
+
+-- Existing users who already picked their sections get Gundam switched on too.
+update public.profiles set sections = array_append(sections, 'gundam')
+ where sections is not null and not ('gundam' = any(sections));
