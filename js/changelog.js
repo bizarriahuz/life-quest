@@ -1,6 +1,14 @@
 // What's new — newest first. Add an entry here with every update.
 export const CHANGELOG = [
   {
+    version: '1.56', date: '2026-11-16', title: 'Fragrance',
+    items: [
+      'A new Fragrance section: the bottles you own and the ones you want, in two lists.',
+      'Type a perfume name and the house, concentration, year and note pyramid fill in. Not there? Type the details yourself.',
+      'Add up to six photos of each bottle, rate them, and see what you spent this year.',
+    ],
+  },
+  {
     version: '1.55', date: '2026-11-13', title: 'Gundam collection',
     items: [
       'A new Gundam section for your Gunpla: official Bandai kits on one tab, third-party kits on the other.',

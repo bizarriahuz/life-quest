@@ -1521,3 +1521,54 @@ body.lc-on .lc-wrap { position: fixed; inset: 0; z-index: 70; background: #000; 
 .fb-credit { text-align: center; margin-top: 4px; }
 @media (max-width: 380px) { .fb-table .wide { display: none; } }
 @media (prefers-reduced-motion: reduce) { .fb-dot { animation: none; } }
+
+/* ---------- Fragrance ---------- */
+.fr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 14px 10px; }
+.fr-bottle { display: grid; gap: 3px; min-width: 0; color: inherit; text-decoration: none; }
+.fr-art { aspect-ratio: 3 / 4; border-radius: 10px; overflow: hidden; background: var(--surface-2); border: 1px solid var(--line); display: grid; place-items: center; }
+.fr-art img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.fr-art img:not([src]) { visibility: hidden; }
+.fr-blank { color: var(--faint); }
+.fr-name { font-size: 14px; font-weight: 600; line-height: 1.25; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.fr-house { font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
+.fr-sub { font-size: 12px; color: var(--faint); overflow-wrap: anywhere; }
+.fr-stars { font-size: 11px; letter-spacing: .06em; color: var(--fg); }
+.fr-bottle:active .fr-art { transform: scale(.98); }
+
+.fr-filters { margin-bottom: 14px; max-width: 260px; }
+.fr-filters .field { width: 100%; }
+
+.fr-carousel { display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scrollbar-width: none; border-radius: 10px; }
+.fr-carousel::-webkit-scrollbar { display: none; }
+.fr-slide { position: relative; flex: 0 0 100%; scroll-snap-align: center; margin: 0; }
+.fr-slide img { width: 100%; aspect-ratio: 3 / 4; max-height: 60vh; object-fit: contain; background: var(--surface-2); border-radius: 10px; display: block; }
+.fr-slide figcaption { position: absolute; left: 10px; bottom: 8px; padding: 2px 8px; border-radius: 999px; background: rgba(0,0,0,.5); color: #fff; }
+.fr-unphoto { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,.5); color: #fff; }
+.fr-noart { display: grid; place-items: center; gap: 6px; aspect-ratio: 3 / 4; max-height: 220px; width: 100%; background: var(--surface-2); border-radius: 10px; color: var(--faint); }
+
+.fr-fields { display: grid; gap: 10px; margin: 0; }
+.fr-row { display: grid; grid-template-columns: 96px 1fr; gap: 10px; }
+.fr-row dt { color: var(--muted); font-size: 13.5px; }
+.fr-row dd { margin: 0; overflow-wrap: anywhere; }
+.fr-notes { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); white-space: pre-wrap; overflow-wrap: anywhere; }
+.fr-pyramid { display: grid; gap: 6px; margin: 12px 0 0; padding-top: 12px; border-top: 1px solid var(--line); }
+.fr-pyr { display: grid; grid-template-columns: 52px 1fr; gap: 10px; font-size: 13px; }
+.fr-pyr dt { color: var(--faint); font-size: 11.5px; text-transform: uppercase; letter-spacing: .07em; padding-top: 2px; }
+.fr-pyr dd { margin: 0; color: var(--muted); overflow-wrap: anywhere; }
+
+.fr-hits { display: grid; margin-top: 10px; border-radius: 12px; overflow: hidden; }
+.fr-hits:empty { display: none; }
+.fr-hit { display: block; width: 100%; text-align: left; background: var(--surface-2); border: 1px solid var(--line); border-bottom: 0; color: inherit; font: inherit; padding: 10px 12px; cursor: pointer; }
+.fr-hit:first-child { border-radius: 12px 12px 0 0; }
+.fr-hit:last-child { border-bottom: 1px solid var(--line); border-radius: 0 0 12px 12px; }
+.fr-hit:only-child { border-radius: 12px; }
+.fr-hit:active { background: var(--surface); }
+.fr-hit-name { display: block; font-size: 14px; font-weight: 600; }
+.fr-hit-sub { display: block; font-size: 12px; color: var(--faint); margin-top: 2px; }
+
+.fr-preview { background: var(--surface-2); border: 1px solid var(--line-2); border-radius: 12px; padding: 14px; margin-bottom: 14px; }
+.fr-preview:empty { display: none; }
+.fr-pv-name { font-family: var(--font-display); font-size: 18px; letter-spacing: -.01em; margin: 0; }
+
+.seg.fr-seg { display: grid; grid-template-columns: repeat(2, 1fr); width: 100%; margin-bottom: 14px; }
+.seg.fr-seg span { text-align: center; }

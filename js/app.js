@@ -33,6 +33,7 @@ import projects from './views/projects.js';
 import couple from './views/couple.js';
 import football from './views/football.js';
 import gundam from './views/gundam.js';
+import fragrance from './views/fragrance.js';
 import join from './views/join.js';
 import calendar from './views/calendar.js';
 import games from './views/games.js';
@@ -42,7 +43,7 @@ import meals from './views/meals.js';
 import renewals from './views/renewals.js';
 import focus from './views/focus.js';
 
-const VIEWS = [home, tasks, calendar, goals, projects, clients, prayer, fitness, sleep, books, comics, learning, notes, journal, mood, quotes, hobbies, games, football, mtg, gundam, watchlist, music, people, couple, finance, meals, renewals, focus, settings];
+const VIEWS = [home, tasks, calendar, goals, projects, clients, prayer, fitness, sleep, books, comics, learning, notes, journal, mood, quotes, hobbies, games, football, mtg, gundam, fragrance, watchlist, music, people, couple, finance, meals, renewals, focus, settings];
 const HIDDEN = [search, review, join, welcome];   // pages reached from buttons, not the menu
 const root = document.getElementById('app');
 const S = { store: null, profile: null, rawTotals: {}, routeToken: 0, swipe: null };

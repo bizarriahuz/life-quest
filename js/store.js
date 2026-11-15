@@ -145,6 +145,7 @@ const DEFAULTS = {
   contacts: { relation: null, every_days: 30, note: null, birthday: null, gift_ideas: null },
   journal_lines: { photos: [] },
   gundam_kits: { series: null, grade: 'HG', scale: null, brand: null, origin: 'official', status: 'unbuilt', rating: null, price: null, currency: 'SGD', bought_at: null, store: null, notes: null, photos: [] },
+  fragrances: { house: null, year: null, concentration: null, perfumer: null, family: null, top_notes: [], heart_notes: [], base_notes: [], status: 'own', rating: null, size_ml: null, price: null, currency: 'SGD', bought_at: null, store: null, notes: null, source_url: null, photos: [] },
   food_logs: { meal: 'snack', detail: null },
   renewals: { remind_days: 30, note: null },
   subscriptions: { every: 'monthly', note: null },
