@@ -332,12 +332,23 @@ function renderForm(el, ctx, rows, row) {
     ctl = new AbortController();
     const matches = await searchPerfumes(q, ctl.signal);
     if (q !== lastQ) return;
-    hits.innerHTML = matches.length
-      ? matches.map((m) => html`<button type="button" class="fr-hit" data-act="pick" data-slug="${slugOf(m.page) || ''}">
+    /* The API is fuzzy: ask it for "bleu de chanel" and it happily returns
+       Parfums de Marly. Offering those would let someone save another perfume's
+       house and note pyramid under a Chanel name, which looks entirely credible
+       afterwards. Keep only results where every word of the query appears in the
+       name or the house, and say plainly when nothing does. */
+    const tokens = q.toLowerCase().split(/\s+/).filter(Boolean);
+    const fold = (s) => String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const relevant = matches.filter((m) => {
+      const hay = fold(`${m.name} ${m.house || ''}`);
+      return tokens.every((t) => hay.includes(fold(t)));
+    });
+    hits.innerHTML = relevant.length
+      ? relevant.map((m) => html`<button type="button" class="fr-hit" data-act="pick" data-slug="${slugOf(m.page) || ''}">
           <span class="fr-hit-name">${m.name}</span>
           <span class="fr-hit-sub">${[m.house, m.family].filter(Boolean).join(' · ')}</span>
         </button>`).join('')
-      : html`<p class="small faint">No match. Fill in the details below.</p>`.s;
+      : html`<p class="small faint">Nothing in the catalogue matches “${q}”. Type the details in yourself.</p>`.s;
   }
 
   if (search) {
