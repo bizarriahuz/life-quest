@@ -21,7 +21,12 @@ export async function searchPerfumes(q, signal) {
   const term = String(q || '').trim();
   if (term.length < 2) return [];
   const d = await getJson(`${API}/search?q=${encodeURIComponent(term)}`, signal);
-  return (d?.detail?.matches || []).filter((m) => m.kind === 'perfume' && m.name);
+  /* Some results are marked as perfumes but link to a brand page rather than a
+     perfume page — picking one would fetch the wrong slug and fail. Require a
+     /perfumes/ path so every hit is one we can actually load. */
+  return (d?.detail?.matches || []).filter(
+    (m) => m.kind === 'perfume' && m.name && /\/perfumes\//.test(m.page || ''),
+  );
 }
 
 export async function getPerfume(slug, signal) {
